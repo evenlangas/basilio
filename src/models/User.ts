@@ -12,7 +12,11 @@ const UserSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
+    required: false, // Optional for OAuth users
+  },
+  image: {
+    type: String,
+    required: false,
   },
   familyId: {
     type: mongoose.Schema.Types.ObjectId,
