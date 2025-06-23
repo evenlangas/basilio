@@ -17,14 +17,20 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
   callbacks: {
     async signIn({ user, account, profile }) {
+      console.log('SignIn callback triggered', { user: user?.email, provider: account?.provider });
+      
       if (account?.provider === 'google') {
         try {
+          console.log('Attempting to connect to database...');
           await dbConnect();
+          console.log('Database connected successfully');
           
           // Check if user exists in our User collection
+          console.log('Looking for existing user with email:', user.email);
           let existingUser = await User.findOne({ email: user.email });
           
           if (!existingUser) {
+            console.log('Creating new user...');
             // Create new user in our User collection
             existingUser = await User.create({
               email: user.email,
@@ -32,27 +38,39 @@ export const authOptions: NextAuthOptions = {
               image: user.image,
               familyId: null,
             });
+            console.log('New user created:', existingUser._id);
+          } else {
+            console.log('Existing user found:', existingUser._id);
           }
           
           return true;
         } catch (error) {
           console.error('Error during sign in:', error);
+          console.error('Error stack:', error.stack);
           return false;
         }
       }
       return true;
     },
     async jwt({ token, user, account }) {
+      console.log('JWT callback triggered', { hasUser: !!user, provider: account?.provider });
+      
       if (account?.provider === 'google' && user) {
         try {
+          console.log('JWT: Connecting to database...');
           await dbConnect();
+          console.log('JWT: Looking for user with email:', user.email);
           const dbUser = await User.findOne({ email: user.email });
           if (dbUser) {
             token.familyId = dbUser.familyId?.toString() || null;
             token.userId = dbUser._id.toString();
+            console.log('JWT: User found, added to token');
+          } else {
+            console.log('JWT: User not found in database');
           }
         } catch (error) {
           console.error('JWT callback error:', error);
+          console.error('JWT error stack:', error.stack);
         }
       }
       return token;
