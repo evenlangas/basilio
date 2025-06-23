@@ -182,16 +182,16 @@ export default function ShoppingPage() {
   const mainList = shoppingLists[0];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navigation />
       
       <main className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-8">
           <div className="mb-4 sm:mb-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
               {session.user.familyId ? 'Family Shopping List' : 'My Shopping List'}
             </h1>
-            <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
+            <p className="text-gray-600 dark:text-gray-400 mt-1 sm:mt-2 text-sm sm:text-base">
               Keep track of what you{session.user.familyId ? ' and your family' : ''} need to buy
             </p>
             {!session.user.familyId && (
@@ -214,10 +214,10 @@ export default function ShoppingPage() {
         {!mainList ? (
           <div className="text-center py-12">
             <div className="text-4xl mb-4">🛒</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
               No shopping list yet
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
               Create your first shopping list to start organizing your grocery trips
             </p>
             <button
@@ -228,16 +228,16 @@ export default function ShoppingPage() {
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mx-2 sm:mx-0">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 mx-2 sm:mx-0">
             <div className="mb-6">
-              <h2 className="text-lg sm:text-xl font-semibold mb-4">Add New Item</h2>
+              <h2 className="text-lg sm:text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Add New Item</h2>
               <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="text"
                   placeholder="Item name"
                   value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                   onKeyPress={(e) => e.key === 'Enter' && addItem(mainList._id)}
                 />
                 <input
@@ -245,14 +245,14 @@ export default function ShoppingPage() {
                   placeholder="Amount"
                   value={newItemAmount}
                   onChange={(e) => setNewItemAmount(e.target.value)}
-                  className="w-full sm:w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-full sm:w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
                 <input
                   type="text"
                   placeholder="Unit"
                   value={newItemUnit}
                   onChange={(e) => setNewItemUnit(e.target.value)}
-                  className="w-full sm:w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-full sm:w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
                 <button
                   onClick={() => addItem(mainList._id)}
@@ -265,12 +265,12 @@ export default function ShoppingPage() {
             </div>
 
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
                 Items ({mainList.items.length})
               </h2>
               
               {mainList.items.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <div className="text-2xl mb-2">📝</div>
                   <p>No items in your shopping list yet</p>
                 </div>
@@ -281,8 +281,8 @@ export default function ShoppingPage() {
                       key={index}
                       className={`flex items-center justify-between p-3 rounded-lg border ${
                         item.completed
-                          ? 'bg-gray-50 border-gray-200'
-                          : 'bg-white border-gray-300'
+                          ? 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+                          : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
                       }`}
                     >
                       <div className="flex items-center space-x-3 flex-1 min-w-0">
@@ -297,10 +297,10 @@ export default function ShoppingPage() {
                           {item.completed && <span className="text-xs">✓</span>}
                         </button>
                         
-                        <div className={`${item.completed ? 'line-through text-gray-500' : ''} min-w-0`}>
+                        <div className={`${item.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100'} min-w-0`}>
                           <div className="font-medium truncate">{item.name}</div>
                           {(item.amount || item.unit) && (
-                            <div className="text-xs sm:text-sm text-gray-600">
+                            <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                               {item.amount} {item.unit}
                             </div>
                           )}
@@ -320,7 +320,7 @@ export default function ShoppingPage() {
             </div>
 
             {mainList.items.length > 0 && (
-              <div className="mt-6 text-sm text-gray-600">
+              <div className="mt-6 text-sm text-gray-600 dark:text-gray-400">
                 <div className="flex justify-between">
                   <span>Total items: {mainList.items.length}</span>
                   <span>

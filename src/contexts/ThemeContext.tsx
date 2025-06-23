@@ -29,17 +29,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (mounted) {
+      console.log('Applying theme:', theme);
       localStorage.setItem('theme', theme);
       if (theme === 'dark') {
         document.documentElement.classList.add('dark');
+        console.log('Added dark class to document');
       } else {
         document.documentElement.classList.remove('dark');
+        console.log('Removed dark class from document');
       }
+      console.log('Document classes:', document.documentElement.className);
     }
   }, [theme, mounted]);
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    console.log('Theme toggle clicked, current theme:', theme);
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    console.log('Setting new theme:', newTheme);
+    setTheme(newTheme);
   };
 
   // Prevent hydration mismatch

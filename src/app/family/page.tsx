@@ -191,32 +191,32 @@ export default function FamilyPage() {
   if (!session) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navigation />
       
       <main className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Family</h1>
-          <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Family</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1 sm:mt-2 text-sm sm:text-base">
             Share your recipes and shopping lists with family members
           </p>
         </div>
 
         {!family ? (
-          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mx-2 sm:mx-0">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 mx-2 sm:mx-0">
             <div className="text-center mb-8">
               <div className="text-4xl mb-4">👨‍👩‍👧‍👦</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                 You're not part of a family yet
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-400">
                 Create a new family or join an existing one to start sharing recipes and shopping lists
               </p>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
-              <div className="border border-gray-200 rounded-lg p-4 sm:p-6">
-                <h4 className="text-base sm:text-lg font-medium mb-4">Create New Family</h4>
+              <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 sm:p-6">
+                <h4 className="text-base sm:text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">Create New Family</h4>
                 
                 {!showCreateForm ? (
                   <button
@@ -232,7 +232,7 @@ export default function FamilyPage() {
                       placeholder="Family name"
                       value={familyName}
                       onChange={(e) => setFamilyName(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                     />
                     
                     {error && showCreateForm && (
@@ -262,8 +262,8 @@ export default function FamilyPage() {
                 )}
               </div>
 
-              <div className="border border-gray-200 rounded-lg p-4 sm:p-6">
-                <h4 className="text-base sm:text-lg font-medium mb-4">Join Existing Family</h4>
+              <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 sm:p-6">
+                <h4 className="text-base sm:text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">Join Existing Family</h4>
                 
                 {!showJoinForm ? (
                   <button
@@ -279,7 +279,7 @@ export default function FamilyPage() {
                       placeholder="Invite code"
                       value={inviteCode}
                       onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                     
                     {error && showJoinForm && (
@@ -311,14 +311,14 @@ export default function FamilyPage() {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mx-2 sm:mx-0">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 mx-2 sm:mx-0">
             <div className="flex justify-between items-start mb-6">
               <div className="flex-1">
                 {!showEditForm ? (
                   <div className="flex items-center space-x-3">
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900">{family.name}</h2>
-                      <p className="text-gray-600 mt-1">
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{family.name}</h2>
+                      <p className="text-gray-600 dark:text-gray-400 mt-1">
                         {family.members.length} member{family.members.length !== 1 ? 's' : ''}
                       </p>
                     </div>
@@ -341,10 +341,10 @@ export default function FamilyPage() {
                         placeholder="Family name"
                         value={editFamilyName}
                         onChange={(e) => setEditFamilyName(e.target.value)}
-                        className="text-2xl font-bold bg-transparent border-b-2 border-green-500 focus:outline-none focus:border-green-600 text-gray-900 pb-1"
+                        className="text-2xl font-bold bg-transparent border-b-2 border-green-500 focus:outline-none focus:border-green-600 text-gray-900 dark:text-gray-100 pb-1"
                         autoFocus
                       />
-                      <p className="text-gray-600 mt-1">
+                      <p className="text-gray-600 dark:text-gray-400 mt-1">
                         {family.members.length} member{family.members.length !== 1 ? 's' : ''}
                       </p>
                     </div>
@@ -377,10 +377,10 @@ export default function FamilyPage() {
               </div>
               
               <div className="flex space-x-3">
-                <div className="bg-gray-100 p-3 rounded-lg">
-                  <div className="text-sm text-gray-600 mb-1">Invite Code</div>
+                <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Invite Code</div>
                   <div className="flex items-center space-x-2">
-                    <span className="font-mono text-lg font-bold">{family.inviteCode}</span>
+                    <span className="font-mono text-lg font-bold text-gray-900 dark:text-gray-100">{family.inviteCode}</span>
                     <button
                       onClick={copyInviteCode}
                       className="text-green-600 hover:text-green-700"
@@ -394,20 +394,20 @@ export default function FamilyPage() {
             </div>
 
             <div className="mb-6">
-              <h3 className="text-lg font-medium mb-4">Family Members</h3>
+              <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">Family Members</h3>
               <div className="space-y-3">
                 {family.members.map((member) => (
                   <div
                     key={member._id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
                   >
                     <div>
-                      <div className="font-medium">{member.name}</div>
-                      <div className="text-sm text-gray-600">{member.email}</div>
+                      <div className="font-medium text-gray-900 dark:text-gray-100">{member.name}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">{member.email}</div>
                     </div>
                     
                     {member._id === session.user.id && (
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                      <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded-full">
                         You
                       </span>
                     )}
