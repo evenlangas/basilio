@@ -55,16 +55,17 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account }) {
       console.log('JWT callback triggered', { hasUser: !!user, provider: account?.provider });
       
-      if (account?.provider === 'google' && user) {
+      // Always refresh user data from database to get latest familyId
+      if (token.email) {
         try {
           console.log('JWT: Connecting to database...');
           await dbConnect();
-          console.log('JWT: Looking for user with email:', user.email);
-          const dbUser = await User.findOne({ email: user.email });
+          console.log('JWT: Looking for user with email:', token.email);
+          const dbUser = await User.findOne({ email: token.email });
           if (dbUser) {
             token.familyId = dbUser.familyId?.toString() || null;
             token.userId = dbUser._id.toString();
-            console.log('JWT: User found, added to token');
+            console.log('JWT: User found, updated token with familyId:', token.familyId);
           } else {
             console.log('JWT: User not found in database');
           }
