@@ -167,12 +167,12 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navigation />
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center py-12">
             <div className="text-4xl mb-4">😵</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">{error}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{error}</h2>
             <button
               onClick={() => router.push('/recipes')}
               className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
@@ -203,7 +203,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
       />
       
       <main className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
-        <div className="bg-white rounded-lg shadow-md overflow-hidden mx-2 sm:mx-0">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden mx-2 sm:mx-0">
           {recipe.image && (
             <div className="h-64 md:h-80 overflow-hidden">
               <img
@@ -213,15 +213,15 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
               />
             </div>
           )}
-          <div className="p-4 sm:p-6 border-b border-gray-200">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4">
               <div className="flex-1">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                   {recipe.title}
                 </h1>
                 
                 {recipe.description && (
-                  <p className="text-gray-600 mb-4">{recipe.description}</p>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">{recipe.description}</p>
                 )}
 
                 {recipe.url && (
@@ -238,7 +238,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                   </div>
                 )}
                 
-                <div className="flex items-center space-x-6 text-sm text-gray-600 mb-4">
+                <div className="flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-400 mb-4">
                   <div className="flex items-center">
                     <span className="mr-1">⏱️</span>
                     {recipe.cookingTime || 0} minutes
@@ -258,7 +258,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                     {recipe.tags.map((tag, index) => (
                       <span
                         key={index}
-                        className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full"
+                        className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs px-3 py-1 rounded-full"
                       >
                         {tag}
                       </span>
@@ -290,17 +290,17 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
             <div>
               <div className="mb-4">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
-                  <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-0">Ingredients</h2>
+                  <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-0 text-gray-900 dark:text-gray-100">Ingredients</h2>
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                     <div className="flex items-center space-x-2">
-                      <label className="text-sm font-medium text-gray-700">Servings:</label>
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Servings:</label>
                       <input
                         type="number"
                         min="1"
                         max="50"
                         value={servings}
                         onChange={(e) => setServings(parseInt(e.target.value) || 1)}
-                        className="w-16 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       />
                     </div>
                     <button
@@ -351,14 +351,14 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
             </div>
 
             <div>
-              <h2 className="text-xl sm:text-2xl font-semibold mb-4">Instructions</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Instructions</h2>
               <div className="space-y-4">
                 {recipe.instructions.map((instruction, index) => (
                   <div key={index} className="flex">
-                    <div className="w-8 h-8 bg-green-100 text-green-800 rounded-full flex items-center justify-center text-sm font-medium mr-4 flex-shrink-0">
+                    <div className="w-8 h-8 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full flex items-center justify-center text-sm font-medium mr-4 flex-shrink-0">
                       {instruction.step}
                     </div>
-                    <p className="text-gray-700 leading-relaxed">
+                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                       {instruction.description}
                     </p>
                   </div>
@@ -367,8 +367,8 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
             </div>
           </div>
 
-          <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-sm text-gray-600 space-y-2 sm:space-y-0">
+          <div className="px-4 sm:px-6 py-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-sm text-gray-600 dark:text-gray-400 space-y-2 sm:space-y-0">
               <span>
                 Created on {new Date(recipe.createdAt).toLocaleDateString()}
               </span>

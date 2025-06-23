@@ -15,41 +15,45 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light');
   const [mounted, setMounted] = useState(false);
 
+  // Initialize theme on mount
   useEffect(() => {
     setMounted(true);
-    // Check for saved theme in localStorage or default to system preference
-    const savedTheme = localStorage.getItem('theme') as Theme;
-    if (savedTheme) {
+    
+    // Check for saved theme in localStorage first
+    const savedTheme = localStorage.getItem('theme') as Theme | null;
+    if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
       setTheme(savedTheme);
+      applyTheme(savedTheme);
     } else {
+      // Fall back to system preference
       const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setTheme(systemPrefersDark ? 'dark' : 'light');
+      const initialTheme = systemPrefersDark ? 'dark' : 'light';
+      setTheme(initialTheme);
+      applyTheme(initialTheme);
     }
   }, []);
 
-  useEffect(() => {
-    if (mounted) {
-      console.log('Applying theme:', theme);
-      localStorage.setItem('theme', theme);
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-        console.log('Added dark class to document');
-      } else {
-        document.documentElement.classList.remove('dark');
-        console.log('Removed dark class from document');
-      }
-      console.log('Document classes:', document.documentElement.className);
+  const applyTheme = (newTheme: Theme) => {
+    // Update localStorage
+    localStorage.setItem('theme', newTheme);
+    
+    // Update document class
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
-  }, [theme, mounted]);
-
-  const toggleTheme = () => {
-    console.log('Theme toggle clicked, current theme:', theme);
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    console.log('Setting new theme:', newTheme);
-    setTheme(newTheme);
   };
 
-  // Prevent hydration mismatch
+  const toggleTheme = () => {
+    if (!mounted) return;
+    
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    applyTheme(newTheme);
+  };
+
+  // Prevent hydration mismatch by rendering a fallback until mounted
   if (!mounted) {
     return <>{children}</>;
   }
