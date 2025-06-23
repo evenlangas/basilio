@@ -34,21 +34,33 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const applyTheme = (newTheme: Theme) => {
+    console.log('Applying theme:', newTheme);
+    
     // Update localStorage
     localStorage.setItem('theme', newTheme);
     
     // Update document class
     if (newTheme === 'dark') {
       document.documentElement.classList.add('dark');
+      console.log('Added dark class. Current classes:', document.documentElement.className);
     } else {
       document.documentElement.classList.remove('dark');
+      console.log('Removed dark class. Current classes:', document.documentElement.className);
     }
+    
+    // Force a style recalculation
+    document.documentElement.style.colorScheme = newTheme;
   };
 
   const toggleTheme = () => {
-    if (!mounted) return;
+    console.log('Toggle theme clicked. Mounted:', mounted, 'Current theme:', theme);
+    if (!mounted) {
+      console.log('Not mounted yet, ignoring toggle');
+      return;
+    }
     
     const newTheme = theme === 'light' ? 'dark' : 'light';
+    console.log('Toggling from', theme, 'to', newTheme);
     setTheme(newTheme);
     applyTheme(newTheme);
   };

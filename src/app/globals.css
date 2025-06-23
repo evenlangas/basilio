@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* Configure dark mode variant */
+@variant dark (.dark &);
+
+/* Test dark mode */
+.dark body {
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+}
+
 /* Custom styles for Basil */
 .line-clamp-3 {
   display: -webkit-box;
