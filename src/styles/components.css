@@ -437,6 +437,40 @@
   background-color: var(--color-primary-900);
 }
 
+/* Mobile Bottom Navigation Support */
+@media (max-width: 768px) {
+  /* Add bottom padding to body to account for fixed bottom navigation */
+  body {
+    padding-bottom: calc(70px + env(safe-area-inset-bottom, 0));
+  }
+  
+  /* Ensure main content doesn't get hidden behind bottom nav */
+  main {
+    margin-bottom: var(--spacing-xl);
+  }
+}
+
+/* Mobile Bottom Navigation Styles */
+.mobile-bottom-nav {
+  background-color: var(--color-bg-secondary);
+  border-top: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+}
+
+.mobile-bottom-nav-item {
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.mobile-bottom-nav-item.active {
+  color: var(--color-primary-600);
+  background-color: var(--color-primary-50);
+}
+
+.dark .mobile-bottom-nav-item.active {
+  background-color: var(--color-primary-900);
+}
+
 /* Responsive Design */
 @media (max-width: 640px) {
   .container {

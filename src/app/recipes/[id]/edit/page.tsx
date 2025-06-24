@@ -445,39 +445,48 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
               </button>
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-4">
               {ingredients.map((ingredient, index) => (
-                <div key={index} className="flex gap-3">
-                  <input
-                    type="text"
-                    placeholder="Ingredient"
-                    value={ingredient.name}
-                    onChange={(e) => updateIngredient(index, 'name', e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Amount"
-                    value={ingredient.amount}
-                    onChange={(e) => updateIngredient(index, 'amount', e.target.value)}
-                    className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Unit"
-                    value={ingredient.unit}
-                    onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
-                    className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-                  {ingredients.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeIngredient(index)}
-                      className="text-red-600 hover:text-red-700 px-2"
-                    >
-                      ×
-                    </button>
-                  )}
+                <div key={index} className="space-y-3 sm:space-y-0 sm:flex sm:gap-3 p-3 sm:p-0 border sm:border-0 rounded-lg sm:rounded-none border-gray-200 dark:border-gray-600">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      placeholder="Ingredient name"
+                      value={ingredient.name}
+                      onChange={(e) => updateIngredient(index, 'name', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                  <div className="flex gap-3 sm:contents">
+                    <div className="flex-1 sm:flex-none sm:w-24">
+                      <input
+                        type="text"
+                        placeholder="Amount"
+                        value={ingredient.amount}
+                        onChange={(e) => updateIngredient(index, 'amount', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                    <div className="flex-1 sm:flex-none sm:w-20">
+                      <input
+                        type="text"
+                        placeholder="Unit"
+                        value={ingredient.unit}
+                        onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                    {ingredients.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeIngredient(index)}
+                        className="text-red-600 hover:text-red-700 px-2 py-2 sm:px-2 sm:py-0 flex items-center justify-center min-w-[40px] sm:min-w-0"
+                        aria-label="Remove ingredient"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

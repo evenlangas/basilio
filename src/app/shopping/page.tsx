@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
-import { IoBulb, IoCart, IoDocumentText } from 'react-icons/io5';
+import { IoBulb, IoCart, IoDocumentText, IoPencil, IoSave, IoClose } from 'react-icons/io5';
 
 interface ShoppingItem {
   name: string;
@@ -31,6 +31,10 @@ export default function ShoppingPage() {
   const [newItemName, setNewItemName] = useState('');
   const [newItemAmount, setNewItemAmount] = useState('');
   const [newItemUnit, setNewItemUnit] = useState('');
+  const [editingItem, setEditingItem] = useState<{listId: string, index: number} | null>(null);
+  const [editedName, setEditedName] = useState('');
+  const [editedAmount, setEditedAmount] = useState('');
+  const [editedUnit, setEditedUnit] = useState('');
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -167,6 +171,57 @@ export default function ShoppingPage() {
     }
   };
 
+  const startEditingItem = (listId: string, index: number) => {
+    const list = shoppingLists.find(l => l._id === listId);
+    if (!list) return;
+    
+    const item = list.items[index];
+    setEditingItem({ listId, index });
+    setEditedName(item.name);
+    setEditedAmount(item.amount);
+    setEditedUnit(item.unit);
+  };
+
+  const cancelEditing = () => {
+    setEditingItem(null);
+    setEditedName('');
+    setEditedAmount('');
+    setEditedUnit('');
+  };
+
+  const saveEditedItem = async () => {
+    if (!editingItem || !editedName.trim()) return;
+
+    const list = shoppingLists.find(l => l._id === editingItem.listId);
+    if (!list) return;
+
+    const updatedItems = list.items.map((item, index) =>
+      index === editingItem.index
+        ? { ...item, name: editedName.trim(), amount: editedAmount.trim(), unit: editedUnit.trim() }
+        : item
+    );
+
+    try {
+      const response = await fetch(`/api/shopping-lists/${editingItem.listId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...list,
+          items: updatedItems,
+        }),
+      });
+
+      if (response.ok) {
+        cancelEditing();
+        fetchShoppingLists();
+      }
+    } catch (error) {
+      console.error('Error updating item:', error);
+    }
+  };
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -286,40 +341,98 @@ export default function ShoppingPage() {
                   {mainList.items.map((item, index) => (
                     <div
                       key={index}
-                      className={`flex items-center justify-between p-3 rounded-lg border ${
+                      className={`p-3 rounded-lg border ${
                         item.completed
                           ? 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600'
                           : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
                       }`}
                     >
-                      <div className="flex items-center space-x-3 flex-1 min-w-0">
-                        <button
-                          onClick={() => toggleItem(mainList._id, index)}
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                            item.completed
-                              ? 'bg-green-500 border-green-500 text-white'
-                              : 'border-gray-300 hover:border-green-500'
-                          }`}
-                        >
-                          {item.completed && <span className="text-xs">✓</span>}
-                        </button>
-                        
-                        <div className={`${item.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100'} min-w-0`}>
-                          <div className="font-medium truncate">{item.name}</div>
-                          {(item.amount || item.unit) && (
-                            <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                              {item.amount} {item.unit}
-                            </div>
-                          )}
+                      {editingItem?.listId === mainList._id && editingItem?.index === index ? (
+                        <div className="space-y-3">
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <input
+                              type="text"
+                              value={editedName}
+                              onChange={(e) => setEditedName(e.target.value)}
+                              className="form-input flex-1"
+                              placeholder="Item name"
+                              autoFocus
+                            />
+                            <input
+                              type="text"
+                              value={editedAmount}
+                              onChange={(e) => setEditedAmount(e.target.value)}
+                              className="form-input w-full sm:w-24"
+                              placeholder="Amount"
+                            />
+                            <input
+                              type="text"
+                              value={editedUnit}
+                              onChange={(e) => setEditedUnit(e.target.value)}
+                              className="form-input w-full sm:w-20"
+                              placeholder="Unit"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={saveEditedItem}
+                              className="btn btn-primary btn-sm"
+                              disabled={!editedName.trim()}
+                            >
+                              <IoSave size={14} />
+                              Save
+                            </button>
+                            <button
+                              onClick={cancelEditing}
+                              className="btn btn-outline btn-sm"
+                            >
+                              <IoClose size={14} />
+                              Cancel
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      
-                      <button
-                        onClick={() => removeItem(mainList._id, index)}
-                        className="text-red-600 hover:text-red-700 p-1 flex-shrink-0"
-                      >
-                        <span className="text-lg">×</span>
-                      </button>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3 flex-1 min-w-0">
+                            <button
+                              onClick={() => toggleItem(mainList._id, index)}
+                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                item.completed
+                                  ? 'bg-green-500 border-green-500 text-white'
+                                  : 'border-gray-300 hover:border-green-500'
+                              }`}
+                            >
+                              {item.completed && <span className="text-xs">✓</span>}
+                            </button>
+                            
+                            <div className={`${item.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100'} min-w-0 flex-1`}>
+                              <div className="font-medium truncate">{item.name}</div>
+                              {(item.amount || item.unit) && (
+                                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                                  {item.amount} {item.unit}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => startEditingItem(mainList._id, index)}
+                              className="text-blue-600 hover:text-blue-700 p-1 flex-shrink-0"
+                              title="Edit item"
+                            >
+                              <IoPencil size={16} />
+                            </button>
+                            <button
+                              onClick={() => removeItem(mainList._id, index)}
+                              className="text-red-600 hover:text-red-700 p-1 flex-shrink-0"
+                              title="Remove item"
+                            >
+                              <IoClose size={18} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
