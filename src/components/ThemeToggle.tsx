@@ -12,12 +12,15 @@ export default function ThemeToggle() {
 
   return (
     <div className="flex items-center space-x-2">
-      <span className="text-xs text-gray-600 dark:text-gray-400">
-        {theme}
-      </span>
       <button
         onClick={handleClick}
-        className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+        className="btn-outline"
+        style={{
+          padding: 'var(--spacing-md)',
+          borderRadius: 'var(--radius-lg)',
+          backgroundColor: 'var(--color-bg-tertiary)',
+          color: 'var(--color-text-primary)',
+        }}
         aria-label="Toggle theme"
         title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
       >

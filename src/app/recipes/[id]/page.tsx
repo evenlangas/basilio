@@ -192,7 +192,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                   (session.user.familyId && recipe.familyId === session.user.familyId);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{backgroundColor: 'var(--color-bg-primary)'}}>
       <Navigation />
       
       <Toast

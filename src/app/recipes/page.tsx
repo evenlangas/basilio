@@ -61,9 +61,9 @@ export default function RecipesPage() {
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
+        <div className="empty-state">
           <div className="text-4xl mb-4">🌿</div>
-          <div className="text-lg">Loading...</div>
+          <div className="loading-spinner"></div>
         </div>
       </div>
     );
@@ -72,21 +72,21 @@ export default function RecipesPage() {
   if (!session) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen" style={{backgroundColor: 'var(--color-bg-primary)'}}>
       <Navigation />
       
-      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-8">
+      <main className="container" style={{paddingTop: 'var(--spacing-2xl)', paddingBottom: 'var(--spacing-2xl)'}}>
+        <div className="page-header">
           <div className="mb-4 sm:mb-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 className="page-title">
               {session.user.familyId ? 'Family Recipes' : 'My Recipes'}
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1 sm:mt-2 text-sm sm:text-base">
+            <p className="page-subtitle">
               {recipes.length} recipe{recipes.length !== 1 ? 's' : ''} in your{' '}
               {session.user.familyId ? 'family' : 'personal'} cookbook
             </p>
             {!session.user.familyId && (
-              <p className="text-xs sm:text-sm text-blue-600 mt-1">
+              <p style={{fontSize: 'var(--text-sm)', color: 'var(--color-secondary-600)', marginTop: 'var(--spacing-md)'}}>
                 💡 <Link href="/family" className="underline hover:text-blue-800">Join or create a family</Link> to share recipes with others!
               </p>
             )}
@@ -95,14 +95,14 @@ export default function RecipesPage() {
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
             <Link
               href="/shopping"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+              className="btn btn-secondary"
             >
               <span>🛒</span>
               <span>Shopping List</span>
             </Link>
             <Link
               href="/recipes/new"
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors text-center"
+              className="btn btn-primary"
             >
               Add Recipe
             </Link>
@@ -115,17 +115,18 @@ export default function RecipesPage() {
             placeholder="Search recipes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full max-w-md px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            className="form-input"
+            style={{maxWidth: '384px'}}
           />
         </div>
 
         {filteredRecipes.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-4xl mb-4">📖</div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+          <div className="empty-state">
+            <div className="empty-state-icon">📖</div>
+            <h3 className="empty-state-title">
               {searchTerm ? 'No recipes found' : 'No recipes yet'}
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="empty-state-description">
               {searchTerm 
                 ? 'Try adjusting your search terms'
                 : 'Start building your cookbook by adding your first recipe'
@@ -134,48 +135,48 @@ export default function RecipesPage() {
             {!searchTerm && (
               <Link
                 href="/recipes/new"
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                className="btn btn-primary btn-lg"
               >
                 Add Your First Recipe
               </Link>
             )}
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3">
             {filteredRecipes.map((recipe) => (
               <Link
                 key={recipe._id}
                 href={`/recipes/${recipe._id}`}
-                className="recipe-card bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                className="recipe-card card"
               >
                 {recipe.image ? (
                   <div className="h-40 sm:h-48 overflow-hidden">
                     <img
                       src={recipe.image}
                       alt={recipe.title}
-                      className="recipe-image w-full h-full object-cover"
+                      className="recipe-image"
                     />
                   </div>
                 ) : (
-                  <div className="h-40 sm:h-48 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                    <div className="text-center text-gray-400 dark:text-gray-500">
+                  <div className="h-40 sm:h-48 flex items-center justify-center" style={{backgroundColor: 'var(--color-bg-tertiary)'}}>
+                    <div className="text-center" style={{color: 'var(--color-text-tertiary)'}}>
                       <div className="text-3xl sm:text-4xl mb-2">🍽️</div>
                       <div className="text-xs sm:text-sm">No image</div>
                     </div>
                   </div>
                 )}
-                <div className="p-4 sm:p-6">
-                  <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100 line-clamp-2">
+                <div className="recipe-content">
+                  <h3 className="recipe-title">
                     {recipe.title}
                   </h3>
                   
                   {recipe.description && (
-                    <p className="text-gray-600 dark:text-gray-400 mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-3 text-sm sm:text-base">
+                    <p className="recipe-description">
                       {recipe.description}
                     </p>
                   )}
                   
-                  <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">
+                  <div className="recipe-meta">
                     <span>⏱️ {recipe.cookingTime || 0}m</span>
                     <span>👥 {recipe.servings || 1}</span>
                   </div>
@@ -185,25 +186,25 @@ export default function RecipesPage() {
                       {recipe.tags.slice(0, 2).map((tag, index) => (
                         <span
                           key={index}
-                          className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs px-2 py-1 rounded-full"
+                          className="badge badge-success"
                         >
                           {tag}
                         </span>
                       ))}
                       {recipe.tags.length > 2 && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                        <span style={{fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)'}}>
                           +{recipe.tags.length - 2}
                         </span>
                       )}
                     </div>
                   )}
                   
-                  <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center justify-between">
+                  <div className="flex items-center justify-between" style={{fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)'}}>
                     <span className="truncate mr-2">
                       {recipe.createdBy.name}
                     </span>
                     {recipe.familyId && (
-                      <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full text-xs flex-shrink-0">
+                      <span className="badge badge-secondary">
                         👨‍👩‍👧‍👦
                       </span>
                     )}
