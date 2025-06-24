@@ -206,6 +206,19 @@
   align-items: center;
 }
 
+.nav-container .nav-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4xl);
+}
+
+.nav-container .nav-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xl);
+  margin-left: auto;
+}
+
 .nav-brand {
   font-size: var(--text-xl);
   font-weight: var(--font-bold);
@@ -469,6 +482,48 @@
 
 .dark .mobile-bottom-nav-item.active {
   background-color: var(--color-primary-900);
+}
+
+/* Floating Action Button */
+.floating-add-button {
+  position: fixed;
+  z-index: 40;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: var(--color-primary-600);
+  color: white;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+  transition: all 200ms ease;
+  right: var(--spacing-xl);
+}
+
+.floating-add-button:hover {
+  background-color: var(--color-primary-700);
+  transform: scale(1.1);
+  box-shadow: var(--shadow-xl);
+}
+
+.floating-add-button:active {
+  transform: scale(0.95);
+}
+
+/* Mobile positioning - above bottom nav */
+@media (max-width: 768px) {
+  .floating-add-button {
+    bottom: calc(90px + env(safe-area-inset-bottom, 0));
+  }
+}
+
+/* Desktop positioning - standard bottom right */
+@media (min-width: 769px) {
+  .floating-add-button {
+    bottom: var(--spacing-3xl);
+  }
 }
 
 /* Responsive Design */

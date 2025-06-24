@@ -23,55 +23,53 @@ export default function Navigation() {
       {/* Desktop Navigation */}
       <nav className="hidden md:block nav">
         <div className="nav-container">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-8">
-              <Link href="/recipes" className="nav-brand" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
-                <IoLeaf size={24} color="var(--color-primary-600)" />
-                Basilio
-              </Link>
-              <div className="flex space-x-6">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`nav-link ${pathname === item.href ? 'active' : ''}`}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 'var(--spacing-md)',
-                      padding: 'var(--spacing-lg) var(--spacing-xl)',
-                      borderRadius: 'var(--radius-md)',
-                      fontSize: 'var(--text-sm)',
-                      fontWeight: 'var(--font-medium)',
-                      backgroundColor: pathname === item.href ? 'var(--color-primary-100)' : 'transparent',
-                      color: pathname === item.href ? 'var(--color-primary-700)' : 'var(--color-text-secondary)'
-                    }}
-                  >
-                    {item.icon}
-                    <span>{item.label}</span>
-                  </Link>
-                ))}
-              </div>
+          <div className="nav-left">
+            <Link href="/recipes" className="nav-brand" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+              <IoLeaf size={24} color="var(--color-primary-600)" />
+              Basilio
+            </Link>
+            <div className="flex space-x-6">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`nav-link ${pathname === item.href ? 'active' : ''}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--spacing-md)',
+                    padding: 'var(--spacing-lg) var(--spacing-xl)',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: 'var(--font-medium)',
+                    backgroundColor: pathname === item.href ? 'var(--color-primary-100)' : 'transparent',
+                    color: pathname === item.href ? 'var(--color-primary-700)' : 'var(--color-text-secondary)'
+                  }}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </Link>
+              ))}
             </div>
-            
-            <div className="flex items-center space-x-4 ml-auto">
-              <ThemeToggle />
-              <button
-                onClick={() => signOut()}
-                className="nav-link flex items-center gap-2"
-                style={{
-                  fontSize: 'var(--text-sm)',
-                  color: 'var(--color-text-secondary)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 'var(--spacing-md)'
-                }}
-              >
-                <IoLogOut size={16} />
-                Sign Out
-              </button>
-            </div>
+          </div>
+          
+          <div className="nav-right">
+            <ThemeToggle />
+            <button
+              onClick={() => signOut()}
+              className="nav-link flex items-center gap-2"
+              style={{
+                fontSize: 'var(--text-sm)',
+                color: 'var(--color-text-secondary)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 'var(--spacing-md)'
+              }}
+            >
+              <IoLogOut size={16} />
+              Sign Out
+            </button>
           </div>
         </div>
       </nav>
@@ -79,26 +77,24 @@ export default function Navigation() {
       {/* Mobile Top Bar */}
       <div className="md:hidden nav" style={{ position: 'relative', zIndex: 10 }}>
         <div className="nav-container">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/recipes" className="nav-brand" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
-              <IoLeaf size={24} color="var(--color-primary-600)" />
-              Basilio
-            </Link>
-            
-            <div className="flex items-center space-x-3">
-              <ThemeToggle />
-              <button
-                onClick={() => signOut()}
-                className="p-2 rounded-lg transition-colors"
-                style={{
-                  color: 'var(--color-text-secondary)',
-                  backgroundColor: 'var(--color-bg-tertiary)'
-                }}
-                title="Sign Out"
-              >
-                <IoLogOut size={18} />
-              </button>
-            </div>
+          <Link href="/recipes" className="nav-brand" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+            <IoLeaf size={24} color="var(--color-primary-600)" />
+            Basilio
+          </Link>
+          
+          <div className="nav-right">
+            <ThemeToggle />
+            <button
+              onClick={() => signOut()}
+              className="p-2 rounded-lg transition-colors"
+              style={{
+                color: 'var(--color-text-secondary)',
+                backgroundColor: 'var(--color-bg-tertiary)'
+              }}
+              title="Sign Out"
+            >
+              <IoLogOut size={18} />
+            </button>
           </div>
         </div>
       </div>

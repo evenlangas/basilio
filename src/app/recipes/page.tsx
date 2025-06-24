@@ -11,7 +11,8 @@ import {
   IoBook, 
   IoRestaurant, 
   IoTime, 
-  IoPeople 
+  IoPeople,
+  IoAdd
 } from 'react-icons/io5';
 
 interface Recipe {
@@ -84,7 +85,7 @@ export default function RecipesPage() {
       
       <main className="container" style={{paddingTop: 'var(--spacing-2xl)', paddingBottom: 'var(--spacing-2xl)'}}>
         <div className="page-header">
-          <div className="mb-4 sm:mb-0">
+          <div className="text-center">
             <h1 className="page-title">
               {session.user.familyId ? 'Family Recipes' : 'My Recipes'}
             </h1>
@@ -94,25 +95,9 @@ export default function RecipesPage() {
             </p>
             {!session.user.familyId && (
               <p style={{fontSize: 'var(--text-sm)', color: 'var(--color-secondary-600)', marginTop: 'var(--spacing-md)'}}>
-<IoBulb className="inline mr-1" size={16} /> <Link href="/family" className="underline hover:text-blue-800">Join or create a family</Link> to share recipes with others!
+                <IoBulb className="inline mr-1" size={16} /> <Link href="/family" className="underline hover:text-blue-800">Join or create a family</Link> to share recipes with others!
               </p>
             )}
-          </div>
-          
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
-            <Link
-              href="/shopping"
-              className="btn btn-secondary"
-            >
-<IoCart className="mr-1" size={20} />
-              <span>Shopping List</span>
-            </Link>
-            <Link
-              href="/recipes/new"
-              className="btn btn-primary"
-            >
-              Add Recipe
-            </Link>
           </div>
         </div>
 
@@ -231,6 +216,14 @@ export default function RecipesPage() {
             ))}
           </div>
         )}
+        {/* Floating Add Button */}
+        <Link
+          href="/recipes/new"
+          className="floating-add-button"
+          title="Add New Recipe"
+        >
+          <IoAdd size={28} />
+        </Link>
       </main>
     </div>
   );
