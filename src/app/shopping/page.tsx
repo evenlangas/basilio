@@ -683,7 +683,24 @@ export default function ShoppingPage() {
                 </button>
               </div>
               
-              <form onSubmit={(e) => { e.preventDefault(); handleAddFromModal(); }} className="space-y-4">
+              <form 
+                onSubmit={(e) => { e.preventDefault(); handleAddFromModal(); }} 
+                className="space-y-4"
+                autoComplete="off"
+                data-form-type="shopping"
+                role="form"
+                aria-label="Add shopping item"
+              >
+                {/* Hidden honeypot field to confuse password managers */}
+                <input
+                  type="text"
+                  name="email"
+                  autoComplete="email"
+                  style={{ display: 'none' }}
+                  tabIndex={-1}
+                  aria-hidden="true"
+                />
+                
                 <div>
                   <input
                     ref={inputRef}
@@ -692,8 +709,9 @@ export default function ShoppingPage() {
                     value={newItemName}
                     onChange={(e) => setNewItemName(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    autoComplete="off"
-                    name="shopping-item-name"
+                    autoComplete="new-password"
+                    name="shopping-product"
+                    data-form-type="other"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && newItemName.trim()) {
                         handleAddFromModal();
@@ -702,25 +720,30 @@ export default function ShoppingPage() {
                   />
                 </div>
                 
-                <div className="flex gap-2 sm:gap-3">
+                <div>
                   <input
                     type="text"
-                    placeholder="Amount"
+                    placeholder="Amount (optional)"
                     value={newItemAmount}
                     onChange={(e) => setNewItemAmount(e.target.value)}
-                    className="flex-[2] px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
-                    autoComplete="off"
-                    name="shopping-item-amount"
+                    className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                    autoComplete="new-password"
+                    name="shopping-quantity"
                     inputMode="decimal"
+                    data-form-type="other"
                   />
+                </div>
+                
+                <div>
                   <input
                     type="text"
-                    placeholder="Unit"
+                    placeholder="Unit (optional)"
                     value={newItemUnit}
                     onChange={(e) => setNewItemUnit(e.target.value)}
-                    className="flex-1 px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
-                    autoComplete="off"
-                    name="shopping-item-unit"
+                    className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                    autoComplete="new-password"
+                    name="shopping-measurement"
+                    data-form-type="other"
                   />
                 </div>
                 
