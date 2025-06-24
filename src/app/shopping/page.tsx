@@ -39,6 +39,7 @@ export default function ShoppingPage() {
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const [isSyncingWithFamily, setIsSyncingWithFamily] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -88,6 +89,35 @@ export default function ShoppingPage() {
         inputRef.current?.focus();
       }, 100);
       return () => clearTimeout(timer);
+    }
+  }, [showAddModal]);
+
+  // Virtual keyboard detection for mobile
+  useEffect(() => {
+    if (!showAddModal) return;
+
+    const handleResize = () => {
+      // For mobile browsers, when virtual keyboard opens, viewport height decreases
+      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      const windowHeight = window.screen.height;
+      const keyboardSpace = windowHeight - viewportHeight;
+      
+      // If keyboard space is significant (more than 150px), keyboard is likely open
+      if (keyboardSpace > 150) {
+        setKeyboardHeight(keyboardSpace);
+      } else {
+        setKeyboardHeight(0);
+      }
+    };
+
+    // Listen for visual viewport changes (better than resize for virtual keyboard)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      return () => window.visualViewport?.removeEventListener('resize', handleResize);
+    } else {
+      // Fallback for older browsers
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
     }
   }, [showAddModal]);
 
@@ -635,8 +665,13 @@ export default function ShoppingPage() {
 
       {/* Add Item Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-white/20 dark:bg-black/20 backdrop-blur-sm flex items-end sm:items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-t-lg sm:rounded-lg w-full sm:w-96 max-w-full mx-1 sm:mx-4 mb-0 sm:mb-auto">
+        <div 
+          className="fixed inset-0 bg-white/20 dark:bg-black/20 backdrop-blur-sm flex items-start sm:items-center justify-center z-50 pt-16 pb-4 sm:p-4"
+          style={{ 
+            paddingBottom: keyboardHeight > 0 ? `${keyboardHeight + 20}px` : undefined 
+          }}
+        >
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full sm:w-96 max-w-full mx-4">
             <div className="p-4 sm:p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Add New Item</h3>

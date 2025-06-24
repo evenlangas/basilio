@@ -574,6 +574,29 @@
   background-size: 200% 100%;
 }
 
+/* Modal keyboard avoidance */
+@media (max-width: 768px) {
+  .modal-keyboard-avoid {
+    /* Ensure modal appears above virtual keyboard */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding-top: 10vh;
+    padding-bottom: 40vh; /* Space for keyboard */
+    overflow-y: auto;
+  }
+  
+  /* When keyboard is open, adjust modal position */
+  @supports (height: 100dvh) {
+    .modal-keyboard-avoid {
+      height: 100dvh;
+      padding-bottom: 35vh;
+    }
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 640px) {
   .container {
