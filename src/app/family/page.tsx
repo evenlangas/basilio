@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
+import { FamilyPageSkeleton } from '@/components/SkeletonLoader';
 import { IoPeople, IoPencil, IoCopy } from 'react-icons/io5';
 
 interface FamilyMember {
@@ -180,13 +181,12 @@ export default function FamilyPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto loading-spinner"></div>
-          </div>
-          <div className="text-lg">Loading...</div>
-        </div>
+      <div className="min-h-screen" style={{backgroundColor: 'var(--color-bg-primary)'}}>
+        <Navigation />
+        
+        <main className="container" style={{paddingTop: 'var(--spacing-2xl)', paddingBottom: 'var(--spacing-2xl)'}}>
+          <FamilyPageSkeleton />
+        </main>
       </div>
     );
   }

@@ -526,6 +526,49 @@
   }
 }
 
+/* Skeleton Loading Animation */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-tertiary) 25%,
+    var(--color-border) 50%,
+    var(--color-bg-tertiary) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: var(--radius-md);
+  height: 1rem;
+  display: block;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton.rounded-full {
+  border-radius: var(--radius-full);
+}
+
+.skeleton.rounded-lg {
+  border-radius: var(--radius-lg);
+}
+
+/* Dark mode skeleton adjustments */
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-gray-800) 25%,
+    var(--color-gray-700) 50%,
+    var(--color-gray-800) 75%
+  );
+  background-size: 200% 100%;
+}
+
 /* Responsive Design */
 @media (max-width: 640px) {
   .container {

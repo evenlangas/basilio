@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
+import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import { IoLeaf, IoBook, IoCart, IoHardwareChip, IoPeople } from 'react-icons/io5';
 
 export default function Home() {
@@ -21,14 +22,7 @@ export default function Home() {
   }, [session, status, router]);
 
   if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="loading-spinner"></div>
-          <div className="text-lg">Loading...</div>
-        </div>
-      </div>
-    );
+    return <PageLoadingSkeleton />;
   }
 
   if (!session) return null;

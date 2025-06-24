@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import Toast from '@/components/Toast';
+import { RecipeDetailSkeleton } from '@/components/SkeletonLoader';
 import { 
   IoSadOutline, 
   IoLink, 
@@ -162,13 +163,12 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4">
-            <div className="loading-spinner mx-auto w-8 h-8 border-4 border-green-200 border-t-green-600 rounded-full animate-spin"></div>
-          </div>
-          <div className="text-lg">Loading...</div>
-        </div>
+      <div className="min-h-screen" style={{backgroundColor: 'var(--color-bg-primary)'}}>
+        <Navigation />
+        
+        <main className="container container-sm" style={{paddingTop: 'var(--spacing-2xl)', paddingBottom: 'var(--spacing-2xl)'}}>
+          <RecipeDetailSkeleton />
+        </main>
       </div>
     );
   }

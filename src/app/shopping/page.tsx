@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
+import { ShoppingListSkeleton } from '@/components/SkeletonLoader';
 import { IoBulb, IoCart, IoDocumentText, IoPencil, IoSave, IoClose } from 'react-icons/io5';
 
 interface ShoppingItem {
@@ -224,13 +225,19 @@ export default function ShoppingPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto loading-spinner"></div>
+      <div className="min-h-screen" style={{backgroundColor: 'var(--color-bg-primary)'}}>
+        <Navigation />
+        
+        <main className="container" style={{paddingTop: 'var(--spacing-2xl)', paddingBottom: 'var(--spacing-2xl)'}}>
+          <div className="page-header">
+            <div className="text-center">
+              <div className="skeleton h-10 mb-4 mx-auto" style={{width: '300px'}} />
+              <div className="skeleton h-6 mx-auto" style={{width: '400px'}} />
+            </div>
           </div>
-          <div className="text-lg">Loading...</div>
-        </div>
+
+          <ShoppingListSkeleton />
+        </main>
       </div>
     );
   }

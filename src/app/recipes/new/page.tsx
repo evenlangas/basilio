@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
+import { FormSkeleton } from '@/components/SkeletonLoader';
 import { IoCamera } from 'react-icons/io5';
 
 interface Ingredient {
@@ -157,7 +158,22 @@ export default function NewRecipePage() {
     setImagePreview('');
   };
 
-  if (!session) return null;
+  if (!session) {
+    return (
+      <div className="min-h-screen" style={{backgroundColor: 'var(--color-bg-primary)'}}>
+        <Navigation />
+        
+        <main className="container container-sm" style={{paddingTop: 'var(--spacing-2xl)', paddingBottom: 'var(--spacing-2xl)'}}>
+          <div className="page-header">
+            <div className="skeleton h-10 mb-4 mx-auto" style={{width: '200px'}} />
+            <div className="skeleton h-6 mx-auto" style={{width: '300px'}} />
+          </div>
+          
+          <FormSkeleton />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{backgroundColor: 'var(--color-bg-primary)'}}>
