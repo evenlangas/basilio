@@ -36,6 +36,8 @@ export default function ShoppingPage() {
   const [editedName, setEditedName] = useState('');
   const [editedAmount, setEditedAmount] = useState('');
   const [editedUnit, setEditedUnit] = useState('');
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
+  const [isSyncingWithFamily, setIsSyncingWithFamily] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -47,12 +49,44 @@ export default function ShoppingPage() {
     fetchShoppingLists();
   }, [session, status, router]);
 
+  // Poll for updates every 10 seconds to sync with family member changes
+  useEffect(() => {
+    if (!session?.user.familyId || shoppingLists.length === 0) return;
+
+    const currentList = shoppingLists[0];
+    const interval = setInterval(async () => {
+      try {
+        setIsSyncingWithFamily(true);
+        const response = await fetch(`/api/shopping-lists/${currentList._id}`);
+        if (response.ok) {
+          const updatedList = await response.json();
+          const serverUpdateTime = new Date(updatedList.updatedAt);
+          
+          // Only update if the server version is newer than our last known update
+          if (!lastUpdateTime || serverUpdateTime > lastUpdateTime) {
+            setShoppingLists([updatedList]);
+            setLastUpdateTime(serverUpdateTime);
+          }
+        }
+      } catch (error) {
+        console.error('Error polling for updates:', error);
+      } finally {
+        setIsSyncingWithFamily(false);
+      }
+    }, 10000); // Poll every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [session?.user.familyId, shoppingLists, lastUpdateTime]);
+
   const fetchShoppingLists = async () => {
     try {
       const response = await fetch('/api/shopping-lists');
       if (response.ok) {
         const data = await response.json();
         setShoppingLists(data);
+        if (data.length > 0) {
+          setLastUpdateTime(new Date(data[0].updatedAt));
+        }
       }
     } catch (error) {
       console.error('Error fetching shopping lists:', error);
@@ -95,35 +129,20 @@ export default function ShoppingPage() {
       completed: false,
     };
 
-    try {
-      const response = await fetch(`/api/shopping-lists/${listId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...list,
-          items: [...list.items, newItem],
-        }),
-      });
+    const updatedItems = [...list.items, newItem];
 
-      if (response.ok) {
-        setNewItemName('');
-        setNewItemAmount('');
-        setNewItemUnit('');
-        await fetchShoppingLists(); // Make sure this completes
-      }
-    } catch (error) {
-      console.error('Error adding item:', error);
-    }
-  };
+    // Clear inputs immediately for better UX
+    setNewItemName('');
+    setNewItemAmount('');
+    setNewItemUnit('');
 
-  const toggleItem = async (listId: string, itemIndex: number) => {
-    const list = shoppingLists.find(l => l._id === listId);
-    if (!list) return;
-
-    const updatedItems = list.items.map((item, index) =>
-      index === itemIndex ? { ...item, completed: !item.completed } : item
+    // Optimistically update the UI
+    setShoppingLists(prevLists => 
+      prevLists.map(prevList => 
+        prevList._id === listId 
+          ? { ...prevList, items: updatedItems }
+          : prevList
+      )
     );
 
     try {
@@ -138,19 +157,53 @@ export default function ShoppingPage() {
         }),
       });
 
-      if (response.ok) {
-        fetchShoppingLists();
+      if (!response.ok) {
+        // Revert on error
+        setShoppingLists(prevLists => 
+          prevLists.map(prevList => 
+            prevList._id === listId 
+              ? { ...prevList, items: list.items }
+              : prevList
+          )
+        );
+        // Restore the form values
+        setNewItemName(newItem.name);
+        setNewItemAmount(newItem.amount);
+        setNewItemUnit(newItem.unit);
       }
     } catch (error) {
-      console.error('Error toggling item:', error);
+      console.error('Error adding item:', error);
+      // Revert on error
+      setShoppingLists(prevLists => 
+        prevLists.map(prevList => 
+          prevList._id === listId 
+            ? { ...prevList, items: list.items }
+            : prevList
+        )
+      );
+      // Restore the form values
+      setNewItemName(newItem.name);
+      setNewItemAmount(newItem.amount);
+      setNewItemUnit(newItem.unit);
     }
   };
 
-  const removeItem = async (listId: string, itemIndex: number) => {
+  const toggleItem = async (listId: string, itemIndex: number) => {
     const list = shoppingLists.find(l => l._id === listId);
     if (!list) return;
 
-    const updatedItems = list.items.filter((_, index) => index !== itemIndex);
+    const updatedItems = list.items.map((item, index) =>
+      index === itemIndex ? { ...item, completed: !item.completed } : item
+    );
+
+    // Optimistically update the UI immediately
+    setShoppingLists(prevLists => 
+      prevLists.map(prevList => 
+        prevList._id === listId 
+          ? { ...prevList, items: updatedItems }
+          : prevList
+      )
+    );
 
     try {
       const response = await fetch(`/api/shopping-lists/${listId}`, {
@@ -164,11 +217,76 @@ export default function ShoppingPage() {
         }),
       });
 
-      if (response.ok) {
-        fetchShoppingLists();
+      if (!response.ok) {
+        // If the API call fails, revert the optimistic update
+        setShoppingLists(prevLists => 
+          prevLists.map(prevList => 
+            prevList._id === listId 
+              ? { ...prevList, items: list.items }
+              : prevList
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error toggling item:', error);
+      // Revert the optimistic update on error
+      setShoppingLists(prevLists => 
+        prevLists.map(prevList => 
+          prevList._id === listId 
+            ? { ...prevList, items: list.items }
+            : prevList
+        )
+      );
+    }
+  };
+
+  const removeItem = async (listId: string, itemIndex: number) => {
+    const list = shoppingLists.find(l => l._id === listId);
+    if (!list) return;
+
+    const updatedItems = list.items.filter((_, index) => index !== itemIndex);
+
+    // Optimistically update the UI
+    setShoppingLists(prevLists => 
+      prevLists.map(prevList => 
+        prevList._id === listId 
+          ? { ...prevList, items: updatedItems }
+          : prevList
+      )
+    );
+
+    try {
+      const response = await fetch(`/api/shopping-lists/${listId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...list,
+          items: updatedItems,
+        }),
+      });
+
+      if (!response.ok) {
+        // Revert on error
+        setShoppingLists(prevLists => 
+          prevLists.map(prevList => 
+            prevList._id === listId 
+              ? { ...prevList, items: list.items }
+              : prevList
+          )
+        );
       }
     } catch (error) {
       console.error('Error removing item:', error);
+      // Revert on error
+      setShoppingLists(prevLists => 
+        prevLists.map(prevList => 
+          prevList._id === listId 
+            ? { ...prevList, items: list.items }
+            : prevList
+        )
+      );
     }
   };
 
@@ -202,6 +320,16 @@ export default function ShoppingPage() {
         : item
     );
 
+    // Optimistically update the UI
+    setShoppingLists(prevLists => 
+      prevLists.map(prevList => 
+        prevList._id === editingItem.listId 
+          ? { ...prevList, items: updatedItems }
+          : prevList
+      )
+    );
+    cancelEditing();
+
     try {
       const response = await fetch(`/api/shopping-lists/${editingItem.listId}`, {
         method: 'PUT',
@@ -214,12 +342,26 @@ export default function ShoppingPage() {
         }),
       });
 
-      if (response.ok) {
-        cancelEditing();
-        fetchShoppingLists();
+      if (!response.ok) {
+        // Revert on error
+        setShoppingLists(prevLists => 
+          prevLists.map(prevList => 
+            prevList._id === editingItem.listId 
+              ? { ...prevList, items: list.items }
+              : prevList
+          )
+        );
       }
     } catch (error) {
       console.error('Error updating item:', error);
+      // Revert on error
+      setShoppingLists(prevLists => 
+        prevLists.map(prevList => 
+          prevList._id === editingItem.listId 
+            ? { ...prevList, items: list.items }
+            : prevList
+        )
+      );
     }
   };
 
@@ -245,6 +387,12 @@ export default function ShoppingPage() {
   if (!session) return null;
 
   const mainList = shoppingLists[0];
+  
+  // Sort items: uncompleted first, then completed at the bottom
+  const sortedItems = mainList?.items ? [...mainList.items].sort((a, b) => {
+    if (a.completed === b.completed) return 0;
+    return a.completed ? 1 : -1;
+  }) : [];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -253,9 +401,14 @@ export default function ShoppingPage() {
       <main className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-8">
           <div className="mb-4 sm:mb-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
-              {session.user.familyId ? 'Family Shopping List' : 'My Shopping List'}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
+                {session.user.familyId ? 'Family Shopping List' : 'My Shopping List'}
+              </h1>
+              {session.user.familyId && isSyncingWithFamily && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" title="Syncing with family members..." />
+              )}
+            </div>
             <p className="text-gray-600 dark:text-gray-400 mt-1 sm:mt-2 text-sm sm:text-base">
               Keep track of what you{session.user.familyId ? ' and your family' : ''} need to buy
             </p>
@@ -334,6 +487,11 @@ export default function ShoppingPage() {
             <div>
               <h2 className="text-lg sm:text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
                 Items ({mainList.items.length})
+                {sortedItems.filter(item => item.completed).length > 0 && (
+                  <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+                    • Completed items at bottom
+                  </span>
+                )}
               </h2>
               
               {mainList.items.length === 0 ? (
@@ -345,16 +503,24 @@ export default function ShoppingPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {mainList.items.map((item, index) => (
+                  {sortedItems.map((item, index) => {
+                    // Find the original index in the unsorted array for API calls
+                    const originalIndex = mainList.items.findIndex(originalItem => 
+                      originalItem.name === item.name && 
+                      originalItem.amount === item.amount && 
+                      originalItem.unit === item.unit &&
+                      originalItem.completed === item.completed
+                    );
+                    return (
                     <div
-                      key={index}
+                      key={`${item.name}-${item.amount}-${item.unit}-${originalIndex}`}
                       className={`p-3 rounded-lg border ${
                         item.completed
                           ? 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600'
                           : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
                       }`}
                     >
-                      {editingItem?.listId === mainList._id && editingItem?.index === index ? (
+                      {editingItem?.listId === mainList._id && editingItem?.index === originalIndex ? (
                         <div className="space-y-3">
                           <div className="flex flex-col sm:flex-row gap-2">
                             <input
@@ -402,7 +568,7 @@ export default function ShoppingPage() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3 flex-1 min-w-0">
                             <button
-                              onClick={() => toggleItem(mainList._id, index)}
+                              onClick={() => toggleItem(mainList._id, originalIndex)}
                               className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
                                 item.completed
                                   ? 'bg-green-500 border-green-500 text-white'
@@ -424,14 +590,14 @@ export default function ShoppingPage() {
                           
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => startEditingItem(mainList._id, index)}
+                              onClick={() => startEditingItem(mainList._id, originalIndex)}
                               className="text-blue-600 hover:text-blue-700 p-1 flex-shrink-0"
                               title="Edit item"
                             >
                               <IoPencil size={16} />
                             </button>
                             <button
-                              onClick={() => removeItem(mainList._id, index)}
+                              onClick={() => removeItem(mainList._id, originalIndex)}
                               className="text-red-600 hover:text-red-700 p-1 flex-shrink-0"
                               title="Remove item"
                             >
@@ -441,7 +607,8 @@ export default function ShoppingPage() {
                         </div>
                       )}
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               )}
             </div>
