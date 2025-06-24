@@ -70,14 +70,14 @@ export default function RecipesPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen" style={{backgroundColor: 'var(--color-bg-primary)'}}>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navigation />
         
-        <main className="container" style={{paddingTop: 'var(--spacing-2xl)', paddingBottom: 'var(--spacing-2xl)'}}>
-          <div className="page-header">
-            <div className="text-center">
-              <div className="skeleton h-10 mb-4 mx-auto" style={{width: '300px'}} />
-              <div className="skeleton h-6 mx-auto" style={{width: '400px'}} />
+        <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-8">
+            <div className="mb-4 sm:mb-0 text-center sm:text-left">
+              <div className="skeleton h-10 mb-4 mx-auto sm:mx-0" style={{width: '300px'}} />
+              <div className="skeleton h-6 mx-auto sm:mx-0" style={{width: '400px'}} />
             </div>
           </div>
 
@@ -97,22 +97,22 @@ export default function RecipesPage() {
   if (!session) return null;
 
   return (
-    <div className="min-h-screen" style={{backgroundColor: 'var(--color-bg-primary)'}}>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navigation />
       
-      <main className="container" style={{paddingTop: 'var(--spacing-2xl)', paddingBottom: 'var(--spacing-2xl)'}}>
-        <div className="page-header">
-          <div className="text-center">
-            <h1 className="page-title">
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-8">
+          <div className="mb-4 sm:mb-0 text-center sm:text-left">
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               {session.user.familyId ? 'Family Recipes' : 'My Recipes'}
             </h1>
-            <p className="page-subtitle">
+            <p className="text-lg text-gray-600 dark:text-gray-400 mb-2">
               {recipes.length} recipe{recipes.length !== 1 ? 's' : ''} in your{' '}
               {session.user.familyId ? 'family' : 'personal'} cookbook
             </p>
             {!session.user.familyId && (
-              <p style={{fontSize: 'var(--text-sm)', color: 'var(--color-secondary-600)', marginTop: 'var(--spacing-md)'}}>
-                <IoBulb className="inline mr-1" size={16} /> <Link href="/family" className="underline hover:text-blue-800">Join or create a family</Link> to share recipes with others!
+              <p className="text-sm text-blue-600 mt-2 flex items-center gap-1 justify-center sm:justify-start">
+                <IoBulb size={14} /> <Link href="/family" className="underline hover:text-blue-800">Join or create a family</Link> to share recipes with others!
               </p>
             )}
           </div>
@@ -124,20 +124,19 @@ export default function RecipesPage() {
             placeholder="Search recipes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="form-input"
-            style={{maxWidth: '384px'}}
+            className="w-full max-w-sm px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
           />
         </div>
 
         {filteredRecipes.length === 0 ? (
-          <div className="empty-state">
-<div className="empty-state-icon">
-              <IoBook size={48} />
+          <div className="text-center py-12">
+            <div className="mb-4 flex justify-center">
+              <IoBook className="text-4xl text-gray-400" size={48} />
             </div>
-            <h3 className="empty-state-title">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
               {searchTerm ? 'No recipes found' : 'No recipes yet'}
             </h3>
-            <p className="empty-state-description">
+            <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
               {searchTerm 
                 ? 'Try adjusting your search terms'
                 : 'Start building your cookbook by adding your first recipe'
@@ -146,14 +145,14 @@ export default function RecipesPage() {
             {!searchTerm && (
               <Link
                 href="/recipes/new"
-                className="btn btn-primary btn-lg"
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
               >
                 Add Your First Recipe
               </Link>
             )}
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
             {filteredRecipes.map((recipe) => (
               <Link
                 key={recipe._id}
@@ -233,15 +232,16 @@ export default function RecipesPage() {
             ))}
           </div>
         )}
-        {/* Floating Add Button */}
-        <Link
-          href="/recipes/new"
-          className="floating-add-button"
-          title="Add New Recipe"
-        >
-          <IoAdd size={28} />
-        </Link>
       </main>
+      
+      {/* Floating Add Button */}
+      <Link
+        href="/recipes/new"
+        className="floating-add-button"
+        title="Add New Recipe"
+      >
+        <IoAdd size={28} />
+      </Link>
     </div>
   );
 }

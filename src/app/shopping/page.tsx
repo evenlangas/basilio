@@ -367,14 +367,14 @@ export default function ShoppingPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen" style={{backgroundColor: 'var(--color-bg-primary)'}}>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navigation />
         
-        <main className="container" style={{paddingTop: 'var(--spacing-2xl)', paddingBottom: 'var(--spacing-2xl)'}}>
-          <div className="page-header">
-            <div className="text-center">
-              <div className="skeleton h-10 mb-4 mx-auto" style={{width: '300px'}} />
-              <div className="skeleton h-6 mx-auto" style={{width: '400px'}} />
+        <main className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-8">
+            <div className="mb-4 sm:mb-0">
+              <div className="skeleton h-10 mb-4" style={{width: '300px'}} />
+              <div className="skeleton h-6" style={{width: '400px'}} />
             </div>
           </div>
 
@@ -409,9 +409,6 @@ export default function ShoppingPage() {
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" title="Syncing with family members..." />
               )}
             </div>
-            <p className="text-gray-600 dark:text-gray-400 mt-1 sm:mt-2 text-sm sm:text-base">
-              Keep track of what you{session.user.familyId ? ' and your family' : ''} need to buy
-            </p>
             {!session.user.familyId && (
               <p className="text-xs sm:text-sm text-blue-600 mt-1 flex items-center gap-1">
                 <IoBulb size={14} /> <Link href="/family" className="underline hover:text-blue-800">Join or create a family</Link> to share shopping lists with others!

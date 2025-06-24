@@ -100,7 +100,7 @@ export default function Navigation() {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 mobile-bottom-nav">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 mobile-bottom-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
         <div className="flex justify-around py-2">
           {navItems.map((item) => (
             <Link
@@ -124,7 +124,7 @@ export default function Navigation() {
         </div>
         {/* Safe area padding for devices with home indicator */}
         <div style={{ height: 'env(safe-area-inset-bottom, 0)' }}></div>
-      </div>
+      </nav>
     </>
   );
 }

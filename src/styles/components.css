@@ -468,6 +468,11 @@
   background-color: var(--color-bg-secondary);
   border-top: 1px solid var(--color-border);
   box-shadow: var(--shadow-lg);
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 50 !important;
 }
 
 .mobile-bottom-nav-item {
