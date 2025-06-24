@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { ShoppingListSkeleton } from '@/components/SkeletonLoader';
-import { IoBulb, IoCart, IoDocumentText, IoPencil, IoSave, IoClose } from 'react-icons/io5';
+import { IoBulb, IoCart, IoDocumentText, IoPencil, IoSave, IoClose, IoAdd } from 'react-icons/io5';
 
 interface ShoppingItem {
   name: string;
@@ -38,6 +38,8 @@ export default function ShoppingPage() {
   const [editedUnit, setEditedUnit] = useState('');
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const [isSyncingWithFamily, setIsSyncingWithFamily] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -77,6 +79,17 @@ export default function ShoppingPage() {
 
     return () => clearInterval(interval);
   }, [session?.user.familyId, shoppingLists, lastUpdateTime]);
+
+  // Auto-focus the input when modal opens
+  useEffect(() => {
+    if (showAddModal && inputRef.current) {
+      // Use a small delay to ensure the modal is fully rendered
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [showAddModal]);
 
   const fetchShoppingLists = async () => {
     try {
@@ -365,6 +378,26 @@ export default function ShoppingPage() {
     }
   };
 
+  const openAddModal = () => {
+    setShowAddModal(true);
+    setNewItemName('');
+    setNewItemAmount('');
+    setNewItemUnit('');
+  };
+
+  const closeAddModal = () => {
+    setShowAddModal(false);
+    setNewItemName('');
+    setNewItemAmount('');
+    setNewItemUnit('');
+  };
+
+  const handleAddFromModal = async () => {
+    if (!mainList || !newItemName.trim()) return;
+    await addItem(mainList._id);
+    closeAddModal();
+  };
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -446,41 +479,6 @@ export default function ShoppingPage() {
           </div>
         ) : (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 mx-2 sm:mx-0">
-            <div className="mb-6">
-              <h2 className="text-lg sm:text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Add New Item</h2>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <input
-                  type="text"
-                  placeholder="Item name"
-                  value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  onKeyPress={(e) => e.key === 'Enter' && addItem(mainList._id)}
-                />
-                <input
-                  type="text"
-                  placeholder="Amount"
-                  value={newItemAmount}
-                  onChange={(e) => setNewItemAmount(e.target.value)}
-                  className="w-full sm:w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-                <input
-                  type="text"
-                  placeholder="Unit"
-                  value={newItemUnit}
-                  onChange={(e) => setNewItemUnit(e.target.value)}
-                  className="w-full sm:w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-                <button
-                  onClick={() => addItem(mainList._id)}
-                  disabled={!newItemName.trim()}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 w-full sm:w-auto"
-                >
-                  Add
-                </button>
-              </div>
-            </div>
-
             <div>
               <h2 className="text-lg sm:text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
                 Items ({mainList.items.length})
@@ -623,6 +621,87 @@ export default function ShoppingPage() {
           </div>
         )}
       </main>
+      
+      {/* Floating Add Button */}
+      {mainList && (
+        <button
+          onClick={openAddModal}
+          className="floating-add-button"
+          title="Add New Item"
+        >
+          <IoAdd size={28} />
+        </button>
+      )}
+
+      {/* Add Item Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-white/20 dark:bg-black/20 backdrop-blur-sm flex items-end sm:items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-t-lg sm:rounded-lg w-full sm:w-96 max-w-full mx-1 sm:mx-4 mb-0 sm:mb-auto">
+            <div className="p-4 sm:p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Add New Item</h3>
+                <button
+                  onClick={closeAddModal}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <IoClose size={24} />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    placeholder="Item name (required)"
+                    value={newItemName}
+                    onChange={(e) => setNewItemName(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newItemName.trim()) {
+                        handleAddFromModal();
+                      }
+                    }}
+                  />
+                </div>
+                
+                <div className="flex gap-2 sm:gap-3">
+                  <input
+                    type="text"
+                    placeholder="Amount"
+                    value={newItemAmount}
+                    onChange={(e) => setNewItemAmount(e.target.value)}
+                    className="flex-[2] px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Unit"
+                    value={newItemUnit}
+                    onChange={(e) => setNewItemUnit(e.target.value)}
+                    className="flex-1 px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                  />
+                </div>
+                
+                <div className="flex gap-2 sm:gap-3 pt-2">
+                  <button
+                    onClick={closeAddModal}
+                    className="flex-1 px-3 sm:px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm sm:text-base"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddFromModal}
+                    disabled={!newItemName.trim()}
+                    className="flex-1 px-3 sm:px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                  >
+                    Add Item
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
