@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { IoCheckmarkCircle, IoCloseCircle, IoInformationCircle } from 'react-icons/io5';
 
 interface ToastProps {
   message: string;
@@ -23,14 +24,14 @@ export default function Toast({ message, type, show, onClose }: ToastProps) {
   if (!show) return null;
 
   const icons = {
-    success: '✅',
-    error: '❌',
-    info: 'ℹ️',
+    success: <IoCheckmarkCircle size={20} />,
+    error: <IoCloseCircle size={20} />,
+    info: <IoInformationCircle size={20} />,
   };
 
   return (
     <div className={`toast toast-${type}`}>
-      <span className="text-lg">{icons[type]}</span>
+      {icons[type]}
       <span style={{fontWeight: 'var(--font-medium)'}}>{message}</span>
       <button
         onClick={onClose}

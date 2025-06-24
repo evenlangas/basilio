@@ -14,7 +14,9 @@ export default function AIHelperPage() {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <div className="text-4xl mb-4">🌿</div>
+        <div className="mb-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto loading-spinner"></div>
+        </div>
         <div className="text-lg">Redirecting...</div>
       </div>
     </div>

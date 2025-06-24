@@ -1,10 +1,13 @@
 import Link from 'next/link';
+import { IoLeaf } from 'react-icons/io5';
 
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center">
-        <div className="text-6xl mb-4">🌿</div>
+        <div className="mb-4 flex justify-center">
+          <IoLeaf className="text-6xl text-green-600" size={72} />
+        </div>
         <h1 className="text-4xl font-bold text-gray-900 mb-2">404</h1>
         <h2 className="text-xl text-gray-600 mb-6">Page Not Found</h2>
         <p className="text-gray-500 mb-8 max-w-md">

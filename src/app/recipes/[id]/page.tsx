@@ -5,6 +5,14 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import Toast from '@/components/Toast';
+import { 
+  IoSadOutline, 
+  IoLink, 
+  IoTime, 
+  IoPeople, 
+  IoPerson, 
+  IoCart 
+} from 'react-icons/io5';
 
 interface Ingredient {
   name: string;
@@ -156,7 +164,9 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl mb-4">🌿</div>
+          <div className="mb-4">
+            <div className="loading-spinner mx-auto w-8 h-8 border-4 border-green-200 border-t-green-600 rounded-full animate-spin"></div>
+          </div>
           <div className="text-lg">Loading...</div>
         </div>
       </div>
@@ -171,7 +181,9 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
         <Navigation />
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center py-12">
-            <div className="text-4xl mb-4">😵</div>
+            <div className="mb-4">
+              <IoSadOutline className="text-gray-400 dark:text-gray-500" size={64} />
+            </div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{error}</h2>
             <button
               onClick={() => router.push('/recipes')}
@@ -232,7 +244,8 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                       rel="noopener noreferrer"
                       className="inline-flex items-center text-green-600 hover:text-green-700 font-medium"
                     >
-                      🔗 View Original Recipe
+                      <IoLink className="mr-1" size={19} />
+                      View Original Recipe
                       <span className="ml-1">↗</span>
                     </a>
                   </div>
@@ -240,15 +253,15 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                 
                 <div className="flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-400 mb-4">
                   <div className="flex items-center">
-                    <span className="mr-1">⏱️</span>
+                    <IoTime className="mr-1 text-gray-500" size={18} />
                     {recipe.cookingTime || 0} minutes
                   </div>
                   <div className="flex items-center">
-                    <span className="mr-1">👥</span>
+                    <IoPeople className="mr-1 text-gray-500" size={18} />
                     {recipe.servings || 1} serving{recipe.servings !== 1 ? 's' : ''}
                   </div>
                   <div className="flex items-center">
-                    <span className="mr-1">👨‍🍳</span>
+                    <IoPerson className="mr-1 text-gray-500" size={18} />
                     {recipe.createdBy.name}
                   </div>
                 </div>
@@ -308,7 +321,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                       disabled={addingToList}
                       className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center space-x-1 w-full sm:w-auto"
                     >
-                      <span>🛒</span>
+                      <IoCart size={18} />
                       <span>{addingToList ? 'Adding...' : 'Add to List'}</span>
                     </button>
                   </div>

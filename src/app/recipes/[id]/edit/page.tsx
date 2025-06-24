@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
+import { IoCamera } from 'react-icons/io5';
 
 interface Ingredient {
   name: string;
@@ -238,7 +239,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl mb-4">🌿</div>
+          <div className="loading-spinner mb-4"></div>
           <div className="text-lg">Loading...</div>
         </div>
       </div>
@@ -338,7 +339,9 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
                     htmlFor="image-upload"
                     className="cursor-pointer flex flex-col items-center"
                   >
-                    <div className="text-4xl mb-2">📸</div>
+                    <div className="text-4xl mb-2">
+                      <IoCamera size={40} style={{ color: 'var(--color-text-secondary)' }} />
+                    </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                       Click to upload a new image
                     </div>
@@ -382,7 +385,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
                     htmlFor="image-replace"
                     className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                   >
-                    📸 Replace Image
+                    <IoCamera size={20} style={{ marginRight: '0.5rem' }} /> Replace Image
                   </label>
                 </div>
               )}

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import ThemeToggle from './ThemeToggle';
+import { IoLeaf, IoBook, IoCart, IoPeople } from 'react-icons/io5';
 
 export default function Navigation() {
   const { data: session } = useSession();
@@ -12,9 +13,9 @@ export default function Navigation() {
   if (!session) return null;
 
   const navItems = [
-    { href: '/recipes', label: 'Recipes', icon: '📖' },
-    { href: '/shopping', label: 'Shopping List', icon: '🛒' },
-    { href: '/family', label: 'Family', icon: '👨‍👩‍👧‍👦' },
+    { href: '/recipes', label: 'Recipes', icon: <IoBook size={20} /> },
+    { href: '/shopping', label: 'Shopping List', icon: <IoCart size={20} /> },
+    { href: '/family', label: 'Family', icon: <IoPeople size={20} /> },
   ];
 
   return (
@@ -22,8 +23,9 @@ export default function Navigation() {
       <div className="nav-container">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-8">
-            <Link href="/recipes" className="nav-brand">
-              🌿 Basilio
+            <Link href="/recipes" className="nav-brand" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+              <IoLeaf size={24} color="var(--color-primary-600)" />
+              Basilio
             </Link>
             <div className="hidden md:flex space-x-6">
               {navItems.map((item) => (
@@ -43,7 +45,7 @@ export default function Navigation() {
                     color: pathname === item.href ? 'var(--color-primary-700)' : 'var(--color-text-secondary)'
                   }}
                 >
-                  <span>{item.icon}</span>
+                  {item.icon}
                   <span>{item.label}</span>
                 </Link>
               ))}
@@ -80,7 +82,7 @@ export default function Navigation() {
                 color: pathname === item.href ? 'var(--color-primary-700)' : 'var(--color-text-secondary)'
               }}
             >
-              <span className="text-lg">{item.icon}</span>
+              <span style={{ fontSize: '20px' }}>{item.icon}</span>
               <span>{item.label}</span>
             </Link>
           ))}

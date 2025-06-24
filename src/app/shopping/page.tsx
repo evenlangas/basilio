@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
+import { IoBulb, IoCart, IoDocumentText } from 'react-icons/io5';
 
 interface ShoppingItem {
   name: string;
@@ -170,7 +171,9 @@ export default function ShoppingPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl mb-4">🌿</div>
+          <div className="mb-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto loading-spinner"></div>
+          </div>
           <div className="text-lg">Loading...</div>
         </div>
       </div>
@@ -195,8 +198,8 @@ export default function ShoppingPage() {
               Keep track of what you{session.user.familyId ? ' and your family' : ''} need to buy
             </p>
             {!session.user.familyId && (
-              <p className="text-xs sm:text-sm text-blue-600 mt-1">
-                💡 <Link href="/family" className="underline hover:text-blue-800">Join or create a family</Link> to share shopping lists with others!
+              <p className="text-xs sm:text-sm text-blue-600 mt-1 flex items-center gap-1">
+                <IoBulb size={14} /> <Link href="/family" className="underline hover:text-blue-800">Join or create a family</Link> to share shopping lists with others!
               </p>
             )}
           </div>
@@ -213,7 +216,9 @@ export default function ShoppingPage() {
 
         {!mainList ? (
           <div className="text-center py-12">
-            <div className="text-4xl mb-4">🛒</div>
+            <div className="mb-4 flex justify-center">
+              <IoCart className="text-4xl text-gray-400" size={48} />
+            </div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
               No shopping list yet
             </h3>
@@ -271,7 +276,9 @@ export default function ShoppingPage() {
               
               {mainList.items.length === 0 ? (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  <div className="text-2xl mb-2">📝</div>
+                  <div className="mb-2 flex justify-center">
+                    <IoDocumentText className="text-2xl" size={32} />
+                  </div>
                   <p>No items in your shopping list yet</p>
                 </div>
               ) : (

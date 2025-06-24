@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
+import { IoLeaf } from 'react-icons/io5';
 
 export default function SignIn() {
   const [loading, setLoading] = useState(false);
@@ -15,7 +16,9 @@ export default function SignIn() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <div className="text-4xl mb-4">🌿</div>
+          <div className="mb-4 flex justify-center">
+            <IoLeaf className="text-4xl text-green-600" size={48} />
+          </div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Basilio</h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Sign in to your account</p>
         </div>

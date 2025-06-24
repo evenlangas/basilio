@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
+import { IoPeople, IoPencil, IoCopy } from 'react-icons/io5';
 
 interface FamilyMember {
   _id: string;
@@ -181,7 +182,9 @@ export default function FamilyPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl mb-4">🌿</div>
+          <div className="mb-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto loading-spinner"></div>
+          </div>
           <div className="text-lg">Loading...</div>
         </div>
       </div>
@@ -205,7 +208,9 @@ export default function FamilyPage() {
         {!family ? (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 mx-2 sm:mx-0">
             <div className="text-center mb-8">
-              <div className="text-4xl mb-4">👨‍👩‍👧‍👦</div>
+              <div className="mb-4 flex justify-center">
+                <IoPeople className="text-4xl text-gray-400" size={48} />
+              </div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                 You're not part of a family yet
               </h3>
@@ -330,7 +335,7 @@ export default function FamilyPage() {
                       className="text-gray-400 hover:text-gray-600 p-1"
                       title="Edit family name"
                     >
-                      ✏️
+                      <IoPencil className="text-lg" size={18} />
                     </button>
                   </div>
                 ) : (
@@ -386,7 +391,7 @@ export default function FamilyPage() {
                       className="text-green-600 hover:text-green-700"
                       title="Copy invite code"
                     >
-                      📋
+                      <IoCopy className="text-lg" size={18} />
                     </button>
                   </div>
                 </div>

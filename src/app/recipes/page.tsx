@@ -5,6 +5,14 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import Link from 'next/link';
+import { 
+  IoBulb, 
+  IoCart, 
+  IoBook, 
+  IoRestaurant, 
+  IoTime, 
+  IoPeople 
+} from 'react-icons/io5';
 
 interface Recipe {
   _id: string;
@@ -62,7 +70,6 @@ export default function RecipesPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="empty-state">
-          <div className="text-4xl mb-4">🌿</div>
           <div className="loading-spinner"></div>
         </div>
       </div>
@@ -87,7 +94,7 @@ export default function RecipesPage() {
             </p>
             {!session.user.familyId && (
               <p style={{fontSize: 'var(--text-sm)', color: 'var(--color-secondary-600)', marginTop: 'var(--spacing-md)'}}>
-                💡 <Link href="/family" className="underline hover:text-blue-800">Join or create a family</Link> to share recipes with others!
+<IoBulb className="inline mr-1" size={16} /> <Link href="/family" className="underline hover:text-blue-800">Join or create a family</Link> to share recipes with others!
               </p>
             )}
           </div>
@@ -97,7 +104,7 @@ export default function RecipesPage() {
               href="/shopping"
               className="btn btn-secondary"
             >
-              <span>🛒</span>
+<IoCart className="mr-1" size={20} />
               <span>Shopping List</span>
             </Link>
             <Link
@@ -122,7 +129,9 @@ export default function RecipesPage() {
 
         {filteredRecipes.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">📖</div>
+<div className="empty-state-icon">
+              <IoBook size={48} />
+            </div>
             <h3 className="empty-state-title">
               {searchTerm ? 'No recipes found' : 'No recipes yet'}
             </h3>
@@ -160,7 +169,9 @@ export default function RecipesPage() {
                 ) : (
                   <div className="h-40 sm:h-48 flex items-center justify-center" style={{backgroundColor: 'var(--color-bg-tertiary)'}}>
                     <div className="text-center" style={{color: 'var(--color-text-tertiary)'}}>
-                      <div className="text-3xl sm:text-4xl mb-2">🍽️</div>
+<div className="text-3xl sm:text-4xl mb-2">
+                        <IoRestaurant size={40} />
+                      </div>
                       <div className="text-xs sm:text-sm">No image</div>
                     </div>
                   </div>
@@ -177,8 +188,14 @@ export default function RecipesPage() {
                   )}
                   
                   <div className="recipe-meta">
-                    <span>⏱️ {recipe.cookingTime || 0}m</span>
-                    <span>👥 {recipe.servings || 1}</span>
+<span className="flex items-center">
+                      <IoTime className="mr-1" size={16} />
+                      {recipe.cookingTime || 0}m
+                    </span>
+                    <span className="flex items-center">
+                      <IoPeople className="mr-1" size={16} />
+                      {recipe.servings || 1}
+                    </span>
                   </div>
                   
                   {recipe.tags.length > 0 && (
@@ -204,8 +221,8 @@ export default function RecipesPage() {
                       {recipe.createdBy.name}
                     </span>
                     {recipe.familyId && (
-                      <span className="badge badge-secondary">
-                        👨‍👩‍👧‍👦
+<span className="badge badge-secondary">
+                        <IoPeople size={16} />
                       </span>
                     )}
                   </div>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
+import { IoCamera } from 'react-icons/io5';
 
 interface Ingredient {
   name: string;
@@ -229,7 +230,9 @@ export default function NewRecipePage() {
                     htmlFor="image-upload"
                     className="cursor-pointer flex flex-col items-center"
                   >
-                    <div className="text-4xl mb-2">📸</div>
+                    <div className="text-4xl mb-2">
+                      <IoCamera size={40} style={{ color: 'var(--color-text-secondary)' }} />
+                    </div>
                     <div style={{fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)'}}>
                       Click to upload an image
                     </div>
