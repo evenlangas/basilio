@@ -683,68 +683,57 @@ export default function ShoppingPage() {
                 </button>
               </div>
               
-              <form 
-                onSubmit={(e) => { e.preventDefault(); handleAddFromModal(); }} 
-                className="space-y-4"
-                autoComplete="off"
-                data-form-type="shopping"
-                role="form"
-                aria-label="Add shopping item"
-              >
-                {/* Hidden honeypot field to confuse password managers */}
-                <input
-                  type="text"
-                  name="email"
-                  autoComplete="email"
-                  style={{ display: 'none' }}
-                  tabIndex={-1}
-                  aria-hidden="true"
-                />
-                
+              <div className="space-y-4">
                 <div>
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    placeholder="Item name (required)"
-                    value={newItemName}
-                    onChange={(e) => setNewItemName(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    autoComplete="new-password"
-                    name="shopping-product"
-                    data-form-type="other"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && newItemName.trim()) {
-                        handleAddFromModal();
-                      }
-                    }}
-                  />
+                  <div
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus-within:ring-2 focus-within:ring-green-500 focus-within:border-green-500 cursor-text"
+                    onClick={() => inputRef.current?.focus()}
+                  >
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      placeholder="Item name"
+                      value={newItemName}
+                      onChange={(e) => setNewItemName(e.target.value)}
+                      className="w-full bg-transparent border-none outline-none p-0 m-0 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newItemName.trim()) {
+                          handleAddFromModal();
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
                 
                 <div>
-                  <input
-                    type="text"
-                    placeholder="Amount (optional)"
-                    value={newItemAmount}
-                    onChange={(e) => setNewItemAmount(e.target.value)}
-                    className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
-                    autoComplete="new-password"
-                    name="shopping-quantity"
-                    inputMode="decimal"
-                    data-form-type="other"
-                  />
+                  <div
+                    className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus-within:ring-2 focus-within:ring-green-500 focus-within:border-green-500 cursor-text text-sm"
+                    onClick={(e) => (e.target as HTMLElement).querySelector('input')?.focus()}
+                  >
+                    <input
+                      type="text"
+                      placeholder="Amount (optional)"
+                      value={newItemAmount}
+                      onChange={(e) => setNewItemAmount(e.target.value)}
+                      className="w-full bg-transparent border-none outline-none p-0 m-0 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                      inputMode="decimal"
+                    />
+                  </div>
                 </div>
                 
                 <div>
-                  <input
-                    type="text"
-                    placeholder="Unit (optional)"
-                    value={newItemUnit}
-                    onChange={(e) => setNewItemUnit(e.target.value)}
-                    className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
-                    autoComplete="new-password"
-                    name="shopping-measurement"
-                    data-form-type="other"
-                  />
+                  <div
+                    className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus-within:ring-2 focus-within:ring-green-500 focus-within:border-green-500 cursor-text text-sm"
+                    onClick={(e) => (e.target as HTMLElement).querySelector('input')?.focus()}
+                  >
+                    <input
+                      type="text"
+                      placeholder="Unit (optional)"
+                      value={newItemUnit}
+                      onChange={(e) => setNewItemUnit(e.target.value)}
+                      className="w-full bg-transparent border-none outline-none p-0 m-0 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                    />
+                  </div>
                 </div>
                 
                 <div className="flex gap-2 sm:gap-3 pt-2">
@@ -762,7 +751,7 @@ export default function ShoppingPage() {
                     Add Item
                   </button>
                 </div>
-              </form>
+              </div>
             </div>
           </div>
         </div>
