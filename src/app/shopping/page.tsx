@@ -683,7 +683,7 @@ export default function ShoppingPage() {
                 </button>
               </div>
               
-              <div className="space-y-4">
+              <form onSubmit={(e) => { e.preventDefault(); handleAddFromModal(); }} className="space-y-4">
                 <div>
                   <input
                     ref={inputRef}
@@ -692,6 +692,8 @@ export default function ShoppingPage() {
                     value={newItemName}
                     onChange={(e) => setNewItemName(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    autoComplete="off"
+                    name="shopping-item-name"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && newItemName.trim()) {
                         handleAddFromModal();
@@ -707,6 +709,9 @@ export default function ShoppingPage() {
                     value={newItemAmount}
                     onChange={(e) => setNewItemAmount(e.target.value)}
                     className="flex-[2] px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                    autoComplete="off"
+                    name="shopping-item-amount"
+                    inputMode="decimal"
                   />
                   <input
                     type="text"
@@ -714,6 +719,8 @@ export default function ShoppingPage() {
                     value={newItemUnit}
                     onChange={(e) => setNewItemUnit(e.target.value)}
                     className="flex-1 px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                    autoComplete="off"
+                    name="shopping-item-unit"
                   />
                 </div>
                 
@@ -732,7 +739,7 @@ export default function ShoppingPage() {
                     Add Item
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         </div>
