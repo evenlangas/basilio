@@ -45,6 +45,26 @@ const RecipeSchema = new mongoose.Schema({
     ref: 'Family',
     default: null,
   },
+  cookbookId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Cookbook',
+    default: null,
+  },
+  originalRecipe: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Recipe',
+    default: null,
+  },
+  originalChef: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
+  copiedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
 }, {
   timestamps: true,
 });

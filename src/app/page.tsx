@@ -2,24 +2,56 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
-import { IoLeaf, IoBook, IoCart, IoHardwareChip, IoPeople } from 'react-icons/io5';
+import { IoSearchOutline, IoHeartOutline, IoEye } from 'react-icons/io5';
+
+interface Creation {
+  _id: string;
+  title: string;
+  description: string;
+  image: string;
+  createdBy: {
+    _id: string;
+    name: string;
+    image?: string;
+  };
+  likes: string[];
+  createdAt: string;
+}
 
 export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [creations, setCreations] = useState<Creation[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (status === 'loading') return;
     if (!session) {
       router.push('/auth/signin');
-    } else {
-      router.push('/recipes');
+      return;
     }
+    
+    // Load creations from followed users
+    loadCreations();
   }, [session, status, router]);
+
+  const loadCreations = async () => {
+    try {
+      const response = await fetch('/api/creations/feed');
+      if (response.ok) {
+        const data = await response.json();
+        setCreations(data);
+      }
+    } catch (error) {
+      console.error('Error loading creations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (status === 'loading') {
     return <PageLoadingSkeleton />;
@@ -28,75 +60,111 @@ export default function Home() {
   if (!session) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navigation />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--spacing-md)' }}>
-              Welcome to Basilio <IoLeaf size={40} color="var(--color-primary-600)" />
-            </span>
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header with Search */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
+            Home
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Your simple and intuitive digital cookbook. Organize recipes, manage shopping lists, 
-            and get AI-powered cooking suggestions with your family.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Link
-            href="/recipes"
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer group"
+            href="/search"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
           >
-            <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">
-              <IoBook size={48} color="var(--color-primary-600)" />
-            </div>
-            <h2 className="text-xl font-semibold mb-2">Recipes</h2>
-            <p className="text-gray-600">
-              Store and organize all your favorite recipes in one place
-            </p>
-          </Link>
-
-          <Link
-            href="/shopping"
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer group"
-          >
-            <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">
-              <IoCart size={48} color="var(--color-primary-600)" />
-            </div>
-            <h2 className="text-xl font-semibold mb-2">Shopping List</h2>
-            <p className="text-gray-600">
-              Keep track of ingredients and items you need to buy
-            </p>
-          </Link>
-
-          <Link
-            href="/ai-helper"
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer group"
-          >
-            <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">
-              <IoHardwareChip size={48} color="var(--color-primary-600)" />
-            </div>
-            <h2 className="text-xl font-semibold mb-2">AI Helper</h2>
-            <p className="text-gray-600">
-              Get recipe suggestions based on ingredients you have
-            </p>
-          </Link>
-
-          <Link
-            href="/family"
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer group"
-          >
-            <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">
-              <IoPeople size={48} color="var(--color-primary-600)" />
-            </div>
-            <h2 className="text-xl font-semibold mb-2">Family</h2>
-            <p className="text-gray-600">
-              Share your cookbook and shopping lists with family members
-            </p>
+            <IoSearchOutline size={18} />
+            <span className="text-sm sm:text-base text-gray-600 dark:text-gray-300 hidden sm:inline">Search</span>
           </Link>
         </div>
+
+        {/* Feed */}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto" style={{ borderBottomColor: 'var(--color-primary-600)' }}></div>
+          </div>
+        ) : creations.length === 0 ? (
+          <div className="text-center py-12">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              No creations yet
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Follow other chefs to see their creations in your feed
+            </p>
+            <Link
+              href="/search"
+              className="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors"
+              style={{ backgroundColor: 'var(--color-primary-600)' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-700)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-600)'}
+            >
+              <IoSearchOutline size={20} />
+              Find Chefs to Follow
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-4 sm:space-y-6">
+            {creations.map((creation) => (
+              <div key={creation._id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+                {/* Header */}
+                <div className="p-3 sm:p-4 flex items-center gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    {creation.createdBy.image ? (
+                      <img 
+                        src={creation.createdBy.image} 
+                        alt={creation.createdBy.name}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-gray-600 dark:text-gray-300 font-medium text-sm sm:text-base">
+                        {creation.createdBy.name.charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
+                      {creation.createdBy.name}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                      {new Date(creation.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Image */}
+                {creation.image && (
+                  <img 
+                    src={creation.image} 
+                    alt={creation.title}
+                    className="w-full h-48 sm:h-64 object-cover"
+                  />
+                )}
+
+                {/* Content */}
+                <div className="p-3 sm:p-4">
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm sm:text-base">
+                    {creation.title}
+                  </h4>
+                  <p className="text-gray-600 dark:text-gray-300 mb-3 sm:mb-4 text-sm sm:text-base">
+                    {creation.description}
+                  </p>
+                  
+                  {/* Actions */}
+                  <div className="flex items-center gap-4 sm:gap-6">
+                    <button className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300 hover:text-red-500 transition-colors">
+                      <IoHeartOutline size={18} />
+                      <span className="text-sm">{creation.likes.length}</span>
+                    </button>
+                    <button className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300 transition-colors" style={{ '--hover-color': 'var(--color-primary-600)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary-600)'} onMouseLeave={(e) => e.currentTarget.style.color = ''}>
+                      <IoEye size={18} />
+                      <span className="text-sm">View</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );

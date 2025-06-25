@@ -29,6 +29,10 @@ const ShoppingListSchema = new mongoose.Schema({
     ref: 'Family',
     default: null,
   },
+  invitedUsers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  }],
 }, {
   timestamps: true,
 });

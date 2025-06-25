@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import Toast from '@/components/Toast';
 import { RecipeDetailSkeleton } from '@/components/SkeletonLoader';
@@ -12,7 +13,8 @@ import {
   IoTime, 
   IoPeople, 
   IoPerson, 
-  IoCart 
+  IoCart,
+  IoBook 
 } from 'react-icons/io5';
 
 interface Ingredient {
@@ -38,6 +40,9 @@ interface Recipe {
   image: string;
   tags: string[];
   createdBy: { _id: string; name: string };
+  originalRecipe?: { _id: string; title: string };
+  originalChef?: { _id: string; name: string };
+  copiedBy?: { _id: string; name: string };
   createdAt: string;
 }
 
@@ -55,6 +60,11 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
     show: false,
   });
   const [recipeId, setRecipeId] = useState<string>('');
+  const [cookbooks, setCookbooks] = useState<any[]>([]);
+  const [shoppingLists, setShoppingLists] = useState<any[]>([]);
+  const [showCookbookDropdown, setShowCookbookDropdown] = useState(false);
+  const [showListDropdown, setShowListDropdown] = useState(false);
+  const [addingToCookbook, setAddingToCookbook] = useState(false);
 
   useEffect(() => {
     const getParams = async () => {
@@ -72,7 +82,25 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
     }
     
     fetchRecipe();
+    loadCookbooks();
+    loadShoppingLists();
   }, [session, status, router, recipeId]);
+
+  // Handle clicks outside dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.dropdown-container')) {
+        setShowCookbookDropdown(false);
+        setShowListDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const fetchRecipe = async () => {
     try {
@@ -90,6 +118,72 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
       setError('An error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCookbooks = async () => {
+    try {
+      const response = await fetch('/api/cookbooks');
+      if (response.ok) {
+        const data = await response.json();
+        setCookbooks(data);
+      }
+    } catch (error) {
+      console.error('Error loading cookbooks:', error);
+    }
+  };
+
+  const loadShoppingLists = async () => {
+    try {
+      const response = await fetch('/api/shopping-lists');
+      if (response.ok) {
+        const data = await response.json();
+        setShoppingLists(data);
+      }
+    } catch (error) {
+      console.error('Error loading shopping lists:', error);
+    }
+  };
+
+  const addToCookbook = async (cookbookId: string) => {
+    if (!recipe) return;
+    
+    setAddingToCookbook(true);
+    try {
+      const response = await fetch(`/api/cookbooks/${cookbookId}/recipes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recipeId: recipe._id,
+        }),
+      });
+
+      if (response.ok) {
+        setToast({ 
+          message: 'Recipe added to cookbook successfully!', 
+          type: 'success', 
+          show: true 
+        });
+        setShowCookbookDropdown(false);
+      } else {
+        const errorData = await response.json();
+        setToast({ 
+          message: errorData.error || 'Failed to add recipe to cookbook', 
+          type: 'error', 
+          show: true 
+        });
+      }
+    } catch (error) {
+      console.error('Error adding to cookbook:', error);
+      setToast({ 
+        message: 'An error occurred while adding recipe to cookbook', 
+        type: 'error', 
+        show: true 
+      });
+    } finally {
+      setAddingToCookbook(false);
     }
   };
 
@@ -113,12 +207,12 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
     }
   };
 
-  const addToShoppingList = async () => {
+  const addToShoppingList = async (listId: string) => {
     if (!recipe) return;
     
     setAddingToList(true);
     try {
-      const response = await fetch('/api/shopping-lists/add-recipe', {
+      const response = await fetch(`/api/shopping-lists/${listId}/add-recipe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -141,6 +235,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
           message = `Added ${data.addedCount} ingredients to your shopping list!`;
         }
         setToast({ message, type: 'success', show: true });
+        setShowListDropdown(false);
       } else {
         const errorData = await response.json();
         setToast({ 
@@ -266,6 +361,32 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                   </div>
                 </div>
 
+                {/* Attribution Section */}
+                {recipe.originalRecipe && recipe.originalChef && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                    <div className="flex items-start gap-2">
+                      <IoLink className="mt-0.5 text-blue-600 dark:text-blue-400" size={16} />
+                      <div className="text-sm">
+                        <p className="text-blue-800 dark:text-blue-200 font-medium">
+                          Copied from: 
+                          <Link 
+                            href={`/recipes/${recipe.originalRecipe._id}`}
+                            className="ml-1 underline hover:no-underline"
+                          >
+                            {recipe.originalRecipe.title}
+                          </Link>
+                        </p>
+                        <p className="text-blue-700 dark:text-blue-300 mt-1">
+                          Original chef: {recipe.originalChef.name}
+                          {recipe.copiedBy && recipe.copiedBy._id !== recipe.createdBy._id && (
+                            <span> • Copied by: {recipe.copiedBy.name}</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {recipe.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-4">
                     {recipe.tags.map((tag, index) => (
@@ -316,14 +437,98 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                         className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       />
                     </div>
-                    <button
-                      onClick={addToShoppingList}
-                      disabled={addingToList}
-                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center space-x-1 w-full sm:w-auto"
-                    >
-                      <IoCart size={18} />
-                      <span>{addingToList ? 'Adding...' : 'Add to List'}</span>
-                    </button>
+                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 relative">
+                      {/* Shopping List Dropdown */}
+                      <div className="relative dropdown-container">
+                        <button
+                          onClick={() => {
+                            setShowListDropdown(!showListDropdown);
+                            setShowCookbookDropdown(false);
+                          }}
+                          disabled={addingToList}
+                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center space-x-1 w-full sm:w-auto"
+                        >
+                          <IoCart size={18} />
+                          <span>Add to List</span>
+                        </button>
+                        
+                        {showListDropdown && (
+                          <div className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 animate-in slide-in-from-top-2 duration-200">
+                            <div className="p-2 max-h-64 overflow-y-auto">
+                              {shoppingLists.length === 0 ? (
+                                <p className="text-gray-500 dark:text-gray-400 text-center py-4 text-sm">
+                                  No shopping lists found
+                                </p>
+                              ) : (
+                                shoppingLists.map((list) => (
+                                  <button
+                                    key={list._id}
+                                    onClick={() => addToShoppingList(list._id)}
+                                    disabled={addingToList}
+                                    className="w-full text-left p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                                  >
+                                    <div className="font-medium text-gray-900 dark:text-white text-sm">
+                                      {list.name}
+                                    </div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                      {list.items.length} items
+                                    </div>
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Cookbook Dropdown */}
+                      <div className="relative dropdown-container">
+                        <button
+                          onClick={() => {
+                            setShowCookbookDropdown(!showCookbookDropdown);
+                            setShowListDropdown(false);
+                          }}
+                          disabled={addingToCookbook}
+                          className="text-white px-3 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center space-x-1 w-full sm:w-auto"
+                          style={{ backgroundColor: 'var(--color-primary-600)' }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-700)'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-600)'}
+                        >
+                          <IoBook size={18} />
+                          <span>Add to Cookbook</span>
+                        </button>
+                        
+                        {showCookbookDropdown && (
+                          <div className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 animate-in slide-in-from-top-2 duration-200">
+                            <div className="p-2 max-h-64 overflow-y-auto">
+                              {cookbooks.length === 0 ? (
+                                <p className="text-gray-500 dark:text-gray-400 text-center py-4 text-sm">
+                                  No cookbooks found
+                                </p>
+                              ) : (
+                                cookbooks.map((cookbook) => (
+                                  <button
+                                    key={cookbook._id}
+                                    onClick={() => addToCookbook(cookbook._id)}
+                                    disabled={addingToCookbook}
+                                    className="w-full text-left p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                                  >
+                                    <div className="font-medium text-gray-900 dark:text-white text-sm">
+                                      {cookbook.name}
+                                    </div>
+                                    {cookbook.description && (
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        {cookbook.description}
+                                      </div>
+                                    )}
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -394,6 +599,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
             </div>
           </div>
         </div>
+
       </main>
     </div>
   );

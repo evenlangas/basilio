@@ -1,11 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import { FormSkeleton } from '@/components/SkeletonLoader';
 import { IoCamera } from 'react-icons/io5';
+
+interface Cookbook {
+  _id: string;
+  name: string;
+  description: string;
+}
 
 interface Ingredient {
   name: string;
@@ -23,6 +29,25 @@ export default function NewRecipePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   
+  // Load cookbooks on component mount
+  useEffect(() => {
+    if (session) {
+      loadCookbooks();
+    }
+  }, [session]);
+  
+  const loadCookbooks = async () => {
+    try {
+      const response = await fetch('/api/cookbooks');
+      if (response.ok) {
+        const data = await response.json();
+        setCookbooks(data);
+      }
+    } catch (error) {
+      console.error('Error loading cookbooks:', error);
+    }
+  };
+  
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [url, setUrl] = useState('');
@@ -34,6 +59,8 @@ export default function NewRecipePage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [ingredients, setIngredients] = useState<Ingredient[]>([{ name: '', amount: '', unit: '' }]);
   const [instructions, setInstructions] = useState<Instruction[]>([{ step: 1, description: '' }]);
+  const [cookbooks, setCookbooks] = useState<Cookbook[]>([]);
+  const [selectedCookbook, setSelectedCookbook] = useState<string>('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +99,7 @@ export default function NewRecipePage() {
         tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag),
         ingredients: ingredients.filter(ing => ing.name.trim()),
         instructions: instructions.filter(inst => inst.description.trim()),
+        cookbook: selectedCookbook || undefined,
       };
 
       const response = await fetch('/api/recipes', {
@@ -83,7 +111,11 @@ export default function NewRecipePage() {
       });
 
       if (response.ok) {
-        router.push('/recipes');
+        if (selectedCookbook) {
+          router.push(`/cookbooks/${selectedCookbook}`);
+        } else {
+          router.push('/recipes');
+        }
       } else {
         console.error('Failed to create recipe');
         alert('Failed to create recipe. Please try again.');
@@ -226,6 +258,24 @@ export default function NewRecipePage() {
               className="form-input form-textarea"
               placeholder="Brief description of the recipe..."
             />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              Add to Cookbook (optional)
+            </label>
+            <select
+              value={selectedCookbook}
+              onChange={(e) => setSelectedCookbook(e.target.value)}
+              className="form-input"
+            >
+              <option value="">Select a cookbook...</option>
+              {cookbooks.map((cookbook) => (
+                <option key={cookbook._id} value={cookbook._id}>
+                  {cookbook.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="form-group">

@@ -3,29 +3,28 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import Recipe from '@/models/Recipe';
+import User from '@/models/User';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
     await dbConnect();
 
-    let query: any;
-    
-    if (session.user.familyId) {
-      // If user is part of a family, only show family recipes
-      query = { _id: id, familyId: session.user.familyId };
-    } else {
-      // If user has no family, show only their personal recipes
-      query = { _id: id, createdBy: session.user.id, familyId: null };
-    }
+    // For viewing recipes, be more permissive - allow viewing any recipe for now
+    // Later we can add more sophisticated access control based on cookbook privacy, etc.
+    const query = { _id: id };
 
-    const recipe = await Recipe.findOne(query).populate('createdBy', 'name');
+    const recipe = await Recipe.findOne(query)
+      .populate('createdBy', 'name')
+      .populate('originalChef', 'name')
+      .populate('copiedBy', 'name')
+      .populate('originalRecipe', 'title');
 
     if (!recipe) {
       return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
@@ -45,7 +44,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -54,21 +53,23 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     
     await dbConnect();
 
-    let updateQuery: any;
-    
-    if (session.user.familyId) {
-      // If user is part of a family, only allow updating family recipes
-      updateQuery = { _id: id, familyId: session.user.familyId };
-    } else {
-      // If user has no family, only allow updating their personal recipes
-      updateQuery = { _id: id, createdBy: session.user.id, familyId: null };
+    // Find the current user
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+
+    // Only allow editing recipes created by the current user
+    const updateQuery = { _id: id, createdBy: user._id };
 
     const recipe = await Recipe.findOneAndUpdate(
       updateQuery,
       data,
       { new: true }
-    ).populate('createdBy', 'name');
+    ).populate('createdBy', 'name')
+     .populate('originalChef', 'name')
+     .populate('copiedBy', 'name')
+     .populate('originalRecipe', 'title');
 
     if (!recipe) {
       return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
@@ -88,22 +89,21 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
     await dbConnect();
 
-    let deleteQuery: any;
-    
-    if (session.user.familyId) {
-      // If user is part of a family, only allow deleting family recipes
-      deleteQuery = { _id: id, familyId: session.user.familyId };
-    } else {
-      // If user has no family, only allow deleting their personal recipes
-      deleteQuery = { _id: id, createdBy: session.user.id, familyId: null };
+    // Find the current user
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+
+    // Only allow deleting recipes created by the current user
+    const deleteQuery = { _id: id, createdBy: user._id };
 
     const recipe = await Recipe.findOneAndDelete(deleteQuery);
 

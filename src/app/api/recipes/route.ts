@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import Recipe from '@/models/Recipe';
+import Cookbook from '@/models/Cookbook';
 
 export async function GET(request: NextRequest) {
   try {
@@ -44,15 +45,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const data = await request.json();
+    const { cookbook, ...recipeData } = await request.json();
     
     await dbConnect();
 
     const recipe = await Recipe.create({
-      ...data,
+      ...recipeData,
       createdBy: session.user.id,
       familyId: session.user.familyId || null,
+      cookbookId: cookbook || null,
     });
+
+    // If a cookbook was selected, add the recipe to it
+    if (cookbook) {
+      await Cookbook.findByIdAndUpdate(
+        cookbook,
+        { $push: { recipes: recipe._id } }
+      );
+    }
 
     const populatedRecipe = await Recipe.findById(recipe._id).populate('createdBy', 'name');
 
