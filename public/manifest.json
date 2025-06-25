@@ -1,0 +1,24 @@
+{
+  "name": "Basilio - Digital Cookbook",
+  "short_name": "Basilio",
+  "description": "A simple and intuitive digital cookbook for families",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#22c55e",
+  "background_color": "#ffffff"
+}
