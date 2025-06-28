@@ -3,14 +3,44 @@
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import ThemeToggle from './ThemeToggle';
-import { IoLeaf, IoBook, IoCart, IoLogOut, IoHome, IoPersonCircle, IoAdd } from 'react-icons/io5';
+import { IoLeaf, IoBook, IoCart, IoLogOut, IoHome, IoPersonCircle, IoAdd, IoRestaurant, IoCreate, IoList } from 'react-icons/io5';
 
 export default function Navigation() {
   const { data: session } = useSession();
   const pathname = usePathname();
+  const [showCreateMenu, setShowCreateMenu] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   if (!session) return null;
+
+  const handleToggleMenu = () => {
+    if (showCreateMenu) {
+      setIsClosing(true);
+      setTimeout(() => {
+        setShowCreateMenu(false);
+        setIsClosing(false);
+      }, 180); // Faster timing
+    } else {
+      setShowCreateMenu(true);
+    }
+  };
+
+  const handleMenuItemClick = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setShowCreateMenu(false);
+      setIsClosing(false);
+    }, 180);
+  };
+
+  const createOptions = [
+    { href: '/recipes/new', label: 'New Recipe', icon: <IoRestaurant size={20} /> },
+    { href: '/cookbooks/new', label: 'New Cookbook', icon: <IoBook size={20} /> },
+    { href: '/lists/new', label: 'New List', icon: <IoList size={20} /> },
+    { href: '/create', label: 'Post a Creation', icon: <IoCreate size={20} /> },
+  ];
 
   const navItems = [
     { href: '/', label: 'Home', icon: <IoHome size={20} /> },
@@ -124,18 +154,21 @@ export default function Navigation() {
             </Link>
           ))}
           
-          {/* Floating Add Button */}
-          <div className="flex-1 flex justify-center">
-            <Link
-              href="/create"
-              className="text-white rounded-full p-4 shadow-lg transform -translate-y-2 transition-all duration-200 hover:scale-110"
+          {/* Floating Add Button with Menu */}
+          <div className="flex-1 flex justify-center relative">
+            <button
+              onClick={handleToggleMenu}
+              className="text-white rounded-full p-4 shadow-lg transform -translate-y-2 transition-all duration-200 hover:scale-110 relative z-50"
               style={{ 
                 background: 'var(--color-primary-600)',
                 boxShadow: '0 8px 25px rgba(34, 197, 94, 0.4)'
               }}
             >
-              <IoAdd size={24} />
-            </Link>
+              <IoAdd 
+                size={24} 
+                className={`transition-transform duration-150 ${showCreateMenu ? 'rotate-45' : ''}`}
+              />
+            </button>
           </div>
           
           {/* Last two nav items */}
@@ -162,6 +195,89 @@ export default function Navigation() {
         {/* Safe area padding for devices with home indicator */}
         <div style={{ height: 'env(safe-area-inset-bottom, 0)' }}></div>
       </nav>
+
+      {/* Blurred Background Overlay */}
+      {showCreateMenu && (
+        <div 
+          className={`fixed inset-0 z-40 transition-opacity duration-150 ${isClosing ? 'opacity-0' : 'opacity-100'}`}
+          style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)'
+          }}
+          onClick={handleToggleMenu}
+        />
+      )}
+
+      {/* Animated Create Menu */}
+      {showCreateMenu && (
+        <div className="fixed bottom-28 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="flex flex-col-reverse gap-3 items-center">
+            {createOptions.map((option, index) => (
+              <Link
+                key={option.href}
+                href={option.href}
+                onClick={handleMenuItemClick}
+                className="flex items-center bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 transition-all duration-200 hover:scale-105"
+                style={{
+                  animation: isClosing 
+                    ? `slideDownToCenter 0.15s ease-in ${(createOptions.length - 1 - index) * 25}ms forwards`
+                    : `slideUpFromCenter 0.15s ease-out ${index * 25}ms forwards`,
+                  transformOrigin: 'center bottom',
+                  width: '220px',
+                  paddingLeft: '16px',
+                  paddingRight: '20px',
+                  paddingTop: '12px',
+                  paddingBottom: '12px',
+                  opacity: 0
+                }}
+              >
+                <div 
+                  className="p-2 rounded-full flex-shrink-0" 
+                  style={{ 
+                    backgroundColor: 'var(--color-primary-100)', 
+                    color: 'var(--color-primary-600)',
+                    width: '40px',
+                    height: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  {option.icon}
+                </div>
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100 ml-3 flex-1">
+                  {option.label}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        @keyframes slideUpFromCenter {
+          0% {
+            opacity: 0;
+            transform: translateY(20px) scale(0.8);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        
+        @keyframes slideDownToCenter {
+          0% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(20px) scale(0.8);
+          }
+        }
+      `}</style>
     </>
   );
 }

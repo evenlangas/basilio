@@ -16,6 +16,7 @@ import {
   IoCart,
   IoBook 
 } from 'react-icons/io5';
+import { getCountryByCode } from '@/utils/countries';
 
 interface Ingredient {
   name: string;
@@ -39,6 +40,9 @@ interface Recipe {
   url: string;
   image: string;
   tags: string[];
+  recommendedDrinks?: string;
+  mealType?: string;
+  cuisine?: string;
   createdBy: { _id: string; name: string };
   originalRecipe?: { _id: string; title: string };
   originalChef?: { _id: string; name: string };
@@ -294,9 +298,8 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
 
   if (!recipe) return null;
 
-  // Allow editing if user is the creator OR if recipe belongs to user's family
-  const canEdit = recipe.createdBy._id === session.user.id || 
-                  (session.user.familyId && recipe.familyId === session.user.familyId);
+  // Allow editing if user is the creator
+  const canEdit = recipe.createdBy._id === session.user.id;
 
   return (
     <div className="min-h-screen" style={{backgroundColor: 'var(--color-bg-primary)'}}>
@@ -363,11 +366,11 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
 
                 {/* Attribution Section */}
                 {recipe.originalRecipe && recipe.originalChef && (
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 mb-4">
                     <div className="flex items-start gap-2">
-                      <IoLink className="mt-0.5 text-blue-600 dark:text-blue-400" size={16} />
+                      <IoLink className="mt-0.5 text-green-600 dark:text-green-400" size={16} />
                       <div className="text-sm">
-                        <p className="text-blue-800 dark:text-blue-200 font-medium">
+                        <p className="text-green-800 dark:text-green-200 font-medium">
                           Copied from: 
                           <Link 
                             href={`/recipes/${recipe.originalRecipe._id}`}
@@ -376,7 +379,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                             {recipe.originalRecipe.title}
                           </Link>
                         </p>
-                        <p className="text-blue-700 dark:text-blue-300 mt-1">
+                        <p className="text-green-700 dark:text-green-300 mt-1">
                           Original chef: {recipe.originalChef.name}
                           {recipe.copiedBy && recipe.copiedBy._id !== recipe.createdBy._id && (
                             <span> • Copied by: {recipe.copiedBy.name}</span>
@@ -387,18 +390,29 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                   </div>
                 )}
 
-                {recipe.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {recipe.tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs px-3 py-1 rounded-full"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
+
+                <div className="flex items-center gap-4 mb-4 text-sm">
+                  {(recipe.cuisine && getCountryByCode(recipe.cuisine)) || recipe.mealType ? (
+                    <div className="flex items-center gap-3">
+                      {recipe.cuisine && getCountryByCode(recipe.cuisine) && (
+                        <span className="text-2xl" title={getCountryByCode(recipe.cuisine)?.name}>
+                          {getCountryByCode(recipe.cuisine)?.flag}
+                        </span>
+                      )}
+                      {recipe.mealType && (
+                        <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-xs font-medium capitalize">
+                          {recipe.mealType}
+                        </span>
+                      )}
+                    </div>
+                  ) : null}
+                  {recipe.recommendedDrinks && (
+                    <div>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">Recommended Drinks:</span>
+                      <span className="ml-2 text-gray-600 dark:text-gray-400">{recipe.recommendedDrinks}</span>
+                    </div>
+                  )}
+                </div>
               </div>
               
               {canEdit && (

@@ -14,7 +14,8 @@ import {
   IoHeart, 
   IoStar,
   IoFlame,
-  IoTime
+  IoTime,
+  IoRestaurant
 } from 'react-icons/io5';
 
 interface UserProfile {
@@ -61,6 +62,7 @@ export default function YouPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [cookbooks, setCookbooks] = useState<any[]>([]);
   const [creations, setCreations] = useState<any[]>([]);
+  const [recipes, setRecipes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -73,6 +75,7 @@ export default function YouPage() {
     loadProfile();
     loadCookbooks();
     loadCreations();
+    loadRecipes();
   }, [session, status, router]);
 
   const loadProfile = async () => {
@@ -108,6 +111,18 @@ export default function YouPage() {
       }
     } catch (error) {
       console.error('Error loading creations:', error);
+    }
+  };
+
+  const loadRecipes = async () => {
+    try {
+      const response = await fetch('/api/user/recipes');
+      if (response.ok) {
+        const data = await response.json();
+        setRecipes(data);
+      }
+    } catch (error) {
+      console.error('Error loading recipes:', error);
     } finally {
       setLoading(false);
     }
@@ -226,6 +241,59 @@ export default function YouPage() {
                         </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* My Recipes */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <IoRestaurant style={{ color: 'var(--color-primary-600)' }} />
+                  My Recipes
+                </h2>
+                <Link
+                  href="/recipes"
+                  className="text-sm font-medium"
+                  style={{ color: 'var(--color-primary-600)' }}
+                >
+                  View All
+                </Link>
+              </div>
+              
+              {recipes.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+                  No recipes yet. Create your first recipe to start building your collection!
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                  {recipes.slice(0, 6).map((recipe) => (
+                    <Link
+                      key={recipe._id}
+                      href={`/recipes/${recipe._id}`}
+                      className="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    >
+                      {recipe.image && (
+                        <img 
+                          src={recipe.image} 
+                          alt={recipe.title}
+                          className="w-full h-32 object-cover"
+                        />
+                      )}
+                      <div className="p-3">
+                        <h3 className="font-medium text-gray-900 dark:text-white text-sm mb-1">
+                          {recipe.title}
+                        </h3>
+                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                          <span>{recipe.cookingTime || 0}m</span>
+                          <span>{recipe.servings || 1} servings</span>
+                          <span>
+                            {new Date(recipe.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
                   ))}
                 </div>
               )}

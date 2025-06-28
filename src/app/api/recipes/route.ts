@@ -15,17 +15,10 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
 
-    let query: any;
-    
-    if (session.user.familyId) {
-      // If user is part of a family, show all family recipes
-      query = { familyId: session.user.familyId };
-    } else {
-      // If user has no family, show only their personal recipes
-      query = { createdBy: session.user.id, familyId: null };
-    }
-
-    const recipes = await Recipe.find(query).populate('createdBy', 'name').sort({ createdAt: -1 });
+    // Only show recipes created by the current user (my recipes)
+    const recipes = await Recipe.find({ createdBy: session.user.id })
+      .populate('createdBy', 'name')
+      .sort({ createdAt: -1 });
 
     return NextResponse.json(recipes);
   } catch (error) {
@@ -52,7 +45,6 @@ export async function POST(request: NextRequest) {
     const recipe = await Recipe.create({
       ...recipeData,
       createdBy: session.user.id,
-      familyId: session.user.familyId || null,
       cookbookId: cookbook || null,
     });
 

@@ -35,6 +35,19 @@ const RecipeSchema = new mongoose.Schema({
     default: '',
   },
   tags: [String],
+  recommendedDrinks: {
+    type: String,
+    default: '',
+  },
+  mealType: {
+    type: String,
+    enum: ['breakfast', 'lunch', 'dinner', 'dessert', 'snack', 'appetizer'],
+    default: '',
+  },
+  cuisine: {
+    type: String,
+    default: '',
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

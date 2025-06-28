@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import { FormSkeleton } from '@/components/SkeletonLoader';
 import { IoCamera } from 'react-icons/io5';
+import CountrySelector from '@/components/CountrySelector';
 
 interface Cookbook {
   _id: string;
@@ -53,7 +54,9 @@ export default function NewRecipePage() {
   const [url, setUrl] = useState('');
   const [cookingTime, setCookingTime] = useState(0);
   const [servings, setServings] = useState(1);
-  const [tags, setTags] = useState('');
+  const [recommendedDrinks, setRecommendedDrinks] = useState('');
+  const [mealType, setMealType] = useState('');
+  const [cuisine, setCuisine] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -96,7 +99,9 @@ export default function NewRecipePage() {
         image: imageUrl,
         cookingTime,
         servings,
-        tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+        recommendedDrinks,
+        mealType,
+        cuisine,
         ingredients: ingredients.filter(ing => ing.name.trim()),
         instructions: instructions.filter(inst => inst.description.trim()),
         cookbook: selectedCookbook || undefined,
@@ -214,7 +219,7 @@ export default function NewRecipePage() {
       <main className="container container-sm" style={{paddingTop: 'var(--spacing-2xl)', paddingBottom: 'var(--spacing-2xl)'}}>
         <div className="page-header">
           <h1 className="page-title">Add New Recipe</h1>
-          <p className="page-subtitle">Share your favorite recipe with your family</p>
+          <p className="page-subtitle">Create and save your favorite recipes</p>
         </div>
         
         <form onSubmit={handleSubmit} className="card card-body" style={{display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2xl)'}}>
@@ -352,17 +357,49 @@ export default function NewRecipePage() {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Tags (comma-separated)
+                Meal Type
+              </label>
+              <select
+                value={mealType}
+                onChange={(e) => setMealType(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              >
+                <option value="">Select meal type...</option>
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch">Lunch</option>
+                <option value="dinner">Dinner</option>
+                <option value="dessert">Dessert</option>
+                <option value="snack">Snack</option>
+                <option value="appetizer">Appetizer</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Recommended Drinks
               </label>
               <input
                 type="text"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
+                value={recommendedDrinks}
+                onChange={(e) => setRecommendedDrinks(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="dessert, quick, vegetarian"
+                placeholder="Red wine and sparkling water"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Cuisine
+              </label>
+              <CountrySelector
+                value={cuisine}
+                onChange={setCuisine}
+                placeholder="Select a country cuisine..."
               />
             </div>
           </div>

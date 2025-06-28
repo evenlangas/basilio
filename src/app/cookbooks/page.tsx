@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
-import { IoAdd, IoBook, IoLockClosed, IoGlobe, IoPeople } from 'react-icons/io5';
+import { IoAdd, IoBook, IoLockClosed, IoGlobe, IoPeople, IoRestaurant } from 'react-icons/io5';
 
 interface Cookbook {
   _id: string;
@@ -69,17 +69,27 @@ export default function CookbooksPage() {
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
             My Cookbooks
           </h1>
-          <Link
-            href="/cookbooks/new"
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-white transition-colors"
-            style={{ backgroundColor: 'var(--color-primary-600)' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-700)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-600)'}
-          >
-            <IoAdd size={18} />
-            <span className="text-sm sm:text-base hidden sm:inline">New Cookbook</span>
-            <span className="text-sm sm:hidden">New</span>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/you"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            >
+              <IoRestaurant size={18} />
+              <span className="text-sm sm:text-base hidden sm:inline">My Recipes</span>
+              <span className="text-sm sm:hidden">Recipes</span>
+            </Link>
+            <Link
+              href="/cookbooks/new"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-white transition-colors"
+              style={{ backgroundColor: 'var(--color-primary-600)' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-700)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-600)'}
+            >
+              <IoAdd size={18} />
+              <span className="text-sm sm:text-base hidden sm:inline">New Cookbook</span>
+              <span className="text-sm sm:hidden">New</span>
+            </Link>
+          </div>
         </div>
 
         {/* Cookbooks Grid */}
@@ -115,17 +125,6 @@ export default function CookbooksPage() {
                 href={`/cookbooks/${cookbook._id}`}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
               >
-                <div className="aspect-video bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                  {cookbook.image ? (
-                    <img 
-                      src={cookbook.image} 
-                      alt={cookbook.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <IoBook size={48} className="text-gray-400 dark:text-gray-500" />
-                  )}
-                </div>
                 
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-2">

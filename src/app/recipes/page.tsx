@@ -7,14 +7,12 @@ import Navigation from '@/components/Navigation';
 import Link from 'next/link';
 import { RecipeGridSkeleton } from '@/components/SkeletonLoader';
 import { 
-  IoBulb, 
-  IoCart, 
   IoBook, 
   IoRestaurant, 
   IoTime, 
-  IoPeople,
-  IoAdd
+  IoPeople
 } from 'react-icons/io5';
+import { getCountryByCode } from '@/utils/countries';
 
 interface Recipe {
   _id: string;
@@ -27,6 +25,8 @@ interface Recipe {
   url: string;
   image: string;
   tags: string[];
+  cuisine?: string;
+  mealType?: string;
   createdBy: { _id: string; name: string };
   createdAt: string;
 }
@@ -87,9 +87,6 @@ export default function RecipesPage() {
 
           <RecipeGridSkeleton count={6} />
         </main>
-        
-        {/* Floating Add Button Skeleton */}
-        <div className="skeleton floating-add-button" />
       </div>
     );
   }
@@ -104,17 +101,11 @@ export default function RecipesPage() {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-8">
           <div className="mb-4 sm:mb-0 text-center sm:text-left">
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-              {session.user.familyId ? 'Family Recipes' : 'My Recipes'}
+              My Recipes
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-400 mb-2">
-              {recipes.length} recipe{recipes.length !== 1 ? 's' : ''} in your{' '}
-              {session.user.familyId ? 'family' : 'personal'} cookbook
+              {recipes.length} recipe{recipes.length !== 1 ? 's' : ''} created by you
             </p>
-            {!session.user.familyId && (
-              <p className="text-sm text-blue-600 mt-2 flex items-center gap-1 justify-center sm:justify-start">
-                <IoBulb size={14} /> <Link href="/family" className="underline hover:text-blue-800">Join or create a family</Link> to share recipes with others!
-              </p>
-            )}
           </div>
         </div>
 
@@ -199,33 +190,25 @@ export default function RecipesPage() {
                     </span>
                   </div>
                   
-                  {recipe.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 sm:gap-2 mb-3 sm:mb-4">
-                      {recipe.tags.slice(0, 2).map((tag, index) => (
-                        <span
-                          key={index}
-                          className="badge badge-success"
-                        >
-                          {tag}
+                  {(recipe.cuisine && getCountryByCode(recipe.cuisine)) || recipe.mealType ? (
+                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                      {recipe.cuisine && getCountryByCode(recipe.cuisine) && (
+                        <span className="text-lg" title={getCountryByCode(recipe.cuisine)?.name}>
+                          {getCountryByCode(recipe.cuisine)?.flag}
                         </span>
-                      ))}
-                      {recipe.tags.length > 2 && (
-                        <span style={{fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)'}}>
-                          +{recipe.tags.length - 2}
+                      )}
+                      {recipe.mealType && (
+                        <span className="badge badge-success capitalize">
+                          {recipe.mealType}
                         </span>
                       )}
                     </div>
-                  )}
+                  ) : null}
                   
                   <div className="flex items-center justify-between" style={{fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)'}}>
                     <span className="truncate mr-2">
                       {recipe.createdBy.name}
                     </span>
-                    {recipe.familyId && (
-<span className="badge badge-secondary">
-                        <IoPeople size={16} />
-                      </span>
-                    )}
                   </div>
                 </div>
               </Link>
@@ -234,14 +217,6 @@ export default function RecipesPage() {
         )}
       </main>
       
-      {/* Floating Add Button */}
-      <Link
-        href="/recipes/new"
-        className="floating-add-button"
-        title="Add New Recipe"
-      >
-        <IoAdd size={28} />
-      </Link>
     </div>
   );
 }

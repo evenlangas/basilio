@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import { FormSkeleton } from '@/components/SkeletonLoader';
 import { IoCamera } from 'react-icons/io5';
+import CountrySelector from '@/components/CountrySelector';
 
 interface Ingredient {
   name: string;
@@ -29,8 +30,10 @@ interface Recipe {
   url: string;
   image: string;
   tags: string[];
+  recommendedDrinks: string;
+  mealType: string;
+  cuisine: string;
   createdBy: { _id: string; name: string };
-  familyId: string | null;
 }
 
 export default function EditRecipePage({ params }: { params: Promise<{ id: string }> }) {
@@ -45,7 +48,9 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
   const [url, setUrl] = useState('');
   const [cookingTime, setCookingTime] = useState(0);
   const [servings, setServings] = useState(1);
-  const [tags, setTags] = useState('');
+  const [recommendedDrinks, setRecommendedDrinks] = useState('');
+  const [mealType, setMealType] = useState('');
+  const [cuisine, setCuisine] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [currentImage, setCurrentImage] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -77,9 +82,8 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
       if (response.ok) {
         const recipe: Recipe = await response.json();
         
-        // Check if user can edit this recipe (creator OR family member)
-        const canEdit = recipe.createdBy._id === session?.user.id || 
-                        (session?.user.familyId && recipe.familyId === session?.user.familyId);
+        // Check if user can edit this recipe (creator only)
+        const canEdit = recipe.createdBy._id === session?.user.id;
         
         if (!canEdit) {
           router.push(`/recipes/${recipeId}`);
@@ -91,7 +95,9 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
         setUrl(recipe.url);
         setCookingTime(recipe.cookingTime);
         setServings(recipe.servings);
-        setTags(recipe.tags.join(', '));
+        setRecommendedDrinks(recipe.recommendedDrinks || '');
+        setMealType(recipe.mealType || '');
+        setCuisine(recipe.cuisine || '');
         setCurrentImage(recipe.image);
         setIngredients(recipe.ingredients.length > 0 ? recipe.ingredients : [{ name: '', amount: '', unit: '' }]);
         setInstructions(recipe.instructions.length > 0 ? recipe.instructions : [{ step: 1, description: '' }]);
@@ -143,7 +149,9 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
         image: imageUrl,
         cookingTime,
         servings,
-        tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+        recommendedDrinks,
+        mealType,
+        cuisine,
         ingredients: ingredients.filter(ing => ing.name.trim()),
         instructions: instructions.filter(inst => inst.description.trim()),
       };
@@ -425,17 +433,49 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Tags (comma-separated)
+                Meal Type
+              </label>
+              <select
+                value={mealType}
+                onChange={(e) => setMealType(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              >
+                <option value="">Select meal type...</option>
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch">Lunch</option>
+                <option value="dinner">Dinner</option>
+                <option value="dessert">Dessert</option>
+                <option value="snack">Snack</option>
+                <option value="appetizer">Appetizer</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Recommended Drinks
               </label>
               <input
                 type="text"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
+                value={recommendedDrinks}
+                onChange={(e) => setRecommendedDrinks(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="dessert, quick, vegetarian"
+                placeholder="Red wine and sparkling water"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Cuisine
+              </label>
+              <CountrySelector
+                value={cuisine}
+                onChange={setCuisine}
+                placeholder="Select a country cuisine..."
               />
             </div>
           </div>

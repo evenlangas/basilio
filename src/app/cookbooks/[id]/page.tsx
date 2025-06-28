@@ -16,6 +16,7 @@ import {
   IoPeople,
   IoTrash
 } from 'react-icons/io5';
+import { getCountryByCode } from '@/utils/countries';
 
 interface Recipe {
   _id: string;
@@ -25,6 +26,8 @@ interface Recipe {
   cookingTime: number;
   servings: number;
   tags: string[];
+  cuisine?: string;
+  mealType?: string;
 }
 
 interface Cookbook {
@@ -42,26 +45,35 @@ interface Cookbook {
   createdAt: string;
 }
 
-export default function CookbookPage({ params }: { params: { id: string } }) {
+export default function CookbookPage({ params }: { params: Promise<{ id: string }> }) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [cookbook, setCookbook] = useState<Cookbook | null>(null);
   const [loading, setLoading] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
+  const [cookbookId, setCookbookId] = useState<string>('');
 
   useEffect(() => {
-    if (status === 'loading') return;
+    const getParams = async () => {
+      const { id } = await params;
+      setCookbookId(id);
+    };
+    getParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (status === 'loading' || !cookbookId) return;
     if (!session) {
       router.push('/auth/signin');
       return;
     }
     
     loadCookbook();
-  }, [session, status, router, params.id]);
+  }, [session, status, router, cookbookId]);
 
   const loadCookbook = async () => {
     try {
-      const response = await fetch(`/api/cookbooks/${params.id}`);
+      const response = await fetch(`/api/cookbooks/${cookbookId}`);
       if (response.ok) {
         const data = await response.json();
         setCookbook(data);
@@ -145,13 +157,6 @@ export default function CookbookPage({ params }: { params: { id: string } }) {
                     <IoSettings size={18} />
                     <span className="text-sm">Settings</span>
                   </Link>
-                  <Link
-                    href={`/recipes/new?cookbook=${cookbook._id}`}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <IoAdd size={18} />
-                    <span className="text-sm">Add Recipe</span>
-                  </Link>
                 </div>
               )}
             </div>
@@ -166,15 +171,6 @@ export default function CookbookPage({ params }: { params: { id: string } }) {
                 <p className="text-gray-600 dark:text-gray-300 mb-6">
                   {isOwner ? 'Add your first recipe to this cookbook' : 'This cookbook is empty'}
                 </p>
-                {isOwner && (
-                  <Link
-                    href={`/recipes/new?cookbook=${cookbook._id}`}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <IoAdd size={20} />
-                    Add Recipe
-                  </Link>
-                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -184,47 +180,44 @@ export default function CookbookPage({ params }: { params: { id: string } }) {
                     href={`/recipes/${recipe._id}`}
                     className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
                   >
-                    <div className="aspect-video bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                      {recipe.image ? (
+                    {recipe.image && (
+                      <div className="h-24 bg-gray-200 dark:bg-gray-700">
                         <img 
                           src={recipe.image} 
                           alt={recipe.title}
                           className="w-full h-full object-cover"
                         />
-                      ) : (
-                        <IoBook size={48} className="text-gray-400 dark:text-gray-500" />
-                      )}
-                    </div>
+                      </div>
+                    )}
                     
-                    <div className="p-4">
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-2">
+                    <div className="p-3">
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-base mb-1 line-clamp-1">
                         {recipe.title}
                       </h3>
                       
                       {recipe.description && (
-                        <p className="text-gray-600 dark:text-gray-300 mb-3 text-sm line-clamp-2">
+                        <p className="text-gray-600 dark:text-gray-300 mb-2 text-xs line-clamp-1">
                           {recipe.description}
                         </p>
                       )}
                       
-                      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                        <span>{recipe.cookingTime}m</span>
-                        <span>{recipe.servings} servings</span>
+                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+                        <div className="flex items-center gap-2">
+                          <span>{recipe.cookingTime}m</span>
+                          <span>{recipe.servings} servings</span>
+                        </div>
                       </div>
                       
-                      {recipe.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {recipe.tags.slice(0, 3).map((tag, index) => (
-                            <span
-                              key={index}
-                              className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded"
-                            >
-                              {tag}
+                      {((recipe.cuisine && getCountryByCode(recipe.cuisine)) || recipe.mealType) && (
+                        <div className="flex items-center gap-2">
+                          {recipe.cuisine && getCountryByCode(recipe.cuisine) && (
+                            <span className="text-base" title={getCountryByCode(recipe.cuisine)?.name}>
+                              {getCountryByCode(recipe.cuisine)?.flag}
                             </span>
-                          ))}
-                          {recipe.tags.length > 3 && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              +{recipe.tags.length - 3}
+                          )}
+                          {recipe.mealType && (
+                            <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded capitalize">
+                              {recipe.mealType}
                             </span>
                           )}
                         </div>
