@@ -15,7 +15,8 @@ import {
   IoPersonAdd,
   IoPersonRemove,
   IoLockClosed,
-  IoCheckmark
+  IoCheckmark,
+  IoRestaurant
 } from 'react-icons/io5';
 
 interface UserProfile {
@@ -55,18 +56,29 @@ interface Creation {
   createdAt: string;
 }
 
-export default function ProfilePage({ params }: { params: { id: string } }) {
+export default function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [creations, setCreations] = useState<Creation[]>([]);
+  const [recipes, setRecipes] = useState<any[]>([]);
+  const [cookbooks, setCookbooks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [userId, setUserId] = useState<string>('');
 
   useEffect(() => {
-    if (status === 'loading') return;
+    const getParams = async () => {
+      const { id } = await params;
+      setUserId(id);
+    };
+    getParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (status === 'loading' || !userId) return;
     if (!session) {
       router.push('/auth/signin');
       return;
@@ -74,11 +86,13 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
     
     loadProfile();
     loadCreations();
-  }, [session, status, router, params.id]);
+    loadRecipes();
+    loadCookbooks();
+  }, [session, status, router, userId]);
 
   const loadProfile = async () => {
     try {
-      const response = await fetch(`/api/user/${params.id}`);
+      const response = await fetch(`/api/user/${userId}`);
       if (response.ok) {
         const data = await response.json();
         setProfile(data);
@@ -96,7 +110,7 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
 
   const loadCreations = async () => {
     try {
-      const response = await fetch(`/api/user/${params.id}/creations`);
+      const response = await fetch(`/api/user/${userId}/creations`);
       if (response.ok) {
         const data = await response.json();
         setCreations(data);
@@ -106,12 +120,36 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
     }
   };
 
+  const loadRecipes = async () => {
+    try {
+      const response = await fetch(`/api/user/${userId}/recipes`);
+      if (response.ok) {
+        const data = await response.json();
+        setRecipes(data);
+      }
+    } catch (error) {
+      console.error('Error loading recipes:', error);
+    }
+  };
+
+  const loadCookbooks = async () => {
+    try {
+      const response = await fetch(`/api/user/${userId}/cookbooks`);
+      if (response.ok) {
+        const data = await response.json();
+        setCookbooks(data);
+      }
+    } catch (error) {
+      console.error('Error loading cookbooks:', error);
+    }
+  };
+
   const handleFollow = async () => {
     if (!profile) return;
 
     setFollowLoading(true);
     try {
-      const response = await fetch(`/api/user/${params.id}/follow`, {
+      const response = await fetch(`/api/user/${userId}/follow`, {
         method: isFollowing ? 'DELETE' : 'POST',
       });
 
@@ -263,86 +301,95 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
               </div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 text-center">
-                <div className="text-2xl font-bold mb-1" style={{ color: 'var(--color-primary-600)' }}>
-                  {profile.stats.recipesCreated}
+            
+
+            {/* Quick Links */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Recipes */}
+              <Link
+                href={`/profile/${userId}/recipes`}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--color-primary-100)' }}>
+                    <IoRestaurant size={24} style={{ color: 'var(--color-primary-600)' }} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recipes</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {profile.isPrivate && !isFollowing && !isOwnProfile ? '?' : recipes.length} recipes
+                    </p>
+                  </div>
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-300">
-                  Recipes Created
+              </Link>
+
+              {/* Creations */}
+              <Link
+                href={`/profile/${userId}/creations`}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                    <IoHeart size={24} className="text-red-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Creations</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {profile.isPrivate && !isFollowing && !isOwnProfile ? '?' : creations.length} creations
+                    </p>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 text-center">
-                <div className="text-2xl font-bold text-green-600 mb-1">
-                  {profile.stats.cookingHours}
+              </Link>
+
+              {/* Cookbooks */}
+              <Link
+                href={`/profile/${userId}/cookbooks`}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--color-primary-100)' }}>
+                    <IoBook size={24} style={{ color: 'var(--color-primary-600)' }} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Cookbooks</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {profile.isPrivate && !isFollowing && !isOwnProfile ? '?' : cookbooks.length} cookbooks
+                    </p>
+                  </div>
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-300">
-                  Hours Cooking
-                </div>
-              </div>
-              
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 text-center">
-                <div className="text-2xl font-bold text-orange-600 mb-1">
-                  {profile.stats.onionsCut}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-300">
-                  Onions Cut
-                </div>
-              </div>
-              
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 text-center">
-                <div className="text-2xl font-bold text-purple-600 mb-1">
-                  {profile.trophies.length}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-300">
-                  Trophies
-                </div>
-              </div>
+              </Link>
             </div>
 
-            {/* Creations */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+{/* Trophies */}
+<div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <IoBook style={{ color: 'var(--color-primary-500)' }} />
-                Recent Creations
+                <IoTrophy className="text-yellow-500" />
+                Trophies
               </h2>
               
-              {creations.length === 0 ? (
+              {profile.trophies.length === 0 ? (
                 <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                  {profile.isPrivate && !isFollowing && !isOwnProfile 
-                    ? 'This profile is private. Follow to see their creations.'
-                    : 'No creations yet'}
+                  No trophies yet. Keep cooking to unlock achievements!
                 </p>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                  {creations.slice(0, 6).map((creation) => (
-                    <div key={creation._id} className="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden">
-                      <img 
-                        src={creation.image} 
-                        alt={creation.title}
-                        className="w-full h-32 object-cover"
-                      />
-                      <div className="p-3">
-                        <h3 className="font-medium text-gray-900 dark:text-white text-sm mb-1">
-                          {creation.title}
-                        </h3>
-                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                          <span className="flex items-center gap-1">
-                            <IoHeart />
-                            {creation.likes.length}
-                          </span>
-                          <span>
-                            {new Date(creation.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {profile.trophies.map((trophy, index) => (
+                    <div key={index} className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <div className="text-2xl mb-2">
+                        <IoTrophy className="text-yellow-500 mx-auto" />
+                      </div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {trophy.type}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(trophy.unlockedAt).toLocaleDateString()}
                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
+
           </div>
         ) : (
           <div className="text-center py-12">

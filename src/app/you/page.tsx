@@ -195,108 +195,55 @@ export default function YouPage() {
               </div>
             </div>
 
-            {/* My Creations */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <IoHeart className="text-red-500" />
-                  My Creations
-                </h2>
-                <Link
-                  href="/create"
-                  className="text-sm font-medium"
-                  style={{ color: 'var(--color-primary-600)' }}
-                >
-                  Create New
-                </Link>
-              </div>
-              
-              {creations.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                  No creations yet. Share your first cooking creation!
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                  {creations.slice(0, 6).map((creation) => (
-                    <div key={creation._id} className="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden">
-                      {creation.image && (
-                        <img 
-                          src={creation.image} 
-                          alt={creation.title}
-                          className="w-full h-32 object-cover"
-                        />
-                      )}
-                      <div className="p-3">
-                        <h3 className="font-medium text-gray-900 dark:text-white text-sm mb-1">
-                          {creation.title}
-                        </h3>
-                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                          <span className="flex items-center gap-1">
-                            <IoHeart />
-                            {creation.likes.length}
-                          </span>
-                          <span>
-                            {new Date(creation.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+            {/* Quick Links */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* My Recipes */}
+              <Link
+                href="/recipes"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--color-primary-100)' }}>
+                    <IoRestaurant size={24} style={{ color: 'var(--color-primary-600)' }} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">My Recipes</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{recipes.length} recipes</p>
+                  </div>
                 </div>
-              )}
-            </div>
+              </Link>
 
-            {/* My Recipes */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <IoRestaurant style={{ color: 'var(--color-primary-600)' }} />
-                  My Recipes
-                </h2>
-                <Link
-                  href="/recipes"
-                  className="text-sm font-medium"
-                  style={{ color: 'var(--color-primary-600)' }}
-                >
-                  View All
-                </Link>
-              </div>
-              
-              {recipes.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                  No recipes yet. Create your first recipe to start building your collection!
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                  {recipes.slice(0, 6).map((recipe) => (
-                    <Link
-                      key={recipe._id}
-                      href={`/recipes/${recipe._id}`}
-                      className="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                    >
-                      {recipe.image && (
-                        <img 
-                          src={recipe.image} 
-                          alt={recipe.title}
-                          className="w-full h-32 object-cover"
-                        />
-                      )}
-                      <div className="p-3">
-                        <h3 className="font-medium text-gray-900 dark:text-white text-sm mb-1">
-                          {recipe.title}
-                        </h3>
-                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                          <span>{recipe.cookingTime || 0}m</span>
-                          <span>{recipe.servings || 1} servings</span>
-                          <span>
-                            {new Date(recipe.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+              {/* My Creations */}
+              <Link
+                href="/creations"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                    <IoHeart size={24} className="text-red-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">My Creations</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{creations.length} creations</p>
+                  </div>
                 </div>
-              )}
+              </Link>
+
+              {/* My Cookbooks */}
+              <Link
+                href="/cookbooks"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--color-primary-100)' }}>
+                    <IoBook size={24} style={{ color: 'var(--color-primary-600)' }} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">My Cookbooks</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{cookbooks.length} cookbooks</p>
+                  </div>
+                </div>
+              </Link>
             </div>
 
             {/* Trophies */}
@@ -329,45 +276,6 @@ export default function YouPage() {
               )}
             </div>
 
-            {/* My Cookbooks */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <IoBook style={{ color: 'var(--color-primary-600)' }} />
-                  My Cookbooks
-                </h2>
-                <Link
-                  href="/cookbooks"
-                  className="text-sm font-medium"
-                  style={{ color: 'var(--color-primary-600)' }}
-                >
-                  View All
-                </Link>
-              </div>
-              
-              {cookbooks.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                  No cookbooks yet. Create your first cookbook to organize recipes!
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                  {cookbooks.slice(0, 6).map((cookbook) => (
-                    <Link
-                      key={cookbook._id}
-                      href={`/cookbooks/${cookbook._id}`}
-                      className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                    >
-                      <h3 className="font-medium text-gray-900 dark:text-white text-sm mb-1">
-                        {cookbook.name}
-                      </h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {cookbook.recipes.length} recipes
-                      </p>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
 
             {/* Basilio Plus */}
             {!profile.hasBasilioPlus && (
