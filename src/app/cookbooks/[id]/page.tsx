@@ -29,6 +29,10 @@ interface Recipe {
   tags: string[];
   cuisine?: string;
   mealType?: string;
+  isReference?: boolean;
+  originalRecipe?: { _id: string; title: string };
+  originalChef?: { _id: string; name: string; image?: string };
+  createdBy?: { _id: string; name: string; image?: string };
 }
 
 interface Cookbook {
@@ -37,6 +41,8 @@ interface Cookbook {
   description: string;
   isPrivate: boolean;
   recipes: Recipe[];
+  referencedRecipes?: Recipe[];
+  allRecipes?: Recipe[];
   createdBy: {
     _id: string;
     name: string;
@@ -232,7 +238,7 @@ export default function CookbookPage({ params }: { params: Promise<{ id: string 
             </div>
 
             {/* Recipes Grid */}
-            {cookbook.recipes.length === 0 ? (
+            {(cookbook.allRecipes || cookbook.recipes).length === 0 ? (
               <div className="text-center py-12">
                 <IoBook size={64} className="mx-auto text-gray-400 dark:text-gray-600 mb-4" />
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
@@ -244,7 +250,7 @@ export default function CookbookPage({ params }: { params: Promise<{ id: string 
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                {cookbook.recipes.map((recipe) => (
+                {(cookbook.allRecipes || cookbook.recipes).map((recipe) => (
                   <Link
                     key={recipe._id}
                     href={`/recipes/${recipe._id}`}

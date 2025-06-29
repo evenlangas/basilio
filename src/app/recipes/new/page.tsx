@@ -64,6 +64,7 @@ export default function NewRecipePage() {
   const [instructions, setInstructions] = useState<Instruction[]>([{ step: 1, description: '' }]);
   const [cookbooks, setCookbooks] = useState<Cookbook[]>([]);
   const [selectedCookbook, setSelectedCookbook] = useState<string>('');
+  const [isPrivate, setIsPrivate] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,6 +106,7 @@ export default function NewRecipePage() {
         ingredients: ingredients.filter(ing => ing.name.trim()),
         instructions: instructions.filter(inst => inst.description.trim()),
         cookbook: selectedCookbook || undefined,
+        isPrivate,
       };
 
       const response = await fetch('/api/recipes', {
@@ -122,8 +124,9 @@ export default function NewRecipePage() {
           router.push('/recipes');
         }
       } else {
-        console.error('Failed to create recipe');
-        alert('Failed to create recipe. Please try again.');
+        const errorData = await response.json();
+        console.error('Failed to create recipe', errorData);
+        alert(errorData.error || 'Failed to create recipe. Please try again.');
       }
     } catch (error) {
       console.error('Error creating recipe:', error);
@@ -265,22 +268,55 @@ export default function NewRecipePage() {
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">
-              Add to Cookbook (optional)
-            </label>
-            <select
-              value={selectedCookbook}
-              onChange={(e) => setSelectedCookbook(e.target.value)}
-              className="form-input"
-            >
-              <option value="">Select a cookbook...</option>
-              {cookbooks.map((cookbook) => (
-                <option key={cookbook._id} value={cookbook._id}>
-                  {cookbook.name}
-                </option>
-              ))}
-            </select>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="form-group">
+              <label className="form-label">
+                Add to Cookbook (optional)
+              </label>
+              <select
+                value={selectedCookbook}
+                onChange={(e) => setSelectedCookbook(e.target.value)}
+                className="form-input"
+              >
+                <option value="">Select a cookbook...</option>
+                {cookbooks.map((cookbook) => (
+                  <option key={cookbook._id} value={cookbook._id}>
+                    {cookbook.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                Privacy Setting
+              </label>
+              <div className="flex items-center gap-3 mt-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="privacy"
+                    checked={!isPrivate}
+                    onChange={() => setIsPrivate(false)}
+                    className="form-radio"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Public</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="privacy"
+                    checked={isPrivate}
+                    onChange={() => setIsPrivate(true)}
+                    className="form-radio"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Private</span>
+                </label>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Private recipes can only be seen by you. Public recipes are visible to everyone.
+              </p>
+            </div>
           </div>
 
           <div className="form-group">

@@ -41,7 +41,7 @@ const RecipeSchema = new mongoose.Schema({
   },
   mealType: {
     type: String,
-    enum: ['breakfast', 'lunch', 'dinner', 'dessert', 'snack', 'appetizer'],
+    enum: ['breakfast', 'lunch', 'dinner', 'dessert', 'snack', 'appetizer', ''],
     default: '',
   },
   cuisine: {
@@ -52,6 +52,14 @@ const RecipeSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
+  },
+  isPrivate: {
+    type: Boolean,
+    default: false,
+  },
+  isReference: {
+    type: Boolean,
+    default: false,
   },
   cookbookId: {
     type: mongoose.Schema.Types.ObjectId,

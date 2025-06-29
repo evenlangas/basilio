@@ -44,6 +44,21 @@ export async function POST(request: NextRequest) {
     await dbConnect();
     Recipe;
 
+    // Validate privacy setting against cookbook
+    if (cookbook) {
+      const selectedCookbook = await Cookbook.findById(cookbook);
+      if (!selectedCookbook) {
+        return NextResponse.json({ error: 'Cookbook not found' }, { status: 404 });
+      }
+      
+      // Check if recipe privacy is compatible with cookbook privacy
+      if (recipeData.isPrivate && !selectedCookbook.isPrivate) {
+        return NextResponse.json({ 
+          error: 'Cannot add private recipe to public cookbook. Make the recipe public first.' 
+        }, { status: 400 });
+      }
+    }
+
     const recipe = await Recipe.create({
       ...recipeData,
       createdBy: session.user.id,

@@ -30,7 +30,20 @@ export async function GET(
       .populate('invitedUsers', 'name image')
       .populate({
         path: 'recipes',
-        select: 'title description image cookingTime servings tags cuisine mealType',
+        select: 'title description image cookingTime servings tags cuisine mealType createdBy originalRecipe originalChef isReference',
+        populate: {
+          path: 'createdBy originalChef',
+          select: 'name image'
+        },
+        options: { sort: { createdAt: -1 } }
+      })
+      .populate({
+        path: 'referencedRecipes',
+        select: 'title description image cookingTime servings tags cuisine mealType createdBy isPrivate',
+        populate: {
+          path: 'createdBy',
+          select: 'name image'
+        },
         options: { sort: { createdAt: -1 } }
       });
 
@@ -49,6 +62,25 @@ export async function GET(
     }
 
     const cookbookData = cookbook.toObject();
+    
+    // Filter out private referenced recipes that the user can't access
+    const accessibleReferencedRecipes = cookbookData.referencedRecipes?.filter((recipe: any) => {
+      return !recipe.isPrivate || recipe.createdBy._id.toString() === user._id.toString();
+    }) || [];
+
+    // Mark referenced recipes with a flag for frontend identification
+    const markedReferencedRecipes = accessibleReferencedRecipes.map((recipe: any) => ({
+      ...recipe,
+      isReference: true,
+      originalRecipe: recipe._id,
+      originalChef: recipe.createdBy
+    }));
+
+    // Combine owned recipes and accessible referenced recipes
+    cookbookData.allRecipes = [
+      ...(cookbookData.recipes || []),
+      ...markedReferencedRecipes
+    ].sort((a: any, b: any) => new Date(b.createdAt || b.updatedAt).getTime() - new Date(a.createdAt || a.updatedAt).getTime());
 
     return NextResponse.json(cookbookData);
   } catch (error) {

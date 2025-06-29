@@ -17,6 +17,10 @@ const CookbookSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Recipe',
   }],
+  referencedRecipes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Recipe',
+  }],
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

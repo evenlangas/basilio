@@ -4,6 +4,7 @@ import { authOptions } from '../../auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import Recipe from '@/models/Recipe';
 import User from '@/models/User';
+import Cookbook from '@/models/Cookbook';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -17,17 +18,23 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     await dbConnect();
     Recipe;
 
-    // For viewing recipes, be more permissive - allow viewing any recipe for now
-    // Later we can add more sophisticated access control based on cookbook privacy, etc.
-    const query = { _id: id };
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
 
-    const recipe = await Recipe.findOne(query)
-      .populate('createdBy', 'name')
-      .populate('originalChef', 'name')
-      .populate('copiedBy', 'name')
+    const recipe = await Recipe.findById(id)
+      .populate('createdBy', 'name image')
+      .populate('originalChef', 'name image')
+      .populate('copiedBy', 'name image')
       .populate('originalRecipe', 'title');
 
     if (!recipe) {
+      return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
+    }
+
+    // Privacy check: only allow access to public recipes or recipes owned by user
+    if (recipe.isPrivate && !recipe.createdBy._id.equals(user._id)) {
       return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
     }
 
@@ -61,16 +68,30 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Only allow editing recipes created by the current user
-    const updateQuery = { _id: id, createdBy: user._id };
+    // Get current recipe to check constraints
+    const currentRecipe = await Recipe.findOne({ _id: id, createdBy: user._id });
+    
+    if (!currentRecipe) {
+      return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
+    }
+
+    // If recipe is in a cookbook, validate privacy settings
+    if (currentRecipe.cookbookId && data.isPrivate !== undefined) {
+      const cookbook = await Cookbook.findById(currentRecipe.cookbookId);
+      if (cookbook && !cookbook.isPrivate && data.isPrivate) {
+        return NextResponse.json({ 
+          error: 'Cannot make recipe private while it\'s in a public cookbook. Remove it from the cookbook first.' 
+        }, { status: 400 });
+      }
+    }
 
     const recipe = await Recipe.findOneAndUpdate(
-      updateQuery,
+      { _id: id, createdBy: user._id },
       data,
       { new: true }
-    ).populate('createdBy', 'name')
-     .populate('originalChef', 'name')
-     .populate('copiedBy', 'name')
+    ).populate('createdBy', 'name image')
+     .populate('originalChef', 'name image')
+     .populate('copiedBy', 'name image')
      .populate('originalRecipe', 'title');
 
     if (!recipe) {

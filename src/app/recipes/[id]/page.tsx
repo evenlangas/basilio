@@ -14,7 +14,8 @@ import {
   IoPeople, 
   IoPerson, 
   IoCart,
-  IoBook 
+  IoBook,
+  IoPersonCircle 
 } from 'react-icons/io5';
 import { getCountryByCode } from '@/utils/countries';
 
@@ -43,10 +44,12 @@ interface Recipe {
   recommendedDrinks?: string;
   mealType?: string;
   cuisine?: string;
-  createdBy: { _id: string; name: string };
+  createdBy: { _id: string; name: string; image?: string };
   originalRecipe?: { _id: string; title: string };
-  originalChef?: { _id: string; name: string };
-  copiedBy?: { _id: string; name: string };
+  originalChef?: { _id: string; name: string; image?: string };
+  copiedBy?: { _id: string; name: string; image?: string };
+  isReference?: boolean;
+  isPrivate?: boolean;
   createdAt: string;
 }
 
@@ -69,6 +72,8 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
   const [showCookbookDropdown, setShowCookbookDropdown] = useState(false);
   const [showListDropdown, setShowListDropdown] = useState(false);
   const [addingToCookbook, setAddingToCookbook] = useState(false);
+  const [selectedCookbookId, setSelectedCookbookId] = useState<string>('');
+  const [showCopyTypeModal, setShowCopyTypeModal] = useState(false);
 
   useEffect(() => {
     const getParams = async () => {
@@ -149,7 +154,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
     }
   };
 
-  const addToCookbook = async (cookbookId: string) => {
+  const addToCookbook = async (cookbookId: string, copyType: 'copy' | 'reference') => {
     if (!recipe) return;
     
     setAddingToCookbook(true);
@@ -161,6 +166,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
         },
         body: JSON.stringify({
           recipeId: recipe._id,
+          copyType: copyType,
         }),
       });
 
@@ -171,6 +177,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
           show: true 
         });
         setShowCookbookDropdown(false);
+        setShowCopyTypeModal(false);
       } else {
         const errorData = await response.json();
         setToast({ 
@@ -189,6 +196,12 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
     } finally {
       setAddingToCookbook(false);
     }
+  };
+
+  const showCopyTypeModalHandler = (cookbookId: string) => {
+    setSelectedCookbookId(cookbookId);
+    setShowCopyTypeModal(true);
+    setShowCookbookDropdown(false);
   };
 
   const deleteRecipe = async () => {
@@ -358,14 +371,25 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                     <IoPeople className="mr-1 text-gray-500" size={18} />
                     {recipe.servings || 1} serving{recipe.servings !== 1 ? 's' : ''}
                   </div>
-                  <div className="flex items-center">
-                    <IoPerson className="mr-1 text-gray-500" size={18} />
+                  <Link 
+                    href={`/profile/${recipe.createdBy._id}`}
+                    className="flex items-center hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  >
+                    {recipe.createdBy.image ? (
+                      <img 
+                        src={recipe.createdBy.image} 
+                        alt={recipe.createdBy.name}
+                        className="w-5 h-5 rounded-full mr-2 object-cover"
+                      />
+                    ) : (
+                      <IoPersonCircle className="mr-2 text-gray-500" size={20} />
+                    )}
                     {recipe.createdBy.name}
-                  </div>
+                  </Link>
                 </div>
 
-                {/* Attribution Section */}
-                {recipe.originalRecipe && recipe.originalChef && (
+                {/* Attribution Section - only for copies, not references */}
+                {recipe.originalRecipe && recipe.originalChef && !recipe.isReference && (
                   <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 mb-4">
                     <div className="flex items-start gap-2">
                       <IoLink className="mt-0.5 text-green-600 dark:text-green-400" size={16} />
@@ -523,7 +547,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                                 cookbooks.map((cookbook) => (
                                   <button
                                     key={cookbook._id}
-                                    onClick={() => addToCookbook(cookbook._id)}
+                                    onClick={() => showCopyTypeModalHandler(cookbook._id)}
                                     disabled={addingToCookbook}
                                     className="w-full text-left p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                                   >
@@ -613,6 +637,54 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
             </div>
           </div>
         </div>
+
+        {/* Copy Type Modal */}
+        {showCopyTypeModal && (
+          <div className="fixed inset-0 bg-white/20 dark:bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  How would you like to add this recipe?
+                </h3>
+                <div className="space-y-3 mb-6">
+                  <button
+                    onClick={() => addToCookbook(selectedCookbookId, 'copy')}
+                    disabled={addingToCookbook}
+                    className="w-full text-left p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                  >
+                    <div className="font-medium text-gray-900 dark:text-white">
+                      Copy Recipe
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      Create a new copy that you can edit independently
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => addToCookbook(selectedCookbookId, 'reference')}
+                    disabled={addingToCookbook}
+                    className="w-full text-left p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                  >
+                    <div className="font-medium text-gray-900 dark:text-white">
+                      Add Reference
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      Link to the original recipe (changes will be reflected)
+                    </div>
+                  </button>
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => setShowCopyTypeModal(false)}
+                    disabled={addingToCookbook}
+                    className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       </main>
     </div>

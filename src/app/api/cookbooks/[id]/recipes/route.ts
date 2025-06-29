@@ -17,7 +17,7 @@ export async function POST(
     }
 
     const { id } = await params;
-    const { recipeId } = await request.json();
+    const { recipeId, copyType = 'copy' } = await request.json(); // 'copy' or 'reference'
 
     if (!recipeId) {
       return NextResponse.json({ error: 'Recipe ID is required' }, { status: 400 });
@@ -57,33 +57,68 @@ export async function POST(
       return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
     }
 
-    // Create a copy of the recipe for this cookbook
-    const recipeData = recipe.toObject();
-    delete recipeData._id;
-    delete recipeData.createdAt;
-    delete recipeData.updatedAt;
+    // Privacy validation: can't add private recipes to public cookbooks
+    if (recipe.isPrivate && !cookbook.isPrivate) {
+      return NextResponse.json({ 
+        error: 'Cannot add private recipe to public cookbook. Make the recipe public first.' 
+      }, { status: 400 });
+    }
+
+    // Check if user has access to the recipe
+    const canAccessRecipe = !recipe.isPrivate || 
+                           recipe.createdBy.equals(user._id) ||
+                           (recipe.cookbookId && cookbook.invitedUsers.includes(user._id));
     
-    const copiedRecipe = new Recipe({
-      ...recipeData,
-      cookbookId: id,
-      originalRecipe: recipeId,
-      originalChef: recipe.createdBy,
-      copiedBy: user._id,
-      createdBy: user._id, // Current user becomes the owner of the copy
-    });
+    if (!canAccessRecipe) {
+      return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
+    }
 
-    await copiedRecipe.save();
+    if (copyType === 'reference') {
+      // Add reference to the original recipe (no new recipe created)
+      await Cookbook.findByIdAndUpdate(
+        id,
+        { $addToSet: { referencedRecipes: recipeId } }
+      );
 
-    // Add the copied recipe to the cookbook
-    await Cookbook.findByIdAndUpdate(
-      id,
-      { $push: { recipes: copiedRecipe._id } }
-    );
+      return NextResponse.json({ 
+        message: 'Recipe reference added to cookbook successfully',
+        recipeId: recipeId,
+        type: 'reference'
+      });
+    } else {
+      // Create a copy of the recipe for this cookbook
+      const recipeData = recipe.toObject();
+      delete recipeData._id;
+      delete recipeData.createdAt;
+      delete recipeData.updatedAt;
+      
+      const copiedRecipe = new Recipe({
+        ...recipeData,
+        cookbookId: id,
+        originalRecipe: recipeId,
+        originalChef: recipe.createdBy,
+        copiedBy: user._id,
+        createdBy: user._id, // Current user becomes the owner of the copy
+        isReference: false,
+        isPrivate: cookbook.isPrivate, // Copy inherits cookbook privacy
+        mealType: recipeData.mealType || '',
+        cuisine: recipeData.cuisine || '',
+      });
 
-    return NextResponse.json({ 
-      message: 'Recipe copied to cookbook successfully',
-      copiedRecipeId: copiedRecipe._id 
-    });
+      await copiedRecipe.save();
+
+      // Add the copied recipe to the cookbook
+      await Cookbook.findByIdAndUpdate(
+        id,
+        { $addToSet: { recipes: copiedRecipe._id } }
+      );
+
+      return NextResponse.json({ 
+        message: 'Recipe copied to cookbook successfully',
+        recipeId: copiedRecipe._id,
+        type: 'copy'
+      });
+    }
   } catch (error) {
     console.error('Error adding recipe to cookbook:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
