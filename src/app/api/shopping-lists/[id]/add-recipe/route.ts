@@ -74,10 +74,11 @@ export async function POST(
         }
       }
 
-      // Check if ingredient already exists in shopping list
+      // Check if ingredient already exists in shopping list (only consider unchecked items)
       const existingItemIndex = shoppingList.items.findIndex(
         item => item.name.toLowerCase() === ingredient.name.toLowerCase() &&
-                item.unit.toLowerCase() === (ingredient.unit || '').toLowerCase()
+                item.unit.toLowerCase() === (ingredient.unit || '').toLowerCase() &&
+                !item.completed
       );
 
       if (existingItemIndex !== -1) {
@@ -105,6 +106,28 @@ export async function POST(
       }
     }
 
+    // Initialize recipeLog if it doesn't exist
+    if (!shoppingList.recipeLog) {
+      shoppingList.recipeLog = [];
+    }
+
+    // Add to recipe log
+    const logEntry = {
+      recipe: recipeId,
+      addedBy: user._id,
+      servings: servings,
+      addedAt: new Date(),
+      addedCount: addedCount,
+      combinedCount: combinedCount,
+    };
+    
+    shoppingList.recipeLog.push(logEntry);
+    
+    // Keep only the last 20 entries
+    if (shoppingList.recipeLog.length > 20) {
+      shoppingList.recipeLog = shoppingList.recipeLog.slice(-20);
+    }
+    
     await shoppingList.save();
 
     return NextResponse.json({ 

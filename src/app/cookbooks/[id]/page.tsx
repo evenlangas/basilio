@@ -14,7 +14,8 @@ import {
   IoLockClosed, 
   IoGlobe,
   IoPeople,
-  IoTrash
+  IoTrash,
+  IoPersonCircle
 } from 'react-icons/io5';
 import { getCountryByCode } from '@/utils/countries';
 
@@ -39,8 +40,13 @@ interface Cookbook {
   createdBy: {
     _id: string;
     name: string;
+    image?: string;
   };
-  invitedUsers: string[];
+  invitedUsers: Array<{
+    _id: string;
+    name: string;
+    image?: string;
+  }>;
   image?: string;
   createdAt: string;
 }
@@ -129,7 +135,7 @@ export default function CookbookPage({ params }: { params: Promise<{ id: string 
                       {cookbook.invitedUsers.length > 0 && (
                         <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                           <IoPeople size={14} />
-                          <span className="text-xs">{cookbook.invitedUsers.length}</span>
+                          <span className="text-xs">{cookbook.invitedUsers.length + 1}</span>
                         </div>
                       )}
                     </div>
@@ -145,6 +151,70 @@ export default function CookbookPage({ params }: { params: Promise<{ id: string 
                 <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mb-4">
                   {cookbook.description}
                 </p>
+              )}
+
+              {/* Members Section */}
+              {(cookbook.invitedUsers.length > 0 || isOwner) && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                    <IoPeople size={16} />
+                    Members ({cookbook.invitedUsers.length + 1})
+                  </h3>
+                <div className="flex items-center gap-3 flex-wrap">
+                  {/* Creator */}
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <div className="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        {cookbook.createdBy.image ? (
+                          <img 
+                            src={cookbook.createdBy.image} 
+                            alt={cookbook.createdBy.name}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <IoPersonCircle size={24} className="text-gray-400" />
+                        )}
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">★</span>
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {cookbook.createdBy.name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Owner
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Invited Members */}
+                  {cookbook.invitedUsers.map((member) => (
+                    <div key={member._id} className="flex items-center gap-2">
+                      <div className="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        {member.image ? (
+                          <img 
+                            src={member.image} 
+                            alt={member.name}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <IoPersonCircle size={24} className="text-gray-400" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {member.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Member
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                </div>
               )}
               
               {/* Action Buttons - Mobile Optimized */}

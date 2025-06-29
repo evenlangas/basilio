@@ -14,7 +14,15 @@ import {
   IoSquareOutline,
   IoPeople,
   IoTrash,
-  IoCart
+  IoCart,
+  IoPencil,
+  IoSave,
+  IoClose,
+  IoPersonCircle,
+  IoBook,
+  IoTime,
+  IoChevronDown,
+  IoChevronUp
 } from 'react-icons/io5';
 
 interface ShoppingItem {
@@ -25,6 +33,26 @@ interface ShoppingItem {
   addedBy: string;
 }
 
+interface RecipeLogEntry {
+  _id: string;
+  recipe: {
+    _id: string;
+    title: string;
+    image?: string;
+    cookingTime?: number;
+    servings?: number;
+  };
+  addedBy: {
+    _id: string;
+    name: string;
+    image?: string;
+  };
+  servings: number;
+  addedAt: string;
+  addedCount: number;
+  combinedCount: number;
+}
+
 interface ShoppingList {
   _id: string;
   name: string;
@@ -32,15 +60,19 @@ interface ShoppingList {
   createdBy: {
     _id: string;
     name: string;
+    image?: string;
   };
   invitedUsers: Array<{
     _id: string;
     name: string;
+    email: string;
+    image?: string;
   }>;
+  recipeLog?: RecipeLogEntry[];
   createdAt: string;
 }
 
-export default function ShoppingListPage({ params }: { params: { id: string } }) {
+export default function ShoppingListPage({ params }: { params: Promise<{ id: string }> }) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [list, setList] = useState<ShoppingList | null>(null);
@@ -49,24 +81,66 @@ export default function ShoppingListPage({ params }: { params: { id: string } })
   const [newItem, setNewItem] = useState({ name: '', amount: '', unit: '' });
   const [addingItem, setAddingItem] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingItem, setEditingItem] = useState({ name: '', amount: '', unit: '' });
+  const [listId, setListId] = useState<string>('');
+  const [isRecipeHistoryExpanded, setIsRecipeHistoryExpanded] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   useEffect(() => {
-    if (status === 'loading') return;
+    const getParams = async () => {
+      const { id } = await params;
+      setListId(id);
+    };
+    getParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (status === 'loading' || !listId) return;
     if (!session) {
       router.push('/auth/signin');
       return;
     }
     
     loadList();
-  }, [session, status, router, params.id]);
+  }, [session, status, router, listId]);
+
+  // Real-time updates via polling
+  useEffect(() => {
+    if (!listId || !session) return;
+
+    const pollForUpdates = async () => {
+      try {
+        const response = await fetch(`/api/shopping-lists/${listId}`);
+        if (response.ok) {
+          const data = await response.json();
+          const serverUpdated = new Date(data.updatedAt || data.createdAt);
+          
+          // Only update if server data is newer than our last update
+          if (serverUpdated > lastUpdated) {
+            setList(data);
+            setLastUpdated(serverUpdated);
+          }
+        }
+      } catch (error) {
+        // Silently fail to avoid console spam
+      }
+    };
+
+    // Poll every 3 seconds
+    const interval = setInterval(pollForUpdates, 3000);
+    
+    return () => clearInterval(interval);
+  }, [listId, session, lastUpdated]);
 
   const loadList = async () => {
     try {
-      const response = await fetch(`/api/shopping-lists/${params.id}`);
+      const response = await fetch(`/api/shopping-lists/${listId}`);
       if (response.ok) {
         const data = await response.json();
         setList(data);
         setIsOwner(data.createdBy._id === session?.user?.id);
+        setLastUpdated(new Date());
       } else if (response.status === 404) {
         router.push('/lists');
       }
@@ -81,10 +155,14 @@ export default function ShoppingListPage({ params }: { params: { id: string } })
     if (!list) return;
 
     const updatedItems = [...list.items];
+    const originalCompleted = updatedItems[index].completed;
     updatedItems[index].completed = !updatedItems[index].completed;
 
+    // Optimistic update
+    setList({ ...list, items: updatedItems });
+
     try {
-      const response = await fetch(`/api/shopping-lists/${params.id}`, {
+      const response = await fetch(`/api/shopping-lists/${listId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -95,9 +173,19 @@ export default function ShoppingListPage({ params }: { params: { id: string } })
       });
 
       if (response.ok) {
-        setList({ ...list, items: updatedItems });
+        setLastUpdated(new Date());
+      } else {
+        // Revert on error
+        const revertedItems = [...list.items];
+        revertedItems[index].completed = originalCompleted;
+        setList({ ...list, items: revertedItems });
+        console.error('Error updating item:', response.statusText);
       }
     } catch (error) {
+      // Revert on error
+      const revertedItems = [...list.items];
+      revertedItems[index].completed = originalCompleted;
+      setList({ ...list, items: revertedItems });
       console.error('Error updating item:', error);
     }
   };
@@ -115,23 +203,46 @@ export default function ShoppingListPage({ params }: { params: { id: string } })
       addedBy: session?.user?.id || '',
     };
 
+    const updatedItems = [...list.items, newShoppingItem];
+
+    // Optimistic update
+    setList({ ...list, items: updatedItems });
+    setNewItem({ name: '', amount: '', unit: '' });
+    setShowAddModal(false);
+
     try {
-      const response = await fetch(`/api/shopping-lists/${params.id}`, {
+      const response = await fetch(`/api/shopping-lists/${listId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          items: [...list.items, newShoppingItem],
+          items: updatedItems,
         }),
       });
 
       if (response.ok) {
-        setList({ ...list, items: [...list.items, newShoppingItem] });
-        setNewItem({ name: '', amount: '', unit: '' });
-        setShowAddModal(false);
+        setLastUpdated(new Date());
+      } else {
+        // Revert on error
+        setList({ ...list, items: list.items });
+        setShowAddModal(true);
+        setNewItem({ 
+          name: newShoppingItem.name, 
+          amount: newShoppingItem.amount, 
+          unit: newShoppingItem.unit 
+        });
+        console.error('Error adding item:', response.statusText);
       }
     } catch (error) {
+      // Revert on error
+      setList({ ...list, items: list.items });
+      setShowAddModal(true);
+      setNewItem({ 
+        name: newShoppingItem.name, 
+        amount: newShoppingItem.amount, 
+        unit: newShoppingItem.unit 
+      });
       console.error('Error adding item:', error);
     } finally {
       setAddingItem(false);
@@ -141,10 +252,70 @@ export default function ShoppingListPage({ params }: { params: { id: string } })
   const removeItem = async (index: number) => {
     if (!list) return;
 
+    const itemToRemove = list.items[index];
     const updatedItems = list.items.filter((_, i) => i !== index);
 
+    // Optimistic update
+    setList({ ...list, items: updatedItems });
+
     try {
-      const response = await fetch(`/api/shopping-lists/${params.id}`, {
+      const response = await fetch(`/api/shopping-lists/${listId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          items: updatedItems,
+        }),
+      });
+
+      if (response.ok) {
+        setLastUpdated(new Date());
+      } else {
+        // Revert on error
+        const revertedItems = [...list.items];
+        revertedItems.splice(index, 0, itemToRemove);
+        setList({ ...list, items: revertedItems });
+        console.error('Error removing item:', response.statusText);
+      }
+    } catch (error) {
+      // Revert on error
+      const revertedItems = [...list.items];
+      revertedItems.splice(index, 0, itemToRemove);
+      setList({ ...list, items: revertedItems });
+      console.error('Error removing item:', error);
+    }
+  };
+
+  const startEditing = (index: number) => {
+    if (!list) return;
+    const item = list.items[index];
+    setEditingIndex(index);
+    setEditingItem({
+      name: item.name,
+      amount: item.amount,
+      unit: item.unit
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditingIndex(null);
+    setEditingItem({ name: '', amount: '', unit: '' });
+  };
+
+  const saveEdit = async () => {
+    if (!list || editingIndex === null || !editingItem.name.trim()) return;
+
+    const updatedItems = [...list.items];
+    updatedItems[editingIndex] = {
+      ...updatedItems[editingIndex],
+      name: editingItem.name.trim(),
+      amount: editingItem.amount.trim(),
+      unit: editingItem.unit.trim()
+    };
+
+    try {
+      const response = await fetch(`/api/shopping-lists/${listId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -156,9 +327,11 @@ export default function ShoppingListPage({ params }: { params: { id: string } })
 
       if (response.ok) {
         setList({ ...list, items: updatedItems });
+        setLastUpdated(new Date());
+        cancelEditing();
       }
     } catch (error) {
-      console.error('Error removing item:', error);
+      console.error('Error updating item:', error);
     }
   };
 
@@ -200,7 +373,7 @@ export default function ShoppingListPage({ params }: { params: { id: string } })
                     {list.invitedUsers.length > 0 && (
                       <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 flex-shrink-0">
                         <IoPeople size={14} />
-                        <span className="text-xs">{list.invitedUsers.length}</span>
+                        <span className="text-xs">{list.invitedUsers.length + 1}</span>
                       </div>
                     )}
                   </div>
@@ -221,17 +394,165 @@ export default function ShoppingListPage({ params }: { params: { id: string } })
               </div>
             </div>
 
+            {/* Members Section */}
+            {(list.invitedUsers.length > 0 || isOwner) && (
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                  <IoPeople size={16} />
+                  Members ({list.invitedUsers.length + 1})
+                </h3>
+                <div className="flex items-center gap-3 flex-wrap">
+                  {/* Creator */}
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <div className="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        {list.createdBy.image ? (
+                          <img 
+                            src={list.createdBy.image} 
+                            alt={list.createdBy.name}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <IoPersonCircle size={24} className="text-gray-400" />
+                        )}
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">★</span>
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {list.createdBy.name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Owner
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Invited Members */}
+                  {list.invitedUsers.map((member) => (
+                    <div key={member._id} className="flex items-center gap-2">
+                      <div className="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        {member.image ? (
+                          <img 
+                            src={member.image} 
+                            alt={member.name}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <IoPersonCircle size={24} className="text-gray-400" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {member.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Member
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recipe Log Section */}
+            {list.recipeLog && list.recipeLog.length > 0 && (
+              <div className="mb-6">
+                <button
+                  onClick={() => setIsRecipeHistoryExpanded(!isRecipeHistoryExpanded)}
+                  className="w-full flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <IoBook size={16} />
+                    Recipe History ({list.recipeLog.length})
+                  </div>
+                  {isRecipeHistoryExpanded ? (
+                    <IoChevronUp size={16} />
+                  ) : (
+                    <IoChevronDown size={16} />
+                  )}
+                </button>
+                
+                {isRecipeHistoryExpanded && (
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden animate-in slide-in-from-top-2 duration-200">
+                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {list.recipeLog.slice().reverse().map((logEntry) => (
+                        <div key={logEntry._id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                          <div className="flex items-start gap-3">
+                            {/* Recipe Image/Icon */}
+                            <div className="w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                              {logEntry.recipe.image ? (
+                                <img 
+                                  src={logEntry.recipe.image} 
+                                  alt={logEntry.recipe.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <IoBook size={20} className="text-gray-400" />
+                              )}
+                            </div>
+                            
+                            {/* Recipe Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <Link 
+                                    href={`/recipes/${logEntry.recipe._id}`}
+                                    className="text-sm font-medium text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-400 transition-colors truncate block"
+                                  >
+                                    {logEntry.recipe.title}
+                                  </Link>
+                                  <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    <div className="flex items-center gap-1">
+                                      <IoPersonCircle size={12} />
+                                      <span>{logEntry.addedBy.name}</span>
+                                    </div>
+                                    {logEntry.recipe.cookingTime && (
+                                      <div className="flex items-center gap-1">
+                                        <IoTime size={12} />
+                                        <span>{logEntry.recipe.cookingTime}m</span>
+                                      </div>
+                                    )}
+                                    <span>
+                                      {logEntry.servings} serving{logEntry.servings !== 1 ? 's' : ''}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-right flex-shrink-0">
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    {new Date(logEntry.addedAt).toLocaleDateString()}
+                                  </div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    {logEntry.addedCount > 0 && `+${logEntry.addedCount} new`}
+                                    {logEntry.addedCount > 0 && logEntry.combinedCount > 0 && ', '}
+                                    {logEntry.combinedCount > 0 && `${logEntry.combinedCount} combined`}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Floating Add Button */}
             <button
               onClick={() => setShowAddModal(true)}
-              className="fixed bottom-20 right-4 md:bottom-8 bg-primary-600 hover:bg-primary-700 text-white rounded-full p-4 shadow-lg transition-all duration-200 hover:scale-110 z-40"
+              className="fixed bottom-20 right-4 md:bottom-8 bg-primary-600 hover:bg-primary-700 text-white rounded-full px-6 py-3 shadow-lg transition-all duration-200 hover:scale-105 z-40 flex items-center gap-2"
               style={{ 
                 backgroundColor: 'var(--color-primary-600)',
                 boxShadow: '0 8px 25px rgba(34, 197, 94, 0.4)'
               }}
             >
-              <IoAdd size={24} />
+              <IoAdd size={20} />
+              <span className="text-sm font-medium">Add item</span>
             </button>
 
             {/* Add Item Modal */}
@@ -332,43 +653,211 @@ export default function ShoppingListPage({ params }: { params: { id: string } })
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {list.items.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                    >
-                      <button
-                        onClick={() => toggleItem(index)}
-                        className="text-xl"
-                      >
-                        {item.completed ? (
-                          <IoCheckbox className="text-green-500" />
-                        ) : (
-                          <IoSquareOutline className="text-gray-400" />
-                        )}
-                      </button>
-                      
-                      <div className="flex-1">
-                        <span className={`font-medium ${item.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>
-                          {item.name}
-                        </span>
-                        {(item.amount || item.unit) && (
-                          <span className={`ml-2 text-sm ${item.completed ? 'line-through text-gray-400' : 'text-gray-600 dark:text-gray-300'}`}>
-                            {item.amount} {item.unit}
-                          </span>
-                        )}
-                      </div>
-                      
-                      <button
-                        onClick={() => removeItem(index)}
-                        className="text-red-500 hover:text-red-700 transition-colors"
-                      >
-                        <IoTrash size={18} />
-                      </button>
+                <>
+                  {/* Uncompleted Items */}
+                  {list.items.filter(item => !item.completed).length > 0 && (
+                    <div className="space-y-3 mb-6">
+                      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                        Active Items ({list.items.filter(item => !item.completed).length})
+                      </h3>
+                      {list.items.filter(item => !item.completed).map((item, filteredIndex) => {
+                        const index = list.items.indexOf(item);
+                        return (
+                          <div
+                            key={index}
+                            className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                          >
+                            <button
+                              onClick={() => toggleItem(index)}
+                              className="text-xl flex-shrink-0"
+                              disabled={editingIndex === index}
+                            >
+                              <IoSquareOutline className="text-gray-400 hover:text-green-500 transition-colors" />
+                            </button>
+                            
+                            {editingIndex === index ? (
+                              // Edit mode
+                              <div className="flex-1 flex items-center gap-2">
+                                <div className="flex-1 space-y-2">
+                                  <input
+                                    type="text"
+                                    value={editingItem.name}
+                                    onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    placeholder="Item name"
+                                    autoFocus
+                                  />
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="text"
+                                      value={editingItem.amount}
+                                      onChange={(e) => setEditingItem({ ...editingItem, amount: e.target.value })}
+                                      className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                      placeholder="Amount"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={editingItem.unit}
+                                      onChange={(e) => setEditingItem({ ...editingItem, unit: e.target.value })}
+                                      className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                      placeholder="Unit"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={saveEdit}
+                                    className="text-green-600 hover:text-green-700 transition-colors p-1"
+                                    disabled={!editingItem.name.trim()}
+                                  >
+                                    <IoSave size={16} />
+                                  </button>
+                                  <button
+                                    onClick={cancelEditing}
+                                    className="text-gray-500 hover:text-gray-700 transition-colors p-1"
+                                  >
+                                    <IoClose size={16} />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              // View mode
+                              <>
+                                <div className="flex-1 cursor-pointer" onClick={() => startEditing(index)}>
+                                  <span className="font-medium block text-gray-900 dark:text-white">
+                                    {item.name}
+                                  </span>
+                                  {(item.amount || item.unit) && (
+                                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                                      {item.amount} {item.unit}
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => startEditing(index)}
+                                    className="text-blue-500 hover:text-blue-700 transition-colors p-1"
+                                  >
+                                    <IoPencil size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => removeItem(index)}
+                                    className="text-red-500 hover:text-red-700 transition-colors p-1"
+                                  >
+                                    <IoTrash size={16} />
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
-                </div>
+                  )}
+
+                  {/* Completed Items */}
+                  {list.items.filter(item => item.completed).length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
+                        Completed ({list.items.filter(item => item.completed).length})
+                      </h3>
+                      {list.items.filter(item => item.completed).map((item, filteredIndex) => {
+                        const index = list.items.indexOf(item);
+                        return (
+                          <div
+                            key={index}
+                            className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg opacity-75"
+                          >
+                            <button
+                              onClick={() => toggleItem(index)}
+                              className="text-xl flex-shrink-0"
+                              disabled={editingIndex === index}
+                            >
+                              <IoCheckbox className="text-green-500 hover:text-gray-400 transition-colors" />
+                            </button>
+                            
+                            {editingIndex === index ? (
+                              // Edit mode
+                              <div className="flex-1 flex items-center gap-2">
+                                <div className="flex-1 space-y-2">
+                                  <input
+                                    type="text"
+                                    value={editingItem.name}
+                                    onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    placeholder="Item name"
+                                    autoFocus
+                                  />
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="text"
+                                      value={editingItem.amount}
+                                      onChange={(e) => setEditingItem({ ...editingItem, amount: e.target.value })}
+                                      className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                      placeholder="Amount"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={editingItem.unit}
+                                      onChange={(e) => setEditingItem({ ...editingItem, unit: e.target.value })}
+                                      className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                      placeholder="Unit"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={saveEdit}
+                                    className="text-green-600 hover:text-green-700 transition-colors p-1"
+                                    disabled={!editingItem.name.trim()}
+                                  >
+                                    <IoSave size={16} />
+                                  </button>
+                                  <button
+                                    onClick={cancelEditing}
+                                    className="text-gray-500 hover:text-gray-700 transition-colors p-1"
+                                  >
+                                    <IoClose size={16} />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              // View mode
+                              <>
+                                <div className="flex-1 cursor-pointer" onClick={() => startEditing(index)}>
+                                  <span className="font-medium block line-through text-gray-500 dark:text-gray-400">
+                                    {item.name}
+                                  </span>
+                                  {(item.amount || item.unit) && (
+                                    <span className="text-sm line-through text-gray-400">
+                                      {item.amount} {item.unit}
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => startEditing(index)}
+                                    className="text-blue-500 hover:text-blue-700 transition-colors p-1"
+                                  >
+                                    <IoPencil size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => removeItem(index)}
+                                    className="text-red-500 hover:text-red-700 transition-colors p-1"
+                                  >
+                                    <IoTrash size={16} />
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

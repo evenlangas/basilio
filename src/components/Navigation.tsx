@@ -3,15 +3,39 @@
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ThemeToggle from './ThemeToggle';
-import { IoLeaf, IoBook, IoCart, IoLogOut, IoHome, IoPersonCircle, IoAdd, IoRestaurant, IoCreate, IoList } from 'react-icons/io5';
+import { IoLeaf, IoBook, IoCart, IoLogOut, IoHome, IoPersonCircle, IoAdd, IoRestaurant, IoCreate, IoList, IoNotifications } from 'react-icons/io5';
 
 export default function Navigation() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!session) return;
+    
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch('/api/notifications');
+        if (response.ok) {
+          const notifications = await response.json();
+          const unread = notifications.filter((n: any) => !n.read).length;
+          setUnreadCount(unread);
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+    };
+
+    fetchNotifications();
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    
+    return () => clearInterval(interval);
+  }, [session]);
 
   if (!session) return null;
 
@@ -86,6 +110,23 @@ export default function Navigation() {
           
           <div className="nav-right">
             <ThemeToggle />
+            <Link
+              href="/notifications"
+              className="nav-link flex items-center gap-2 relative"
+              style={{
+                fontSize: 'var(--text-sm)',
+                color: 'var(--color-text-secondary)',
+                padding: 'var(--spacing-md)'
+              }}
+            >
+              <IoNotifications size={16} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+              Notifications
+            </Link>
             <button
               onClick={() => signOut()}
               className="nav-link flex items-center gap-2"
@@ -115,6 +156,22 @@ export default function Navigation() {
           
           <div className="nav-right">
             <ThemeToggle />
+            <Link
+              href="/notifications"
+              className="p-2 rounded-lg transition-colors relative"
+              style={{
+                color: 'var(--color-text-secondary)',
+                backgroundColor: 'var(--color-bg-tertiary)'
+              }}
+              title="Notifications"
+            >
+              <IoNotifications size={18} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </Link>
             <button
               onClick={() => signOut()}
               className="p-2 rounded-lg transition-colors"

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
+import UserSearch from '@/components/UserSearch';
 import { 
   IoArrowBack, 
   IoSave, 
@@ -28,38 +29,56 @@ interface ShoppingList {
   }>;
 }
 
-export default function ListSettingsPage({ params }: { params: { id: string } }) {
+export default function ListSettingsPage({ params }: { params: Promise<{ id: string }> }) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [list, setList] = useState<ShoppingList | null>(null);
   const [name, setName] = useState('');
-  const [inviteEmail, setInviteEmail] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [listId, setListId] = useState<string>('');
+  const [pendingInvites, setPendingInvites] = useState<Array<{
+    _id: string;
+    recipient: {
+      _id: string;
+      name: string;
+      email: string;
+      image?: string;
+    };
+  }>>([]);
 
   useEffect(() => {
-    if (status === 'loading') return;
+    const getParams = async () => {
+      const { id } = await params;
+      setListId(id);
+    };
+    getParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (status === 'loading' || !listId) return;
     if (!session) {
       router.push('/auth/signin');
       return;
     }
     
     loadList();
-  }, [session, status, router, params.id]);
+  }, [session, status, router, listId]);
 
   const loadList = async () => {
     try {
-      const response = await fetch(`/api/shopping-lists/${params.id}`);
+      const response = await fetch(`/api/shopping-lists/${listId}`);
       if (response.ok) {
         const data = await response.json();
         setList(data);
         setName(data.name);
+        loadPendingInvites();
       } else if (response.status === 404) {
         router.push('/lists');
       } else if (response.status === 403) {
-        router.push(`/lists/${params.id}`);
+        router.push(`/lists/${listId}`);
       }
     } catch (error) {
       console.error('Error loading shopping list:', error);
@@ -68,12 +87,24 @@ export default function ListSettingsPage({ params }: { params: { id: string } })
     }
   };
 
+  const loadPendingInvites = async () => {
+    try {
+      const response = await fetch(`/api/shopping-lists/${listId}/invite`);
+      if (response.ok) {
+        const data = await response.json();
+        setPendingInvites(data);
+      }
+    } catch (error) {
+      console.error('Error loading pending invites:', error);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     
     setSaving(true);
     try {
-      const response = await fetch(`/api/shopping-lists/${params.id}`, {
+      const response = await fetch(`/api/shopping-lists/${listId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -84,7 +115,7 @@ export default function ListSettingsPage({ params }: { params: { id: string } })
       });
 
       if (response.ok) {
-        router.push(`/lists/${params.id}`);
+        router.push(`/lists/${listId}`);
       } else {
         alert('Failed to update shopping list');
       }
@@ -96,26 +127,22 @@ export default function ListSettingsPage({ params }: { params: { id: string } })
     }
   };
 
-  const handleInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!inviteEmail.trim()) return;
-
+  const handleInvite = async (user: { _id: string; name: string; email: string }) => {
     setInviting(true);
     try {
-      const response = await fetch(`/api/shopping-lists/${params.id}/invite`, {
+      const response = await fetch(`/api/shopping-lists/${listId}/invite`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: inviteEmail.trim(),
+          userId: user._id,
         }),
       });
 
       if (response.ok) {
-        setInviteEmail('');
-        loadList(); // Refresh to show new invite
+        alert(`Invitation sent to ${user.name}`);
+        loadPendingInvites();
       } else {
         const error = await response.json();
         alert(error.error || 'Failed to send invite');
@@ -128,9 +155,34 @@ export default function ListSettingsPage({ params }: { params: { id: string } })
     }
   };
 
+  const handleCancelInvite = async (notificationId: string, userName: string) => {
+    try {
+      const response = await fetch(`/api/shopping-lists/${listId}/invite`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          notificationId,
+        }),
+      });
+
+      if (response.ok) {
+        alert(`Invitation to ${userName} cancelled`);
+        loadPendingInvites();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to cancel invite');
+      }
+    } catch (error) {
+      console.error('Error cancelling invite:', error);
+      alert('Failed to cancel invite');
+    }
+  };
+
   const handleRemoveUser = async (userId: string) => {
     try {
-      const response = await fetch(`/api/shopping-lists/${params.id}/invite`, {
+      const response = await fetch(`/api/shopping-lists/${listId}/invite`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -158,7 +210,7 @@ export default function ListSettingsPage({ params }: { params: { id: string } })
 
     setDeleting(true);
     try {
-      const response = await fetch(`/api/shopping-lists/${params.id}`, {
+      const response = await fetch(`/api/shopping-lists/${listId}`, {
         method: 'DELETE',
       });
 
@@ -269,42 +321,53 @@ export default function ListSettingsPage({ params }: { params: { id: string } })
               </h2>
 
               {/* Invite Form */}
-              <form onSubmit={handleInvite} className="mb-6">
-                <div className="flex gap-2">
-                  <input
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    placeholder="Enter email address"
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent"
-                    onFocus={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--color-primary-500)';
-                      e.currentTarget.style.boxShadow = '0 0 0 2px var(--color-primary-500)';
-                    }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.borderColor = '';
-                      e.currentTarget.style.boxShadow = '';
-                    }}
-                  />
-                  <button
-                    type="submit"
-                    disabled={inviting}
-                    className="flex items-center gap-2 px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    style={{ backgroundColor: 'var(--color-primary-600)' }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-700)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-600)'}
-                  >
-                    {inviting ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <>
-                        <IoAdd size={18} />
-                        <span className="hidden sm:inline">Invite</span>
-                      </>
-                    )}
-                  </button>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Invite Users
+                </label>
+                <UserSearch
+                  onUserSelect={handleInvite}
+                  placeholder="Search for users to invite..."
+                  excludeUserIds={[
+                    list.createdBy._id, 
+                    ...list.invitedUsers.map(u => u._id),
+                    ...pendingInvites.map(invite => invite.recipient._id)
+                  ]}
+                />
+              </div>
+
+              {/* Pending Invitations */}
+              {pendingInvites.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Pending Invitations ({pendingInvites.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {pendingInvites.map((invite) => (
+                      <div key={invite._id} className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white text-sm">
+                            {invite.recipient.name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {invite.recipient.email}
+                          </p>
+                          <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                            Invitation pending
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleCancelInvite(invite._id, invite.recipient.name)}
+                          className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                          title="Cancel invitation"
+                        >
+                          <IoClose size={18} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </form>
+              )}
 
               {/* Invited Users */}
               {list.invitedUsers.length > 0 && (
@@ -326,6 +389,7 @@ export default function ListSettingsPage({ params }: { params: { id: string } })
                         <button
                           onClick={() => handleRemoveUser(user._id)}
                           className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                          title="Remove user"
                         >
                           <IoClose size={18} />
                         </button>

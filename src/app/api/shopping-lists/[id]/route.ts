@@ -22,9 +22,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const shoppingList = await ShoppingList.findById(id)
-      .populate('createdBy', 'name')
-      .populate('invitedUsers', 'name email')
-      .populate('items.addedBy', 'name');
+      .populate('createdBy', 'name image')
+      .populate('invitedUsers', 'name email image')
+      .populate('items.addedBy', 'name')
+      .populate({
+        path: 'recipeLog.recipe',
+        select: 'title image cookingTime servings',
+        options: { strictPopulate: false }
+      })
+      .populate({
+        path: 'recipeLog.addedBy', 
+        select: 'name image',
+        options: { strictPopulate: false }
+      });
 
     if (!shoppingList) {
       return NextResponse.json({ error: 'Shopping list not found' }, { status: 404 });
@@ -34,11 +44,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const isOwner = shoppingList.createdBy._id.toString() === user._id.toString();
     const isInvited = shoppingList.invitedUsers?.some((invitedUser: any) => 
       invitedUser._id.toString() === user._id.toString()
-    );
+    ) || false;
     const isFamilyMember = session.user.familyId && shoppingList.familyId?.toString() === session.user.familyId;
 
     if (!isOwner && !isInvited && !isFamilyMember) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    // Ensure recipeLog field exists (for backward compatibility)
+    if (!shoppingList.recipeLog) {
+      shoppingList.recipeLog = [];
+      await shoppingList.save();
     }
 
     return NextResponse.json(shoppingList);
@@ -89,7 +105,23 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       id,
       data,
       { new: true }
-    ).populate('createdBy', 'name').populate('invitedUsers', 'name email').populate('items.addedBy', 'name');
+    ).populate('createdBy', 'name image').populate('invitedUsers', 'name email image').populate('items.addedBy', 'name')
+     .populate({
+       path: 'recipeLog.recipe',
+       select: 'title image cookingTime servings',
+       options: { strictPopulate: false }
+     })
+     .populate({
+       path: 'recipeLog.addedBy', 
+       select: 'name image',
+       options: { strictPopulate: false }
+     });
+
+    // Ensure recipeLog field exists (for backward compatibility)
+    if (!updatedList.recipeLog) {
+      updatedList.recipeLog = [];
+      await updatedList.save();
+    }
 
     return NextResponse.json(updatedList);
   } catch (error) {

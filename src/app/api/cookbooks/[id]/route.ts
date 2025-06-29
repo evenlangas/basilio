@@ -25,8 +25,8 @@ export async function GET(
 
     const { id } = await params;
     const cookbook = await Cookbook.findById(id)
-      .populate('createdBy', 'name')
-      .populate('invitedUsers', 'name')
+      .populate('createdBy', 'name image')
+      .populate('invitedUsers', 'name image')
       .populate({
         path: 'recipes',
         select: 'title description image cookingTime servings tags cuisine mealType',

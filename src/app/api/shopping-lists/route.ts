@@ -20,8 +20,14 @@ export async function GET(request: NextRequest) {
       // If user is part of a family, only show family shopping lists
       query = { familyId: session.user.familyId };
     } else {
-      // If user has no family, show only their personal lists
-      query = { createdBy: session.user.id, familyId: null };
+      // If user has no family, show lists they own or are invited to
+      query = {
+        $or: [
+          { createdBy: session.user.id },
+          { invitedUsers: session.user.id }
+        ],
+        familyId: null
+      };
     }
 
     const shoppingLists = await ShoppingList.find(query)
@@ -49,22 +55,23 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json();
     
+    // Validate required fields
+    if (!data.name || !data.name.trim()) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    }
+    
     await dbConnect();
 
-    // For family users, check if a shopping list already exists
-    if (session.user.familyId) {
-      const existingList = await ShoppingList.findOne({ familyId: session.user.familyId });
-      if (existingList) {
-        return NextResponse.json({ error: 'Family already has a shopping list' }, { status: 400 });
-      }
-    }
-
-    const shoppingList = await ShoppingList.create({
-      ...data,
+    const listData = {
+      name: data.name.trim(),
+      items: [],
       createdBy: session.user.id,
       familyId: session.user.familyId || null,
-    });
-
+      invitedUsers: [],
+      recipeLog: []
+    };
+    
+    const shoppingList = await ShoppingList.create(listData);
     const populatedList = await ShoppingList.findById(shoppingList._id)
       .populate('createdBy', 'name')
       .populate('items.addedBy', 'name');
@@ -72,8 +79,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(populatedList, { status: 201 });
   } catch (error) {
     console.error('Create shopping list error:', error);
+    console.error('Error details:', error.message);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }

@@ -33,6 +33,37 @@ const ShoppingListSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   }],
+  recipeLog: {
+    type: [{
+      recipe: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Recipe',
+        required: true,
+      },
+      addedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+      },
+      servings: {
+        type: Number,
+        default: 1,
+      },
+      addedAt: {
+        type: Date,
+        default: Date.now,
+      },
+      addedCount: {
+        type: Number,
+        default: 0,
+      },
+      combinedCount: {
+        type: Number,
+        default: 0,
+      },
+    }],
+    default: []
+  },
 }, {
   timestamps: true,
 });
