@@ -8,13 +8,15 @@ import Notification from '@/models/Notification';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { id } = await params;
 
     await dbConnect();
     
@@ -23,7 +25,7 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const shoppingList = await ShoppingList.findById(params.id);
+    const shoppingList = await ShoppingList.findById(id);
     if (!shoppingList) {
       return NextResponse.json({ error: 'Shopping list not found' }, { status: 404 });
     }
@@ -49,13 +51,15 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { id } = await params;
 
     const body = await request.json();
     const { userId } = body;
@@ -71,7 +75,7 @@ export async function POST(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const shoppingList = await ShoppingList.findById(params.id);
+    const shoppingList = await ShoppingList.findById(id);
     if (!shoppingList) {
       return NextResponse.json({ error: 'Shopping list not found' }, { status: 404 });
     }
@@ -136,13 +140,15 @@ export async function POST(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { id } = await params;
 
     const body = await request.json();
     const { notificationId } = body;
@@ -158,7 +164,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const shoppingList = await ShoppingList.findById(params.id);
+    const shoppingList = await ShoppingList.findById(id);
     if (!shoppingList) {
       return NextResponse.json({ error: 'Shopping list not found' }, { status: 404 });
     }
@@ -175,7 +181,7 @@ export async function PATCH(
     }
 
     // Verify this notification belongs to this shopping list
-    if (notification.data.shoppingListId.toString() !== params.id) {
+    if (notification.data.shoppingListId.toString() !== id) {
       return NextResponse.json({ error: 'Invalid invitation' }, { status: 400 });
     }
 
@@ -195,13 +201,15 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { id } = await params;
 
     const body = await request.json();
     const { userId } = body;
@@ -217,7 +225,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const shoppingList = await ShoppingList.findById(params.id);
+    const shoppingList = await ShoppingList.findById(id);
     if (!shoppingList) {
       return NextResponse.json({ error: 'Shopping list not found' }, { status: 404 });
     }

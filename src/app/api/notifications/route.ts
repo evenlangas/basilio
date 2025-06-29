@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import Notification from '@/models/Notification';
+import Cookbook from '@/models/Cookbook';
+import ShoppingList from '@/models/ShoppingList';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,6 +15,10 @@ export async function GET(request: NextRequest) {
     }
 
     await dbConnect();
+    
+    // Ensure models are registered
+    Cookbook;
+    ShoppingList;
 
     const notifications = await Notification.find({ recipient: session.user.id })
       .populate('sender', 'name image')

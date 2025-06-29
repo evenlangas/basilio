@@ -8,7 +8,7 @@ import ShoppingList from '@/models/ShoppingList';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,10 +18,11 @@ export async function PUT(
     }
 
     const { status, read } = await request.json();
+    const { id } = await params;
     
     await dbConnect();
 
-    const notification = await Notification.findById(params.id);
+    const notification = await Notification.findById(id);
     
     if (!notification) {
       return NextResponse.json({ error: 'Notification not found' }, { status: 404 });
