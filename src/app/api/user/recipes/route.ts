@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     await dbConnect();
+    Recipe;
 
     // Only show recipes created by the current user
     const recipes = await Recipe.find({ createdBy: session.user.id })

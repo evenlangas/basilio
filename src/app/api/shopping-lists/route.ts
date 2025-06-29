@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import ShoppingList from '@/models/ShoppingList';
+import Recipe from '@/models/Recipe';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,22 +14,15 @@ export async function GET(request: NextRequest) {
     }
 
     await dbConnect();
+    Recipe;
 
-    let query: any;
-    
-    if (session.user.familyId) {
-      // If user is part of a family, only show family shopping lists
-      query = { familyId: session.user.familyId };
-    } else {
-      // If user has no family, show lists they own or are invited to
-      query = {
-        $or: [
-          { createdBy: session.user.id },
-          { invitedUsers: session.user.id }
-        ],
-        familyId: null
-      };
-    }
+    // Show lists the user owns or is invited to
+    const query = {
+      $or: [
+        { createdBy: session.user.id },
+        { invitedUsers: session.user.id }
+      ]
+    };
 
     const shoppingLists = await ShoppingList.find(query)
       .populate('createdBy', 'name')
@@ -61,12 +55,12 @@ export async function POST(request: NextRequest) {
     }
     
     await dbConnect();
+    Recipe;
 
     const listData = {
       name: data.name.trim(),
       items: [],
       createdBy: session.user.id,
-      familyId: session.user.familyId || null,
       invitedUsers: [],
       recipeLog: []
     };

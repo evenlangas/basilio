@@ -53,11 +53,6 @@ const RecipeSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
-  familyId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Family',
-    default: null,
-  },
   cookbookId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Cookbook',

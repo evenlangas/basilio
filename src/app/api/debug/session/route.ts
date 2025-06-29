@@ -20,14 +20,11 @@ export async function GET() {
       session: {
         userId: session.user.id,
         email: session.user.email,
-        familyId: session.user.familyId,
       },
       dbUser: {
         _id: dbUser?._id,
         email: dbUser?.email,
-        familyId: dbUser?.familyId,
-      },
-      match: session.user.familyId === dbUser?.familyId?.toString()
+      }
     });
   } catch (error) {
     console.error('Debug session error:', error);

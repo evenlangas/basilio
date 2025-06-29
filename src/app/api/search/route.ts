@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     }
 
     await dbConnect();
+    Recipe;
     
     const searchRegex = new RegExp(query, 'i');
     

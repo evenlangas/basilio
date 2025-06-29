@@ -6,7 +6,6 @@ declare module 'next-auth' {
       id: string;
       email: string;
       name: string;
-      familyId?: string | null;
     };
   }
 
@@ -14,12 +13,10 @@ declare module 'next-auth' {
     id: string;
     email: string;
     name: string;
-    familyId?: string | null;
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
-    familyId?: string | null;
   }
 }

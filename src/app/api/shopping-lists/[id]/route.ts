@@ -4,6 +4,7 @@ import { authOptions } from '../../auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import ShoppingList from '@/models/ShoppingList';
 import User from '@/models/User';
+import Recipe from '@/models/Recipe';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -15,6 +16,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const { id } = await params;
     await dbConnect();
+    
+    // Ensure Recipe model is registered
+    Recipe;
 
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
@@ -45,9 +49,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const isInvited = shoppingList.invitedUsers?.some((invitedUser: any) => 
       invitedUser._id.toString() === user._id.toString()
     ) || false;
-    const isFamilyMember = session.user.familyId && shoppingList.familyId?.toString() === session.user.familyId;
 
-    if (!isOwner && !isInvited && !isFamilyMember) {
+    if (!isOwner && !isInvited) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -79,6 +82,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     
     await dbConnect();
+    
+    // Ensure Recipe model is registered
+    Recipe;
 
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
@@ -95,9 +101,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const isInvited = shoppingList.invitedUsers?.some((invitedUserId: any) => 
       invitedUserId.toString() === user._id.toString()
     );
-    const isFamilyMember = session.user.familyId && shoppingList.familyId?.toString() === session.user.familyId;
 
-    if (!isOwner && !isInvited && !isFamilyMember) {
+    if (!isOwner && !isInvited) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 

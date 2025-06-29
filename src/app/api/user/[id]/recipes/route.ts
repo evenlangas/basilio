@@ -17,6 +17,7 @@ export async function GET(
     }
 
     await dbConnect();
+    Recipe;
 
     // Get the user to check if profile is private
     const user = await User.findById(params.id);

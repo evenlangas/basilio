@@ -102,7 +102,7 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
       return;
     }
     
-    loadList();
+    loadList(listId);
   }, [session, status, router, listId]);
 
   // Real-time updates via polling
@@ -133,9 +133,9 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
     return () => clearInterval(interval);
   }, [listId, session, lastUpdated]);
 
-  const loadList = async () => {
+  const loadList = async (id: string) => {
     try {
-      const response = await fetch(`/api/shopping-lists/${listId}`);
+      const response = await fetch(`/api/shopping-lists/${id}`);
       if (response.ok) {
         const data = await response.json();
         setList(data);

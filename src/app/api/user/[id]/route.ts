@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
+import Recipe from '@/models/Recipe';
 
 export async function GET(
   request: NextRequest,
@@ -15,6 +16,7 @@ export async function GET(
     }
 
     await dbConnect();
+    Recipe;
     
     const currentUser = await User.findOne({ email: session.user.email });
     if (!currentUser) {

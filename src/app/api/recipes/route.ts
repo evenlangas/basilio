@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     await dbConnect();
+    Recipe;
 
     // Only show recipes created by the current user (my recipes)
     const recipes = await Recipe.find({ createdBy: session.user.id })
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest) {
     const { cookbook, ...recipeData } = await request.json();
     
     await dbConnect();
+    Recipe;
 
     const recipe = await Recipe.create({
       ...recipeData,

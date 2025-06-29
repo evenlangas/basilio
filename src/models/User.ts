@@ -18,11 +18,6 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
-  familyId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Family',
-    default: null,
-  },
   bio: {
     type: String,
     default: '',

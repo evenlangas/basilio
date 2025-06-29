@@ -15,6 +15,9 @@ export async function GET() {
 
     await dbConnect();
     
+    // Ensure Recipe model is registered
+    Recipe;
+    
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });

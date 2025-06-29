@@ -17,6 +17,7 @@ export async function GET(
     }
 
     await dbConnect();
+    Recipe;
     
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
@@ -70,6 +71,7 @@ export async function PUT(
     const { name, description, isPrivate } = body;
 
     await dbConnect();
+    Recipe;
     
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
@@ -113,6 +115,7 @@ export async function DELETE(
     }
 
     await dbConnect();
+    Recipe;
     
     const user = await User.findOne({ email: session.user.email });
     if (!user) {

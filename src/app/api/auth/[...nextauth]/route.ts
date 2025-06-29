@@ -36,7 +36,6 @@ export const authOptions: NextAuthOptions = {
               email: user.email,
               name: user.name,
               image: user.image,
-              familyId: null,
             });
             console.log('New user created:', existingUser._id);
           } else {
@@ -55,7 +54,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account }) {
       console.log('JWT callback triggered', { hasUser: !!user, provider: account?.provider });
       
-      // Always refresh user data from database to get latest familyId
+      // Refresh user data from database
       if (token.email) {
         try {
           console.log('JWT: Connecting to database...');
@@ -63,9 +62,8 @@ export const authOptions: NextAuthOptions = {
           console.log('JWT: Looking for user with email:', token.email);
           const dbUser = await User.findOne({ email: token.email });
           if (dbUser) {
-            token.familyId = dbUser.familyId?.toString() || null;
             token.userId = dbUser._id.toString();
-            console.log('JWT: User found, updated token with familyId:', token.familyId);
+            console.log('JWT: User found, updated token with userId:', token.userId);
           } else {
             console.log('JWT: User not found in database');
           }
@@ -79,7 +77,6 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token) {
         session.user.id = token.userId as string;
-        session.user.familyId = token.familyId as string | null;
       }
       return session;
     },

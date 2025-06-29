@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
+import Recipe from '@/models/Recipe';
 
 export async function GET() {
   try {
@@ -12,6 +13,7 @@ export async function GET() {
     }
 
     await dbConnect();
+    Recipe;
     
     const user = await User.findOne({ email: session.user.email })
       .populate('followers', 'name image')
@@ -58,6 +60,7 @@ export async function PUT(request: NextRequest) {
     const { name, bio, isPrivate } = body;
 
     await dbConnect();
+    Recipe;
     
     const user = await User.findOne({ email: session.user.email });
     if (!user) {

@@ -15,6 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const { id } = await params;
     await dbConnect();
+    Recipe;
 
     // For viewing recipes, be more permissive - allow viewing any recipe for now
     // Later we can add more sophisticated access control based on cookbook privacy, etc.
@@ -52,6 +53,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     
     await dbConnect();
+    Recipe;
 
     // Find the current user
     const user = await User.findOne({ email: session.user.email });
@@ -95,6 +97,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     const { id } = await params;
     await dbConnect();
+    Recipe;
 
     // Find the current user
     const user = await User.findOne({ email: session.user.email });

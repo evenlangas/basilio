@@ -221,41 +221,30 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
-    // Fetch the recipe
-    let recipeQuery: any;
-    
-    if (session.user.familyId) {
-      // If user is part of a family, only access family recipes
-      recipeQuery = { _id: recipeId, familyId: session.user.familyId };
-    } else {
-      // If user has no family, only access their personal recipes
-      recipeQuery = { _id: recipeId, createdBy: session.user.id, familyId: null };
-    }
-
-    const recipe = await Recipe.findOne(recipeQuery);
+    // Fetch the recipe (user's personal recipes only)
+    const recipe = await Recipe.findOne({ 
+      _id: recipeId, 
+      createdBy: session.user.id 
+    });
     if (!recipe) {
       return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
     }
 
-    // Get or create shopping list
-    let shoppingListQuery: any;
-    
-    if (session.user.familyId) {
-      // If user is part of a family, only access family shopping lists
-      shoppingListQuery = { familyId: session.user.familyId };
-    } else {
-      // If user has no family, only access their personal shopping lists
-      shoppingListQuery = { createdBy: session.user.id, familyId: null };
-    }
-
-    let shoppingList = await ShoppingList.findOne(shoppingListQuery);
+    // Get or create shopping list (user's personal shopping lists only)
+    // Find lists where user is owner OR is invited
+    let shoppingList = await ShoppingList.findOne({
+      $or: [
+        { createdBy: session.user.id },
+        { invitedUsers: session.user.id }
+      ]
+    });
     
     if (!shoppingList) {
       shoppingList = await ShoppingList.create({
         name: 'My Shopping List',
         items: [],
         createdBy: session.user.id,
-        familyId: session.user.familyId || null,
+        invitedUsers: [],
       });
     }
 
