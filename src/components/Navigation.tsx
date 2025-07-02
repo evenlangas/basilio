@@ -1,11 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import ThemeToggle from './ThemeToggle';
-import { IoLeaf, IoBook, IoCart, IoLogOut, IoHome, IoPersonCircle, IoAdd, IoRestaurant, IoCreate, IoList, IoNotifications } from 'react-icons/io5';
+import { IoLeaf, IoBook, IoCart, IoHome, IoPersonCircle, IoAdd, IoRestaurant, IoCreate, IoList, IoNotifications, IoEllipsisVertical, IoSettings } from 'react-icons/io5';
 
 export default function Navigation() {
   const { data: session } = useSession();
@@ -13,6 +12,7 @@ export default function Navigation() {
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   useEffect(() => {
     if (!session) return;
@@ -36,6 +36,18 @@ export default function Navigation() {
     
     return () => clearInterval(interval);
   }, [session]);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowUserMenu(false);
+    };
+
+    if (showUserMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showUserMenu]);
 
   if (!session) return null;
 
@@ -109,7 +121,6 @@ export default function Navigation() {
           </div>
           
           <div className="nav-right">
-            <ThemeToggle />
             <Link
               href="/notifications"
               className="nav-link flex items-center gap-2 relative"
@@ -127,21 +138,35 @@ export default function Navigation() {
               )}
               Notifications
             </Link>
-            <button
-              onClick={() => signOut()}
-              className="nav-link flex items-center gap-2"
-              style={{
-                fontSize: 'var(--text-sm)',
-                color: 'var(--color-text-secondary)',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: 'var(--spacing-md)'
-              }}
-            >
-              <IoLogOut size={16} />
-              Sign Out
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="nav-link flex items-center gap-2"
+                style={{
+                  fontSize: 'var(--text-sm)',
+                  color: 'var(--color-text-secondary)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 'var(--spacing-md)'
+                }}
+              >
+                <IoEllipsisVertical size={16} />
+                Menu
+              </button>
+              {showUserMenu && (
+                <div className="absolute right-0 top-full mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-50 min-w-[160px]">
+                  <Link
+                    href="/settings"
+                    onClick={() => setShowUserMenu(false)}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <IoSettings size={16} />
+                    Settings
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </nav>
@@ -155,7 +180,6 @@ export default function Navigation() {
           </Link>
           
           <div className="nav-right">
-            <ThemeToggle />
             <Link
               href="/notifications"
               className="p-2 rounded-lg transition-colors relative"
@@ -172,17 +196,37 @@ export default function Navigation() {
                 </span>
               )}
             </Link>
-            <button
-              onClick={() => signOut()}
-              className="p-2 rounded-lg transition-colors"
-              style={{
-                color: 'var(--color-text-secondary)',
-                backgroundColor: 'var(--color-bg-tertiary)'
-              }}
-              title="Sign Out"
-            >
-              <IoLogOut size={18} />
-            </button>
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowUserMenu(!showUserMenu);
+                }}
+                className="p-2 rounded-lg transition-colors"
+                style={{
+                  color: 'var(--color-text-secondary)',
+                  backgroundColor: 'var(--color-bg-tertiary)'
+                }}
+                title="Menu"
+              >
+                <IoEllipsisVertical size={18} />
+              </button>
+              {showUserMenu && (
+                <div 
+                  className="absolute right-0 top-full mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-50 min-w-[140px]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Link
+                    href="/settings"
+                    onClick={() => setShowUserMenu(false)}
+                    className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <IoSettings size={16} />
+                    Settings
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

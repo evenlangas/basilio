@@ -8,7 +8,7 @@ import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import ChefDisplay from '@/components/ChefDisplay';
 import UserMentions from '@/components/UserMentions';
-import { IoRestaurantOutline, IoArrowBack, IoTimeOutline, IoPeopleOutline, IoCreateOutline, IoTrashOutline, IoChatbubbleOutline, IoSendOutline } from 'react-icons/io5';
+import { IoRestaurantOutline, IoArrowBack, IoTimeOutline, IoPeopleOutline, IoCreateOutline, IoTrashOutline, IoChatbubbleOutline, IoSendOutline, IoEllipsisVertical, IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
 import { FaGrinHearts, FaRegGrinHearts } from 'react-icons/fa';
 
 interface User {
@@ -40,6 +40,7 @@ interface Comment {
   user: User;
   text: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 interface Creation {
@@ -71,6 +72,11 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
   const [loadingComments, setLoadingComments] = useState(true);
   const [newComment, setNewComment] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState('');
+  const [updatingComment, setUpdatingComment] = useState(false);
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+  const [showMenuForComment, setShowMenuForComment] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -82,6 +88,18 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
     loadCreation();
     loadComments();
   }, [session, status, router, id]);
+
+  // Close dropdown menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowMenuForComment(null);
+    };
+
+    if (showMenuForComment) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showMenuForComment]);
 
   const loadCreation = async () => {
     try {
@@ -136,6 +154,70 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
       console.error('Error submitting comment:', error);
     } finally {
       setSubmittingComment(false);
+    }
+  };
+
+  const handleEditComment = (comment: Comment) => {
+    setEditingCommentId(comment._id);
+    setEditCommentText(comment.text);
+    setShowMenuForComment(null);
+  };
+
+  const toggleCommentMenu = (commentId: string) => {
+    setShowMenuForComment(prev => prev === commentId ? null : commentId);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCommentId(null);
+    setEditCommentText('');
+  };
+
+  const handleUpdateComment = async (commentId: string) => {
+    if (!editCommentText.trim() || updatingComment) return;
+
+    setUpdatingComment(true);
+    try {
+      const response = await fetch(`/api/creations/${id}/comments/${commentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: editCommentText.trim() }),
+      });
+
+      if (response.ok) {
+        const updatedComment = await response.json();
+        setComments(prev => prev.map(comment => 
+          comment._id === commentId ? updatedComment : comment
+        ));
+        setEditingCommentId(null);
+        setEditCommentText('');
+      }
+    } catch (error) {
+      console.error('Error updating comment:', error);
+    } finally {
+      setUpdatingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('Are you sure you want to delete this comment?')) {
+      return;
+    }
+
+    setDeletingCommentId(commentId);
+    try {
+      const response = await fetch(`/api/creations/${id}/comments/${commentId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setComments(prev => prev.filter(comment => comment._id !== commentId));
+      }
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+    } finally {
+      setDeletingCommentId(null);
     }
   };
 
@@ -222,7 +304,7 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
           )}
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-visible">
           {/* Header */}
           <div className="p-4 flex items-center gap-3">
             <div className="w-12 h-12 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -375,7 +457,7 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
             )}
 
             {/* Comments Section */}
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 overflow-visible">
               <div className="flex items-center gap-2 mb-4">
                 <IoChatbubbleOutline size={20} className="text-gray-600 dark:text-gray-400" />
                 <h4 className="font-medium text-gray-900 dark:text-white">
@@ -433,7 +515,7 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
               </form>
 
               {/* Comments List */}
-              <div className="space-y-4">
+              <div className="space-y-4 overflow-visible">
                 {loadingComments ? (
                   <div className="text-center py-4">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 mx-auto" style={{ borderBottomColor: 'var(--color-primary-600)' }}></div>
@@ -443,47 +525,132 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                     No comments yet. Be the first to comment!
                   </p>
                 ) : (
-                  comments.map((comment) => (
-                    <div key={comment._id} className="flex gap-3">
-                      <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
-                        {comment.user.image ? (
-                          <img 
-                            src={comment.user.image} 
-                            alt={comment.user.name}
-                            className="w-full h-full rounded-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-gray-600 dark:text-gray-300 font-medium text-sm">
-                            {comment.user.name.charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Link 
-                              href={`/profile/${comment.user._id}`}
-                              className="font-medium text-sm hover:underline"
-                              style={{ color: 'var(--color-primary-600)' }}
-                            >
-                              {comment.user.name}
-                            </Link>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {new Date(comment.createdAt).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
+                  comments.map((comment) => {
+                    const isOwner = comment.user._id === session?.user?.id;
+                    const isEditing = editingCommentId === comment._id;
+                    const isDeleting = deletingCommentId === comment._id;
+
+                    return (
+                      <div key={comment._id} className="flex gap-3 overflow-visible">
+                        <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                          {comment.user.image ? (
+                            <img 
+                              src={comment.user.image} 
+                              alt={comment.user.name}
+                              className="w-full h-full rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-gray-600 dark:text-gray-300 font-medium text-sm">
+                              {comment.user.name.charAt(0).toUpperCase()}
                             </span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2 relative">
+                            <div className="flex items-start justify-between mb-1">
+                              <div className="flex-1 min-w-0">
+                                <Link 
+                                  href={`/profile/${comment.user._id}`}
+                                  className="font-medium text-sm hover:underline block"
+                                  style={{ color: 'var(--color-primary-600)' }}
+                                >
+                                  {comment.user.name}
+                                </Link>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 block">
+                                  {new Date(comment.createdAt).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                  {comment.updatedAt && comment.updatedAt !== comment.createdAt && (
+                                    <span className="ml-1">(edited)</span>
+                                  )}
+                                </span>
+                              </div>
+                              
+                              {/* Three dots menu for comment owner */}
+                              {isOwner && !isEditing && (
+                                <div className="relative">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleCommentMenu(comment._id);
+                                    }}
+                                    className="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                    title="Comment options"
+                                  >
+                                    <IoEllipsisVertical size={16} />
+                                  </button>
+                                  
+                                  {/* Dropdown menu */}
+                                  {showMenuForComment === comment._id && (
+                                    <div 
+                                      className="absolute right-0 top-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-50 min-w-[120px]"
+                                      style={{
+                                        transform: 'translateY(0)',
+                                        transformOrigin: 'top right'
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <button
+                                        onClick={() => handleEditComment(comment)}
+                                        className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                      >
+                                        <IoCreateOutline size={14} />
+                                        Edit
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteComment(comment._id)}
+                                        disabled={isDeleting}
+                                        className="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50"
+                                      >
+                                        <IoTrashOutline size={14} />
+                                        Delete
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            
+                            {isEditing ? (
+                              <div className="space-y-2">
+                                <textarea
+                                  value={editCommentText}
+                                  onChange={(e) => setEditCommentText(e.target.value)}
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 resize-none"
+                                  rows={2}
+                                />
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleUpdateComment(comment._id)}
+                                    disabled={!editCommentText.trim() || updatingComment}
+                                    className="flex items-center gap-1 px-2 py-1 text-xs text-white rounded transition-colors disabled:opacity-50"
+                                    style={{ backgroundColor: editCommentText.trim() ? 'var(--color-primary-600)' : '#9CA3AF' }}
+                                  >
+                                    <IoCheckmarkOutline size={12} />
+                                    {updatingComment ? 'Saving...' : 'Save'}
+                                  </button>
+                                  <button
+                                    onClick={handleCancelEdit}
+                                    className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                                  >
+                                    <IoCloseOutline size={12} />
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-gray-900 dark:text-gray-100 text-sm">
+                                {comment.text}
+                              </p>
+                            )}
                           </div>
-                          <p className="text-gray-900 dark:text-gray-100 text-sm">
-                            {comment.text}
-                          </p>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>

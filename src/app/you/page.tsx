@@ -186,7 +186,7 @@ export default function YouPage() {
                 </div>
                 
                 <Link
-                  href="/you/settings"
+                  href="/settings"
                   className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors w-full sm:w-auto justify-center"
                 >
                   <IoSettings size={18} />
