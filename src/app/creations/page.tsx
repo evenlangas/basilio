@@ -5,6 +5,8 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import Link from 'next/link';
+import ChefDisplay from '@/components/ChefDisplay';
+import UserMentions from '@/components/UserMentions';
 import { 
   IoRestaurant, 
   IoTime,
@@ -151,7 +153,7 @@ export default function CreationsPage() {
         ) : (
           <div className="space-y-4 sm:space-y-6 mb-8">
             {filteredCreations.map((creation) => (
-              <div key={creation._id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+              <Link key={creation._id} href={`/creations/${creation._id}`} className="block bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
                 {/* Header */}
                 <div className="p-3 sm:p-4 flex items-center gap-3">
                   <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -162,20 +164,20 @@ export default function CreationsPage() {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
                       {creation.createdBy.name}
-                      {creation.chefName && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400 font-normal ml-1">
-                          (Chef: {creation.chefName})
-                        </span>
-                      )}
                     </h3>
+                    {creation.chefName && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        Chef: <ChefDisplay chefName={creation.chefName} className="text-xs" showProfilePicture={false} />
+                      </p>
+                    )}
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                       {new Date(creation.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
 
-                {/* Clickable Image and Content */}
-                <Link href={`/creations/${creation._id}`} className="block">
+                {/* Image and Content */}
+                <div>
                   {creation.image && (
                     <img 
                       src={creation.image} 
@@ -195,47 +197,8 @@ export default function CreationsPage() {
                       </p>
                     )}
 
-                    {/* Recipe Info */}
-                    {creation.recipe && (
-                      <div className="mb-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <div className="flex items-center gap-2 text-sm">
-                          <IoRestaurant className="text-gray-500 dark:text-gray-400" size={16} />
-                          <span className="font-medium text-gray-700 dark:text-gray-300">
-                            Recipe: {creation.recipe.title}
-                          </span>
-                        </div>
-                        {(creation.recipe.cookingTime || creation.recipe.servings) && (
-                          <div className="flex gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            {creation.recipe.cookingTime && (
-                              <div className="flex items-center gap-1">
-                                <IoTime size={12} />
-                                <span>{creation.recipe.cookingTime} min</span>
-                              </div>
-                            )}
-                            {creation.recipe.servings && (
-                              <span>{creation.recipe.servings} servings</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Creation Details */}
-                    {(creation.eatenWith || creation.cookingTime || creation.drankWith) && (
-                      <div className="flex flex-wrap gap-3 mb-3 text-xs text-gray-500 dark:text-gray-400">
-                        {creation.eatenWith && (
-                          <span>🍽️ Eaten with: {creation.eatenWith}</span>
-                        )}
-                        {creation.cookingTime && (
-                          <span>⏱️ Cooking time: {creation.cookingTime} min</span>
-                        )}
-                        {creation.drankWith && (
-                          <span>🥤 Drank: {creation.drankWith}</span>
-                        )}
-                      </div>
-                    )}
                   </div>
-                </Link>
+                </div>
 
                 {/* Actions */}
                 <div className="px-3 sm:px-4 pb-3 sm:pb-4">
@@ -246,15 +209,9 @@ export default function CreationsPage() {
                         {creation.likes.length} {creation.likes.length === 1 ? 'yum' : 'yums'}
                       </span>
                     </div>
-                    <Link 
-                      href={`/creations/${creation._id}`}
-                      className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300 transition-colors hover:text-blue-500"
-                    >
-                      <span className="text-sm">View Details</span>
-                    </Link>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

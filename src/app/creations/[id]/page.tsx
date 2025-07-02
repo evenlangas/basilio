@@ -6,6 +6,8 @@ import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
+import ChefDisplay from '@/components/ChefDisplay';
+import UserMentions from '@/components/UserMentions';
 import { IoRestaurantOutline, IoArrowBack, IoTimeOutline, IoPeopleOutline, IoCreateOutline, IoTrashOutline } from 'react-icons/io5';
 import { FaGrinHearts, FaRegGrinHearts } from 'react-icons/fa';
 
@@ -235,7 +237,8 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                 {creation.eatenWith && (
                   <div className="flex items-center gap-1">
                     <IoPeopleOutline size={16} />
-                    <span>Eaten with: {creation.eatenWith}</span>
+                    <span>Eaten with: </span>
+                    <UserMentions text={creation.eatenWith} />
                   </div>
                 )}
                 {creation.cookingTime && (
@@ -251,7 +254,8 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                 )}
                 {creation.chefName && (
                   <div className="flex items-center gap-1">
-                    <span>👨‍🍳 Chef: {creation.chefName}</span>
+                    <span>👨‍🍳 Chef: </span>
+                    <ChefDisplay chefName={creation.chefName} />
                   </div>
                 )}
               </div>
