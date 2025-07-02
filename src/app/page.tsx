@@ -6,7 +6,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
-import { IoSearchOutline, IoHeartOutline, IoHeart, IoEye, IoRestaurantOutline, IoTimeOutline } from 'react-icons/io5';
+import { IoSearchOutline, IoRestaurantOutline, IoEye, IoTimeOutline } from 'react-icons/io5';
+import { FaGrinHearts, FaRegGrinHearts } from 'react-icons/fa';
 
 interface User {
   _id: string;
@@ -32,6 +33,8 @@ interface Creation {
   recipe?: Recipe;
   eatenWith?: string;
   cookingTime?: number;
+  drankWith?: string;
+  chefName?: string;
   createdAt: string;
 }
 
@@ -164,6 +167,11 @@ export default function Home() {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
                       {creation.createdBy.name}
+                      {creation.chefName && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400 font-normal ml-1">
+                          (Chef: {creation.chefName})
+                        </span>
+                      )}
                     </h3>
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                       {new Date(creation.createdAt).toLocaleDateString()}
@@ -218,13 +226,16 @@ export default function Home() {
                     )}
 
                     {/* Creation Details */}
-                    {(creation.eatenWith || creation.cookingTime) && (
+                    {(creation.eatenWith || creation.cookingTime || creation.drankWith) && (
                       <div className="flex flex-wrap gap-3 mb-3 text-xs text-gray-500 dark:text-gray-400">
                         {creation.eatenWith && (
                           <span>🍽️ Eaten with: {creation.eatenWith}</span>
                         )}
                         {creation.cookingTime && (
                           <span>⏱️ Cooking time: {creation.cookingTime} min</span>
+                        )}
+                        {creation.drankWith && (
+                          <span>🥤 Drank: {creation.drankWith}</span>
                         )}
                       </div>
                     )}
@@ -242,11 +253,11 @@ export default function Home() {
                       disabled={yummingStates[creation._id]}
                       className={`flex items-center gap-1 sm:gap-2 transition-colors ${
                         hasYummed(creation)
-                          ? 'text-red-500'
-                          : 'text-gray-600 dark:text-gray-300 hover:text-red-500'
+                          ? 'text-green-600'
+                          : 'text-gray-600 dark:text-gray-300 hover:text-green-600'
                       }`}
                     >
-                      {hasYummed(creation) ? <IoHeart size={18} /> : <IoHeartOutline size={18} />}
+                      {hasYummed(creation) ? <FaGrinHearts size={18} style={{ color: 'var(--color-primary-600)' }} /> : <FaRegGrinHearts size={18} />}
                       <span className="text-sm font-medium">
                         {creation.likes.length} {creation.likes.length === 1 ? 'yum' : 'yums'}
                       </span>

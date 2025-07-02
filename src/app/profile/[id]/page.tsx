@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
@@ -11,13 +11,13 @@ import {
   IoPersonCircle, 
   IoTrophy, 
   IoBook, 
-  IoHeart, 
   IoPersonAdd,
   IoPersonRemove,
   IoLockClosed,
   IoCheckmark,
   IoRestaurant
 } from 'react-icons/io5';
+import { FaGrinHearts } from 'react-icons/fa';
 
 interface UserProfile {
   _id: string;
@@ -59,6 +59,7 @@ interface Creation {
 export default function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { id: userId } = use(params);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [creations, setCreations] = useState<Creation[]>([]);
   const [recipes, setRecipes] = useState<any[]>([]);
@@ -67,18 +68,9 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
-  const [userId, setUserId] = useState<string>('');
 
   useEffect(() => {
-    const getParams = async () => {
-      const { id } = await params;
-      setUserId(id);
-    };
-    getParams();
-  }, [params]);
-
-  useEffect(() => {
-    if (status === 'loading' || !userId) return;
+    if (status === 'loading') return;
     if (!session) {
       router.push('/auth/signin');
       return;
@@ -329,8 +321,8 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-                    <IoHeart size={24} className="text-red-500" />
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--color-primary-100)' }}>
+                    <FaGrinHearts size={24} style={{ color: 'var(--color-primary-600)' }} />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Creations</h3>

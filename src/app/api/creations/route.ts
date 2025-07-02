@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, image, recipe, eatenWith, cookingTime } = body;
+    const { title, description, image, recipe, eatenWith, cookingTime, drankWith, chefName } = body;
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
@@ -63,6 +63,8 @@ export async function POST(request: NextRequest) {
       recipe: recipe || null,
       eatenWith: eatenWith || '',
       cookingTime: cookingTime || 0,
+      drankWith: drankWith || '',
+      chefName: chefName || '',
       createdBy: user._id,
       likes: [],
       comments: [],

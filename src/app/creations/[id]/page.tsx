@@ -2,11 +2,12 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
-import { IoHeartOutline, IoHeart, IoArrowBack, IoTimeOutline, IoPeopleOutline, IoRestaurantOutline } from 'react-icons/io5';
+import { IoRestaurantOutline, IoArrowBack, IoTimeOutline, IoPeopleOutline, IoCreateOutline, IoTrashOutline } from 'react-icons/io5';
+import { FaGrinHearts, FaRegGrinHearts } from 'react-icons/fa';
 
 interface User {
   _id: string;
@@ -45,13 +46,15 @@ interface Creation {
   createdAt: string;
 }
 
-export default function CreationDetail({ params }: { params: { id: string } }) {
+export default function CreationDetail({ params }: { params: Promise<{ id: string }> }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { id } = use(params);
   const [creation, setCreation] = useState<Creation | null>(null);
   const [loading, setLoading] = useState(true);
   const [yumming, setYumming] = useState(false);
   const [showYumList, setShowYumList] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -61,11 +64,11 @@ export default function CreationDetail({ params }: { params: { id: string } }) {
     }
     
     loadCreation();
-  }, [session, status, router, params.id]);
+  }, [session, status, router, id]);
 
   const loadCreation = async () => {
     try {
-      const response = await fetch(`/api/creations/${params.id}`);
+      const response = await fetch(`/api/creations/${id}`);
       if (response.ok) {
         const data = await response.json();
         setCreation(data);
@@ -100,6 +103,32 @@ export default function CreationDetail({ params }: { params: { id: string } }) {
   };
 
   const hasYummed = creation?.likes.some(like => like._id === session?.user?.id);
+  const isOwner = creation?.createdBy._id === session?.user?.id;
+
+  const handleDelete = async () => {
+    if (!creation || deleting) return;
+    
+    if (!confirm('Are you sure you want to delete this creation?')) {
+      return;
+    }
+    
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/creations/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        router.push('/creations');
+      } else {
+        console.error('Failed to delete creation');
+      }
+    } catch (error) {
+      console.error('Error deleting creation:', error);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   if (status === 'loading' || loading) {
     return <PageLoadingSkeleton />;
@@ -112,8 +141,8 @@ export default function CreationDetail({ params }: { params: { id: string } }) {
       <Navigation />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back Button */}
-        <div className="mb-6">
+        {/* Header with Back and Edit buttons */}
+        <div className="mb-6 flex items-center justify-between">
           <button
             onClick={() => router.back()}
             className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -121,6 +150,19 @@ export default function CreationDetail({ params }: { params: { id: string } }) {
             <IoArrowBack size={20} />
             <span>Back</span>
           </button>
+          
+          {isOwner && (
+            <Link
+              href={`/creations/${id}/edit`}
+              className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors"
+              style={{ backgroundColor: 'var(--color-primary-600)' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-700)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-600)'}
+            >
+              <IoCreateOutline size={18} />
+              <span>Edit</span>
+            </Link>
+          )}
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
@@ -153,6 +195,17 @@ export default function CreationDetail({ params }: { params: { id: string } }) {
                 })}
               </p>
             </div>
+            {/* Delete button for owner */}
+            {isOwner && (
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors disabled:opacity-50"
+                title="Delete creation"
+              >
+                <IoTrashOutline size={20} />
+              </button>
+            )}
           </div>
 
           {/* Image */}
@@ -177,7 +230,7 @@ export default function CreationDetail({ params }: { params: { id: string } }) {
             )}
 
             {/* Creation Details */}
-            {(creation.eatenWith || creation.cookingTime) && (
+            {(creation.eatenWith || creation.cookingTime || creation.drankWith || creation.chefName) && (
               <div className="flex flex-wrap gap-4 mb-4 text-sm text-gray-600 dark:text-gray-400">
                 {creation.eatenWith && (
                   <div className="flex items-center gap-1">
@@ -191,6 +244,16 @@ export default function CreationDetail({ params }: { params: { id: string } }) {
                     <span>Cooking time: {creation.cookingTime} minutes</span>
                   </div>
                 )}
+                {creation.drankWith && (
+                  <div className="flex items-center gap-1">
+                    <span>🥤 Drank with: {creation.drankWith}</span>
+                  </div>
+                )}
+                {creation.chefName && (
+                  <div className="flex items-center gap-1">
+                    <span>👨‍🍳 Chef: {creation.chefName}</span>
+                  </div>
+                )}
               </div>
             )}
             
@@ -201,11 +264,11 @@ export default function CreationDetail({ params }: { params: { id: string } }) {
                 disabled={yumming}
                 className={`flex items-center gap-2 transition-colors ${
                   hasYummed 
-                    ? 'text-red-500' 
-                    : 'text-gray-600 dark:text-gray-300 hover:text-red-500'
+                    ? 'text-green-600' 
+                    : 'text-gray-600 dark:text-gray-300 hover:text-green-600'
                 }`}
               >
-                {hasYummed ? <IoHeart size={24} /> : <IoHeartOutline size={24} />}
+                {hasYummed ? <FaGrinHearts size={24} style={{ color: 'var(--color-primary-600)' }} /> : <FaRegGrinHearts size={24} />}
                 <span className="font-medium">
                   {hasYummed ? 'Yummed' : 'Yum'}
                 </span>

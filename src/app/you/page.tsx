@@ -11,12 +11,12 @@ import {
   IoSettings, 
   IoTrophy, 
   IoBook, 
-  IoHeart, 
   IoStar,
   IoFlame,
   IoTime,
   IoRestaurant
 } from 'react-icons/io5';
+import { FaGrinHearts } from 'react-icons/fa';
 
 interface UserProfile {
   _id: string;
@@ -41,7 +41,7 @@ interface UserProfile {
 }
 
 const trophyIcons: { [key: string]: JSX.Element } = {
-  '100_creations': <IoHeart className="text-red-500" />,
+  '100_creations': <FaGrinHearts style={{ color: 'var(--color-primary-600)' }} />,
   '50_onions': <IoFlame className="text-orange-500" />,
   '100_hours': <IoTime style={{ color: 'var(--color-primary-500)' }} />,
   'first_recipe': <IoStar className="text-yellow-500" />,
@@ -219,8 +219,8 @@ export default function YouPage() {
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-                    <IoHeart size={24} className="text-red-500" />
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--color-primary-100)' }}>
+                    <FaGrinHearts size={24} style={{ color: 'var(--color-primary-600)' }} />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">My Creations</h3>

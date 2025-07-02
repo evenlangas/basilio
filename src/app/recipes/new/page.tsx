@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import { FormSkeleton } from '@/components/SkeletonLoader';
+import CameraInput from '@/components/CameraInput';
 import { IoCamera } from 'react-icons/io5';
 import CountrySelector from '@/components/CountrySelector';
 
@@ -324,46 +325,29 @@ export default function NewRecipePage() {
               Recipe Image (optional)
             </label>
             <div className="space-y-4">
-              {!imagePreview ? (
-                <div className="upload-area">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                    id="image-upload"
-                  />
-                  <label
-                    htmlFor="image-upload"
-                    className="cursor-pointer flex flex-col items-center"
-                  >
-                    <div className="text-4xl mb-2">
-                      <IoCamera size={40} style={{ color: 'var(--color-text-secondary)' }} />
-                    </div>
-                    <div style={{fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)'}}>
-                      Click to upload an image
-                    </div>
-                    <div style={{fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--spacing-sm)'}}>
-                      PNG, JPG, GIF up to 5MB
-                    </div>
-                  </label>
-                </div>
-              ) : (
-                <div className="relative">
-                  <img
-                    src={imagePreview}
-                    alt="Recipe preview"
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                  <button
-                    type="button"
-                    onClick={removeImage}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 transition-colors"
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
+              <CameraInput
+                onImageCapture={(file) => {
+                  setImage(file);
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                    setImagePreview(e.target?.result as string);
+                  };
+                  reader.readAsDataURL(file);
+                }}
+                onImageSelect={(file) => {
+                  setImage(file);
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                    setImagePreview(e.target?.result as string);
+                  };
+                  reader.readAsDataURL(file);
+                }}
+                currentImage={imagePreview}
+                onRemoveImage={() => {
+                  setImage(null);
+                  setImagePreview('');
+                }}
+              />
             </div>
           </div>
 

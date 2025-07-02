@@ -6,11 +6,12 @@ import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import Link from 'next/link';
 import { 
-  IoHeart, 
+  IoRestaurant, 
   IoTime,
   IoPersonCircle,
   IoAdd
 } from 'react-icons/io5';
+import { FaGrinHearts, FaRegGrinHearts } from 'react-icons/fa';
 
 interface Creation {
   _id: string;
@@ -20,6 +21,16 @@ interface Creation {
   likes: string[];
   createdBy: { _id: string; name: string };
   createdAt: string;
+  eatenWith?: string;
+  cookingTime?: number;
+  drankWith?: string;
+  chefName?: string;
+  recipe?: {
+    _id: string;
+    title: string;
+    cookingTime?: number;
+    servings?: number;
+  };
 }
 
 export default function CreationsPage() {
@@ -116,7 +127,7 @@ export default function CreationsPage() {
         {filteredCreations.length === 0 ? (
           <div className="text-center py-12">
             <div className="mb-4 flex justify-center">
-              <IoHeart className="text-4xl text-red-400" size={48} />
+              <FaGrinHearts className="text-4xl" style={{ color: 'var(--color-primary-500)' }} size={48} />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
               {searchTerm ? 'No creations found' : 'No creations yet'}
@@ -138,44 +149,109 @@ export default function CreationsPage() {
             )}
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+          <div className="space-y-4 sm:space-y-6 mb-8">
             {filteredCreations.map((creation) => (
-              <div key={creation._id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                {creation.image && (
-                  <div className="h-48 overflow-hidden">
-                    <img
-                      src={creation.image}
-                      alt={creation.title}
-                      className="w-full h-full object-cover"
-                    />
+              <div key={creation._id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+                {/* Header */}
+                <div className="p-3 sm:p-4 flex items-center gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-gray-600 dark:text-gray-300 font-medium text-sm sm:text-base">
+                      {creation.createdBy.name.charAt(0).toUpperCase()}
+                    </span>
                   </div>
-                )}
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    {creation.title}
-                  </h3>
-                  
-                  {creation.description && (
-                    <p className="text-gray-600 dark:text-gray-300 mb-3 text-sm">
-                      {creation.description}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
+                      {creation.createdBy.name}
+                      {creation.chefName && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400 font-normal ml-1">
+                          (Chef: {creation.chefName})
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                      {new Date(creation.createdAt).toLocaleDateString()}
                     </p>
+                  </div>
+                </div>
+
+                {/* Clickable Image and Content */}
+                <Link href={`/creations/${creation._id}`} className="block">
+                  {creation.image && (
+                    <img 
+                      src={creation.image} 
+                      alt={creation.title}
+                      className="w-full h-48 sm:h-64 object-cover hover:opacity-95 transition-opacity"
+                    />
                   )}
-                  
-                  <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center gap-3">
-                      <span className="flex items-center gap-1">
-                        <IoHeart className="text-red-500" />
-                        {creation.likes.length}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <IoTime />
-                        {new Date(creation.createdAt).toLocaleDateString()}
+
+                  {/* Content */}
+                  <div className="p-3 sm:p-4">
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm sm:text-base hover:underline">
+                      {creation.title}
+                    </h4>
+                    {creation.description && (
+                      <p className="text-gray-600 dark:text-gray-300 mb-3 text-sm sm:text-base line-clamp-2">
+                        {creation.description}
+                      </p>
+                    )}
+
+                    {/* Recipe Info */}
+                    {creation.recipe && (
+                      <div className="mb-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div className="flex items-center gap-2 text-sm">
+                          <IoRestaurant className="text-gray-500 dark:text-gray-400" size={16} />
+                          <span className="font-medium text-gray-700 dark:text-gray-300">
+                            Recipe: {creation.recipe.title}
+                          </span>
+                        </div>
+                        {(creation.recipe.cookingTime || creation.recipe.servings) && (
+                          <div className="flex gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {creation.recipe.cookingTime && (
+                              <div className="flex items-center gap-1">
+                                <IoTime size={12} />
+                                <span>{creation.recipe.cookingTime} min</span>
+                              </div>
+                            )}
+                            {creation.recipe.servings && (
+                              <span>{creation.recipe.servings} servings</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Creation Details */}
+                    {(creation.eatenWith || creation.cookingTime || creation.drankWith) && (
+                      <div className="flex flex-wrap gap-3 mb-3 text-xs text-gray-500 dark:text-gray-400">
+                        {creation.eatenWith && (
+                          <span>🍽️ Eaten with: {creation.eatenWith}</span>
+                        )}
+                        {creation.cookingTime && (
+                          <span>⏱️ Cooking time: {creation.cookingTime} min</span>
+                        )}
+                        {creation.drankWith && (
+                          <span>🥤 Drank: {creation.drankWith}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+
+                {/* Actions */}
+                <div className="px-3 sm:px-4 pb-3 sm:pb-4">
+                  <div className="flex items-center gap-4 sm:gap-6">
+                    <div className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300">
+                      <FaGrinHearts size={18} style={{ color: 'var(--color-primary-600)' }} />
+                      <span className="text-sm font-medium">
+                        {creation.likes.length} {creation.likes.length === 1 ? 'yum' : 'yums'}
                       </span>
                     </div>
-                    <span className="flex items-center gap-1">
-                      <IoPersonCircle />
-                      {creation.createdBy.name}
-                    </span>
+                    <Link 
+                      href={`/creations/${creation._id}`}
+                      className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300 transition-colors hover:text-blue-500"
+                    >
+                      <span className="text-sm">View Details</span>
+                    </Link>
                   </div>
                 </div>
               </div>

@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import UserSearchInput from '@/components/UserSearchInput';
@@ -15,9 +15,28 @@ interface Recipe {
   image?: string;
 }
 
-export default function CreatePage() {
+interface Creation {
+  _id: string;
+  title: string;
+  description: string;
+  image: string;
+  recipe?: Recipe;
+  eatenWith?: string;
+  cookingTime?: number;
+  drankWith?: string;
+  chefName?: string;
+  createdBy: {
+    _id: string;
+    name: string;
+  };
+}
+
+export default function EditCreationPage({ params }: { params: Promise<{ id: string }> }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { id } = use(params);
+  
+  const [creation, setCreation] = useState<Creation | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [image, setImage] = useState<File | null>(null);
@@ -28,7 +47,8 @@ export default function CreatePage() {
   const [drankWith, setDrankWith] = useState('');
   const [chefName, setChefName] = useState('');
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -37,8 +57,41 @@ export default function CreatePage() {
       return;
     }
     
+    loadCreation();
     loadRecipes();
-  }, [session, status, router]);
+  }, [session, status, router, id]);
+
+  const loadCreation = async () => {
+    try {
+      const response = await fetch(`/api/creations/${id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setCreation(data);
+        
+        // Check if user owns this creation
+        if (data.createdBy._id !== session?.user?.id) {
+          router.push(`/creations/${id}`);
+          return;
+        }
+        
+        // Populate form with current data
+        setTitle(data.title || '');
+        setDescription(data.description || '');
+        setImagePreview(data.image || '');
+        setRecipe(data.recipe?._id || '');
+        setEatenWith(data.eatenWith || '');
+        setCookingTime(data.cookingTime?.toString() || '');
+        setDrankWith(data.drankWith || '');
+        setChefName(data.chefName || '');
+      } else if (response.status === 404) {
+        router.push('/creations');
+      }
+    } catch (error) {
+      console.error('Error loading creation:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadRecipes = async () => {
     try {
@@ -52,23 +105,6 @@ export default function CreatePage() {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImage(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removeImage = () => {
-    setImage(null);
-    setImagePreview('');
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -77,11 +113,11 @@ export default function CreatePage() {
       return;
     }
 
-    setLoading(true);
+    setSaving(true);
     try {
-      let imageUrl = '';
+      let imageUrl = imagePreview;
       
-      // Upload image if provided
+      // Upload new image if provided
       if (image) {
         const formData = new FormData();
         formData.append('image', image);
@@ -99,9 +135,9 @@ export default function CreatePage() {
         imageUrl = uploadData.imageUrl;
       }
 
-      // Create the creation
-      const creationResponse = await fetch('/api/creations', {
-        method: 'POST',
+      // Update the creation
+      const updateResponse = await fetch(`/api/creations/${id}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -117,24 +153,24 @@ export default function CreatePage() {
         }),
       });
 
-      if (creationResponse.ok) {
-        router.push('/');
+      if (updateResponse.ok) {
+        router.push(`/creations/${id}`);
       } else {
-        alert('Failed to create post');
+        alert('Failed to update creation');
       }
     } catch (error) {
-      console.error('Error creating post:', error);
-      alert('Failed to create post');
+      console.error('Error updating creation:', error);
+      alert('Failed to update creation');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  if (status === 'loading') {
+  if (status === 'loading' || loading) {
     return <PageLoadingSkeleton />;
   }
 
-  if (!session) return null;
+  if (!session || !creation) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -150,7 +186,7 @@ export default function CreatePage() {
             <IoArrowBack size={20} />
           </button>
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-            Share Your Creation
+            Edit Creation
           </h1>
         </div>
 
@@ -266,19 +302,13 @@ export default function CreatePage() {
               />
             </div>
 
-            <div>
-              <label htmlFor="drankWith" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                🥤 What did you drink with this?
-              </label>
-              <input
-                type="text"
-                id="drankWith"
-                value={drankWith}
-                onChange={(e) => setDrankWith(e.target.value)}
-                placeholder="Wine, beer, water, coffee..."
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
+            <UserSearchInput
+              value={drankWith}
+              onChange={setDrankWith}
+              placeholder="Search users or type custom text..."
+              label="🥤 What did you drink with this?"
+              allowFreeText={true}
+            />
 
             <UserSearchInput
               value={chefName}
@@ -300,16 +330,16 @@ export default function CreatePage() {
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={saving}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               style={{ backgroundColor: 'var(--color-primary-600)' }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-700)'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-600)'}
             >
-              {loading ? (
+              {saving ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               ) : (
-                'Share Creation'
+                'Update Creation'
               )}
             </button>
           </div>

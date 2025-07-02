@@ -26,6 +26,14 @@ const CreationSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  drankWith: {
+    type: String,
+    default: '',
+  },
+  chefName: {
+    type: String,
+    default: '',
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
