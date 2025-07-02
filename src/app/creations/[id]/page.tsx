@@ -8,7 +8,7 @@ import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import ChefDisplay from '@/components/ChefDisplay';
 import UserMentions from '@/components/UserMentions';
-import { IoRestaurantOutline, IoArrowBack, IoTimeOutline, IoPeopleOutline, IoCreateOutline, IoTrashOutline } from 'react-icons/io5';
+import { IoRestaurantOutline, IoArrowBack, IoTimeOutline, IoPeopleOutline, IoCreateOutline, IoTrashOutline, IoChatbubbleOutline, IoSendOutline } from 'react-icons/io5';
 import { FaGrinHearts, FaRegGrinHearts } from 'react-icons/fa';
 
 interface User {
@@ -35,6 +35,13 @@ interface Recipe {
   }>;
 }
 
+interface Comment {
+  _id: string;
+  user: User;
+  text: string;
+  createdAt: string;
+}
+
 interface Creation {
   _id: string;
   title: string;
@@ -42,9 +49,12 @@ interface Creation {
   image: string;
   createdBy: User;
   likes: User[];
+  comments?: Comment[];
   recipe?: Recipe;
   eatenWith?: string;
   cookingTime?: number;
+  drankWith?: string;
+  chefName?: string;
   createdAt: string;
 }
 
@@ -57,6 +67,10 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
   const [yumming, setYumming] = useState(false);
   const [showYumList, setShowYumList] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loadingComments, setLoadingComments] = useState(true);
+  const [newComment, setNewComment] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -66,6 +80,7 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
     }
     
     loadCreation();
+    loadComments();
   }, [session, status, router, id]);
 
   const loadCreation = async () => {
@@ -81,6 +96,46 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
       console.error('Error loading creation:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadComments = async () => {
+    try {
+      const response = await fetch(`/api/creations/${id}/comments`);
+      if (response.ok) {
+        const data = await response.json();
+        setComments(data);
+      }
+    } catch (error) {
+      console.error('Error loading comments:', error);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim() || submittingComment) return;
+
+    setSubmittingComment(true);
+    try {
+      const response = await fetch(`/api/creations/${id}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: newComment.trim() }),
+      });
+
+      if (response.ok) {
+        const comment = await response.json();
+        setComments(prev => [...prev, comment]);
+        setNewComment('');
+      }
+    } catch (error) {
+      console.error('Error submitting comment:', error);
+    } finally {
+      setSubmittingComment(false);
     }
   };
 
@@ -318,6 +373,120 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                 </div>
               </div>
             )}
+
+            {/* Comments Section */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+              <div className="flex items-center gap-2 mb-4">
+                <IoChatbubbleOutline size={20} className="text-gray-600 dark:text-gray-400" />
+                <h4 className="font-medium text-gray-900 dark:text-white">
+                  Comments ({comments.length})
+                </h4>
+              </div>
+
+              {/* Comment Form */}
+              <form onSubmit={handleSubmitComment} className="mb-6">
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    {session?.user?.image ? (
+                      <img 
+                        src={session.user.image} 
+                        alt={session.user.name || 'You'}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-gray-600 dark:text-gray-300 font-medium text-sm">
+                        {(session?.user?.name || 'You').charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Write a comment..."
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
+                      rows={3}
+                    />
+                    <div className="flex justify-end mt-2">
+                      <button
+                        type="submit"
+                        disabled={!newComment.trim() || submittingComment}
+                        className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ backgroundColor: newComment.trim() ? 'var(--color-primary-600)' : '#9CA3AF' }}
+                        onMouseEnter={(e) => {
+                          if (newComment.trim()) {
+                            e.currentTarget.style.backgroundColor = 'var(--color-primary-700)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (newComment.trim()) {
+                            e.currentTarget.style.backgroundColor = 'var(--color-primary-600)';
+                          }
+                        }}
+                      >
+                        <IoSendOutline size={16} />
+                        {submittingComment ? 'Posting...' : 'Post Comment'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+
+              {/* Comments List */}
+              <div className="space-y-4">
+                {loadingComments ? (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 mx-auto" style={{ borderBottomColor: 'var(--color-primary-600)' }}></div>
+                  </div>
+                ) : comments.length === 0 ? (
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                    No comments yet. Be the first to comment!
+                  </p>
+                ) : (
+                  comments.map((comment) => (
+                    <div key={comment._id} className="flex gap-3">
+                      <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        {comment.user.image ? (
+                          <img 
+                            src={comment.user.image} 
+                            alt={comment.user.name}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-gray-600 dark:text-gray-300 font-medium text-sm">
+                            {comment.user.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Link 
+                              href={`/profile/${comment.user._id}`}
+                              className="font-medium text-sm hover:underline"
+                              style={{ color: 'var(--color-primary-600)' }}
+                            >
+                              {comment.user.name}
+                            </Link>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {new Date(comment.createdAt).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                          <p className="text-gray-900 dark:text-gray-100 text-sm">
+                            {comment.text}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

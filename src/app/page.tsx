@@ -8,7 +8,7 @@ import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import ChefDisplay from '@/components/ChefDisplay';
 import UserMentions from '@/components/UserMentions';
-import { IoSearchOutline, IoRestaurantOutline, IoTimeOutline } from 'react-icons/io5';
+import { IoSearchOutline, IoRestaurantOutline, IoTimeOutline, IoChatbubbleOutline } from 'react-icons/io5';
 import { FaGrinHearts, FaRegGrinHearts } from 'react-icons/fa';
 
 interface User {
@@ -38,6 +38,11 @@ interface Creation {
   drankWith?: string;
   chefName?: string;
   createdAt: string;
+  comments?: Array<{
+    user: User;
+    text: string;
+    createdAt: string;
+  }>;
 }
 
 export default function Home() {
@@ -176,7 +181,13 @@ export default function Home() {
                       </p>
                     )}
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(creation.createdAt).toLocaleDateString()}
+                      {new Date(creation.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
                     </p>
                   </div>
                 </div>
@@ -226,6 +237,12 @@ export default function Home() {
                         {creation.likes.length} {creation.likes.length === 1 ? 'yum' : 'yums'}
                       </span>
                     </button>
+                    <div className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300">
+                      <IoChatbubbleOutline size={18} />
+                      <span className="text-sm font-medium">
+                        {creation.comments?.length || 0} {(creation.comments?.length || 0) === 1 ? 'comment' : 'comments'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </Link>

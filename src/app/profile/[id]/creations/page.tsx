@@ -11,7 +11,8 @@ import {
   IoArrowBack,
   IoRestaurantOutline,
   IoTime,
-  IoPersonCircle
+  IoPersonCircle,
+  IoChatbubbleOutline
 } from 'react-icons/io5';
 import { FaGrinHearts, FaRegGrinHearts } from 'react-icons/fa';
 
@@ -27,6 +28,11 @@ interface Creation {
   cookingTime?: number;
   drankWith?: string;
   chefName?: string;
+  comments?: Array<{
+    user: { _id: string; name: string };
+    text: string;
+    createdAt: string;
+  }>;
   recipe?: {
     _id: string;
     title: string;
@@ -185,7 +191,13 @@ export default function UserCreationsPage({ params }: { params: Promise<{ id: st
                       </p>
                     )}
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(creation.createdAt).toLocaleDateString()}
+                      {new Date(creation.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
                     </p>
                   </div>
                 </div>
@@ -221,6 +233,12 @@ export default function UserCreationsPage({ params }: { params: Promise<{ id: st
                       <FaGrinHearts size={18} style={{ color: 'var(--color-primary-600)' }} />
                       <span className="text-sm font-medium">
                         {creation.likes.length} {creation.likes.length === 1 ? 'yum' : 'yums'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300">
+                      <IoChatbubbleOutline size={18} />
+                      <span className="text-sm font-medium">
+                        {creation.comments?.length || 0} {(creation.comments?.length || 0) === 1 ? 'comment' : 'comments'}
                       </span>
                     </div>
                   </div>
