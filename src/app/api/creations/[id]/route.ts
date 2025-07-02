@@ -6,7 +6,10 @@ import Creation from '@/models/Creation';
 import User from '@/models/User';
 import Recipe from '@/models/Recipe';
 
-export async function GET() {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -14,8 +17,6 @@ export async function GET() {
     }
 
     await dbConnect();
-    
-    // Ensure Recipe model is registered
     Recipe;
     
     const user = await User.findOne({ email: session.user.email });
@@ -23,22 +24,25 @@ export async function GET() {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Get creations from users this user follows AND the user's own creations
-    const followingIds = user.following || [];
-    const allUserIds = [user._id, ...followingIds];
+    const creation = await Creation.findById(params.id)
+      .populate('createdBy', 'name image')
+      .populate('likes', 'name image')
+      .populate({
+        path: 'recipe',
+        select: 'title description cookingTime servings image ingredients instructions'
+      });
 
-    const creations = await Creation.find({ 
-      createdBy: { $in: allUserIds } 
-    })
-    .populate('createdBy', 'name image')
-    .populate('likes', 'name image')
-    .populate('recipe', 'title description cookingTime servings')
-    .sort({ createdAt: -1 })
-    .limit(50); // Limit to recent 50 creations
+    if (!creation) {
+      return NextResponse.json({ error: 'Creation not found' }, { status: 404 });
+    }
 
-    return NextResponse.json(creations);
+    // Check if user has permission to view this creation
+    // (For now, all authenticated users can view all creations)
+    // TODO: Add privacy controls if needed
+
+    return NextResponse.json(creation);
   } catch (error) {
-    console.error('Error fetching feed:', error);
+    console.error('Error fetching creation:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -6,19 +6,32 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
-import { IoSearchOutline, IoHeartOutline, IoEye } from 'react-icons/io5';
+import { IoSearchOutline, IoHeartOutline, IoHeart, IoEye, IoRestaurantOutline, IoTimeOutline } from 'react-icons/io5';
+
+interface User {
+  _id: string;
+  name: string;
+  image?: string;
+}
+
+interface Recipe {
+  _id: string;
+  title: string;
+  description?: string;
+  cookingTime?: number;
+  servings?: number;
+}
 
 interface Creation {
   _id: string;
   title: string;
   description: string;
   image: string;
-  createdBy: {
-    _id: string;
-    name: string;
-    image?: string;
-  };
-  likes: string[];
+  createdBy: User;
+  likes: User[];
+  recipe?: Recipe;
+  eatenWith?: string;
+  cookingTime?: number;
   createdAt: string;
 }
 
@@ -27,6 +40,7 @@ export default function Home() {
   const router = useRouter();
   const [creations, setCreations] = useState<Creation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [yummingStates, setYummingStates] = useState<{[key: string]: boolean}>({});
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -51,6 +65,32 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleYum = async (creationId: string) => {
+    if (yummingStates[creationId]) return;
+    
+    setYummingStates(prev => ({ ...prev, [creationId]: true }));
+    try {
+      const response = await fetch(`/api/creations/${creationId}/yum`, {
+        method: 'POST',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCreations(prev => prev.map(creation => 
+          creation._id === creationId ? data.creation : creation
+        ));
+      }
+    } catch (error) {
+      console.error('Error yumming creation:', error);
+    } finally {
+      setYummingStates(prev => ({ ...prev, [creationId]: false }));
+    }
+  };
+
+  const hasYummed = (creation: Creation) => {
+    return creation.likes.some(like => like._id === session?.user?.id);
   };
 
   if (status === 'loading') {
@@ -131,34 +171,93 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Image */}
-                {creation.image && (
-                  <img 
-                    src={creation.image} 
-                    alt={creation.title}
-                    className="w-full h-48 sm:h-64 object-cover"
-                  />
-                )}
+                {/* Clickable Image and Content */}
+                <Link href={`/creations/${creation._id}`} className="block">
+                  {creation.image && (
+                    <img 
+                      src={creation.image} 
+                      alt={creation.title}
+                      className="w-full h-48 sm:h-64 object-cover hover:opacity-95 transition-opacity"
+                    />
+                  )}
 
-                {/* Content */}
-                <div className="p-3 sm:p-4">
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm sm:text-base">
-                    {creation.title}
-                  </h4>
-                  <p className="text-gray-600 dark:text-gray-300 mb-3 sm:mb-4 text-sm sm:text-base">
-                    {creation.description}
-                  </p>
-                  
-                  {/* Actions */}
+                  {/* Content */}
+                  <div className="p-3 sm:p-4">
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm sm:text-base hover:underline">
+                      {creation.title}
+                    </h4>
+                    {creation.description && (
+                      <p className="text-gray-600 dark:text-gray-300 mb-3 text-sm sm:text-base line-clamp-2">
+                        {creation.description}
+                      </p>
+                    )}
+
+                    {/* Recipe Info */}
+                    {creation.recipe && (
+                      <div className="mb-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div className="flex items-center gap-2 text-sm">
+                          <IoRestaurantOutline className="text-gray-500 dark:text-gray-400" size={16} />
+                          <span className="font-medium text-gray-700 dark:text-gray-300">
+                            Recipe: {creation.recipe.title}
+                          </span>
+                        </div>
+                        {(creation.recipe.cookingTime || creation.recipe.servings) && (
+                          <div className="flex gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {creation.recipe.cookingTime && (
+                              <div className="flex items-center gap-1">
+                                <IoTimeOutline size={12} />
+                                <span>{creation.recipe.cookingTime} min</span>
+                              </div>
+                            )}
+                            {creation.recipe.servings && (
+                              <span>{creation.recipe.servings} servings</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Creation Details */}
+                    {(creation.eatenWith || creation.cookingTime) && (
+                      <div className="flex flex-wrap gap-3 mb-3 text-xs text-gray-500 dark:text-gray-400">
+                        {creation.eatenWith && (
+                          <span>🍽️ Eaten with: {creation.eatenWith}</span>
+                        )}
+                        {creation.cookingTime && (
+                          <span>⏱️ Cooking time: {creation.cookingTime} min</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+
+                {/* Actions */}
+                <div className="px-3 sm:px-4 pb-3 sm:pb-4">
                   <div className="flex items-center gap-4 sm:gap-6">
-                    <button className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300 hover:text-red-500 transition-colors">
-                      <IoHeartOutline size={18} />
-                      <span className="text-sm">{creation.likes.length}</span>
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleYum(creation._id);
+                      }}
+                      disabled={yummingStates[creation._id]}
+                      className={`flex items-center gap-1 sm:gap-2 transition-colors ${
+                        hasYummed(creation)
+                          ? 'text-red-500'
+                          : 'text-gray-600 dark:text-gray-300 hover:text-red-500'
+                      }`}
+                    >
+                      {hasYummed(creation) ? <IoHeart size={18} /> : <IoHeartOutline size={18} />}
+                      <span className="text-sm font-medium">
+                        {creation.likes.length} {creation.likes.length === 1 ? 'yum' : 'yums'}
+                      </span>
                     </button>
-                    <button className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300 transition-colors" style={{ '--hover-color': 'var(--color-primary-600)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary-600)'} onMouseLeave={(e) => e.currentTarget.style.color = ''}>
+                    <Link 
+                      href={`/creations/${creation._id}`}
+                      className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300 transition-colors hover:text-blue-500"
+                    >
                       <IoEye size={18} />
-                      <span className="text-sm">View</span>
-                    </button>
+                      <span className="text-sm">View Details</span>
+                    </Link>
                   </div>
                 </div>
               </div>
