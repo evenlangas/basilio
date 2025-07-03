@@ -40,6 +40,7 @@ interface Creation {
   createdBy: User;
   likes: User[];
   recipe?: Recipe;
+  recipeRating?: number;
   eatenWith?: string;
   cookingTime?: number;
   drankWith?: string;
@@ -63,6 +64,7 @@ interface FeedItem {
   // Creation-specific fields
   likes?: User[];
   recipe?: Recipe;
+  recipeRating?: number;
   eatenWith?: string;
   cookingTime?: number;
   drankWith?: string;
@@ -79,6 +81,25 @@ interface FeedItem {
   mealType?: string;
   servings?: number;
 }
+
+const renderPinchedFingers = (rating: number) => {
+  return Array.from({ length: 5 }, (_, i) => {
+    const isSelected = i < rating;
+    return (
+      <span 
+        key={i} 
+        className={`inline-block transition-all ${
+          isSelected ? 'opacity-100' : 'opacity-30'
+        }`}
+        style={{
+          filter: isSelected ? 'hue-rotate(0deg) saturate(1.2)' : 'grayscale(80%)'
+        }}
+      >
+        🤌
+      </span>
+    );
+  });
+};
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -307,6 +328,16 @@ export default function Home() {
                           {item.comments?.length || 0} {(item.comments?.length || 0) === 1 ? 'comment' : 'comments'}
                         </span>
                       </Link>
+                      {item.recipeRating && (
+                        <div className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300">
+                          <div className="flex">
+                            {renderPinchedFingers(item.recipeRating)}
+                          </div>
+                          <span className="text-sm font-medium">
+                            {item.recipeRating} chef's {item.recipeRating === 1 ? 'kiss' : 'kisses'}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Link>

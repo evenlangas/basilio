@@ -28,6 +28,7 @@ interface Creation {
   cookingTime?: number;
   drankWith?: string;
   chefName?: string;
+  recipeRating?: number;
   comments?: Array<{
     user: { _id: string; name: string };
     text: string;
@@ -40,6 +41,25 @@ interface Creation {
     servings?: number;
   };
 }
+
+const renderPinchedFingers = (rating: number) => {
+  return Array.from({ length: 5 }, (_, i) => {
+    const isSelected = i < rating;
+    return (
+      <span 
+        key={i} 
+        className={`inline-block transition-all ${
+          isSelected ? 'opacity-100' : 'opacity-30'
+        }`}
+        style={{
+          filter: isSelected ? 'hue-rotate(0deg) saturate(1.2)' : 'grayscale(80%)'
+        }}
+      >
+        🤌
+      </span>
+    );
+  });
+};
 
 export default function CreationsPage() {
   const { data: session, status } = useSession();
@@ -235,6 +255,16 @@ export default function CreationsPage() {
                         {creation.comments?.length || 0} {(creation.comments?.length || 0) === 1 ? 'comment' : 'comments'}
                       </span>
                     </Link>
+                    {creation.recipeRating && (
+                      <div className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300">
+                        <div className="flex">
+                          {renderPinchedFingers(creation.recipeRating)}
+                        </div>
+                        <span className="text-sm font-medium">
+                          {creation.recipeRating} chef's {creation.recipeRating === 1 ? 'kiss' : 'kisses'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </Link>

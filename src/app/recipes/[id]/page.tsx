@@ -418,12 +418,15 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                     {recipe.servings || 1} serving{recipe.servings !== 1 ? 's' : ''}
                   </div>
                   {recipe.totalRatings > 0 ? (
-                    <div className="flex items-center">
+                    <Link 
+                      href={`/recipes/${recipeId}/creations`}
+                      className="flex items-center hover:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer"
+                    >
                       <div className="flex mr-2">
                         {renderPinchedFingers(Math.round(recipe.averageRating))}
                       </div>
                       <span>{recipe.averageRating.toFixed(1)} ({recipe.totalRatings} rating{recipe.totalRatings !== 1 ? 's' : ''})</span>
-                    </div>
+                    </Link>
                   ) : (
                     <span className="text-gray-400">No ratings yet</span>
                   )}

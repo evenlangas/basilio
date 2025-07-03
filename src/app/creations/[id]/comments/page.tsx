@@ -8,6 +8,8 @@ import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import ChefDisplay from '@/components/ChefDisplay';
 import UserMentions from '@/components/UserMentions';
+import MentionInput from '@/components/MentionInput';
+import CommentText from '@/components/CommentText';
 import { IoArrowBack, IoTimeOutline, IoSendOutline, IoEllipsisVertical, IoCheckmarkOutline, IoCloseOutline, IoCreateOutline, IoTrashOutline, IoAddOutline, IoChatbubbleOutline } from 'react-icons/io5';
 
 interface User {
@@ -20,6 +22,12 @@ interface Comment {
   _id: string;
   user: User;
   text: string;
+  mentions?: Array<{
+    user: User;
+    username: string;
+    startIndex: number;
+    endIndex: number;
+  }>;
   createdAt: string;
   updatedAt?: string;
 }
@@ -43,6 +51,12 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(true);
   const [newComment, setNewComment] = useState('');
+  const [newCommentMentions, setNewCommentMentions] = useState<Array<{
+    user: User;
+    username: string;
+    startIndex: number;
+    endIndex: number;
+  }>>([]);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState('');
@@ -117,13 +131,17 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text: newComment.trim() }),
+        body: JSON.stringify({ 
+          text: newComment.trim(),
+          mentions: newCommentMentions
+        }),
       });
 
       if (response.ok) {
         const comment = await response.json();
         setComments(prev => [...prev, comment]);
         setNewComment('');
+        setNewCommentMentions([]);
         setShowCommentInput(false);
       }
     } catch (error) {
@@ -461,7 +479,10 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
                             </div>
                           ) : (
                             <div className="text-gray-900 dark:text-gray-100 text-sm leading-relaxed">
-                              <UserMentions text={comment.text} />
+                              <CommentText 
+                                text={comment.text} 
+                                mentions={comment.mentions}
+                              />
                             </div>
                           )}
                         </div>
@@ -508,54 +529,24 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
                     </span>
                   )}
                 </div>
-                <div className="flex-1 relative">
-                  <textarea
+                <div className="flex-1">
+                  <MentionInput
                     value={newComment}
-                    onChange={handleCommentChange}
-                    onKeyPress={handleKeyPress}
+                    onChange={(value, mentions) => {
+                      setNewComment(value);
+                      setNewCommentMentions(mentions);
+                    }}
+                    onSubmit={handleSubmitComment}
                     placeholder="Write a comment... (Use @username to mention someone, Press Enter to post)"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                    rows={3}
-                    autoFocus
+                    disabled={submittingComment}
                   />
-                  
-                  {/* Mention Suggestions Dropdown */}
-                  {showMentionSuggestions && mentionSuggestions.length > 0 && (
-                    <div className="absolute bottom-full left-0 right-0 mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
-                      {mentionSuggestions.map((user) => (
-                        <button
-                          key={user._id}
-                          onClick={() => insertMention(user)}
-                          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
-                        >
-                          <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
-                            {user.image ? (
-                              <img 
-                                src={user.image} 
-                                alt={user.name}
-                                className="w-full h-full rounded-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-gray-600 dark:text-gray-300 font-medium text-sm">
-                                {user.name.charAt(0).toUpperCase()}
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-gray-900 dark:text-gray-100 font-medium">
-                            @{user.name}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
 
                   <div className="flex justify-between items-center mt-2">
                     <button
                       onClick={() => {
                         setShowCommentInput(false);
                         setNewComment('');
-                        setShowMentionSuggestions(false);
-                        setMentionSuggestions([]);
+                        setNewCommentMentions([]);
                       }}
                       className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                     >

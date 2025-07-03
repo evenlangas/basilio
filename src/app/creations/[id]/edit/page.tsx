@@ -21,6 +21,7 @@ interface Creation {
   description: string;
   image: string;
   recipe?: Recipe;
+  recipeRating?: number;
   eatenWith?: string;
   cookingTime?: number;
   drankWith?: string;
@@ -46,6 +47,7 @@ export default function EditCreationPage({ params }: { params: Promise<{ id: str
   const [cookingTime, setCookingTime] = useState('');
   const [drankWith, setDrankWith] = useState('');
   const [chefName, setChefName] = useState('');
+  const [recipeRating, setRecipeRating] = useState(0);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -83,6 +85,7 @@ export default function EditCreationPage({ params }: { params: Promise<{ id: str
         setCookingTime(data.cookingTime?.toString() || '');
         setDrankWith(data.drankWith || '');
         setChefName(data.chefName || '');
+        setRecipeRating(data.recipeRating || 0);
       } else if (response.status === 404) {
         router.push('/creations');
       }
@@ -150,6 +153,7 @@ export default function EditCreationPage({ params }: { params: Promise<{ id: str
           cookingTime: cookingTime ? parseInt(cookingTime) : 0,
           drankWith: drankWith.trim(),
           chefName: chefName.trim(),
+          recipeRating: recipeRating > 0 ? recipeRating : null,
         }),
       });
 
@@ -273,6 +277,39 @@ export default function EditCreationPage({ params }: { params: Promise<{ id: str
               ))}
             </select>
           </div>
+
+          {/* Recipe Rating */}
+          {recipe && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                Rate this recipe
+              </label>
+              <div className="flex items-center gap-2">
+                {Array.from({ length: 5 }, (_, i) => {
+                  const rating = i + 1;
+                  const isSelected = rating <= recipeRating;
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setRecipeRating(rating === recipeRating ? 0 : rating)}
+                      className={`text-2xl transition-all duration-200 hover:scale-110 ${
+                        isSelected ? 'opacity-100' : 'opacity-30 hover:opacity-60'
+                      }`}
+                      style={{
+                        filter: isSelected ? 'hue-rotate(0deg) saturate(1.2)' : 'grayscale(80%)'
+                      }}
+                    >
+                      🤌
+                    </button>
+                  );
+                })}
+                <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                  {recipeRating > 0 ? `${recipeRating} chef's ${recipeRating === 1 ? 'kiss' : 'kisses'}` : 'Click to rate'}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Additional Details */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 space-y-4">

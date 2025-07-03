@@ -88,13 +88,57 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { title, description, image, recipe, eatenWith, cookingTime, drankWith, chefName } = body;
+    const { title, description, image, recipe, eatenWith, cookingTime, drankWith, chefName, recipeRating } = body;
 
     // Get old mentions to compare with new ones
     const oldMentions = [
       ...extractMentions(creation.eatenWith || ''),
       ...extractMentions(creation.chefName || '')
     ];
+
+    // Handle recipe rating updates
+    if (recipe && recipeRating !== undefined) {
+      // Remove old rating if it exists
+      if (creation.recipe && creation.recipeRating && creation.recipe.toString() === recipe) {
+        await Recipe.findByIdAndUpdate(creation.recipe, {
+          $pull: { 
+            ratings: { 
+              user: user._id, 
+              creation: creation._id 
+            }
+          }
+        });
+      }
+      
+      // Add new rating if provided
+      if (recipeRating > 0) {
+        await Recipe.findByIdAndUpdate(recipe, {
+          $push: {
+            ratings: {
+              user: user._id,
+              rating: recipeRating,
+              creation: creation._id,
+              createdAt: new Date()
+            }
+          }
+        });
+        
+        // Update aggregated rating data
+        const recipeDoc = await Recipe.findById(recipe);
+        if (recipeDoc) {
+          const ratings = recipeDoc.ratings || [];
+          const totalRatings = ratings.length;
+          const averageRating = totalRatings > 0 
+            ? ratings.reduce((sum, r) => sum + r.rating, 0) / totalRatings 
+            : 0;
+          
+          await Recipe.findByIdAndUpdate(recipe, {
+            totalRatings,
+            averageRating
+          });
+        }
+      }
+    }
 
     // Update the creation
     const updatedCreation = await Creation.findByIdAndUpdate(
@@ -104,6 +148,7 @@ export async function PUT(
         description,
         image,
         recipe: recipe || null,
+        recipeRating: recipeRating > 0 ? recipeRating : null,
         eatenWith,
         cookingTime,
         drankWith,

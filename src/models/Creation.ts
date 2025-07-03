@@ -53,6 +53,15 @@ const CreationSchema = new mongoose.Schema({
       type: String,
       required: true,
     },
+    mentions: [{
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      username: String,
+      startIndex: Number,
+      endIndex: Number,
+    }],
     createdAt: {
       type: Date,
       default: Date.now,

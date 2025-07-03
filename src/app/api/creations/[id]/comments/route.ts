@@ -30,10 +30,16 @@ export async function GET(
     await dbConnect();
     
     const creation = await Creation.findById(params.id)
-      .populate({
-        path: 'comments.user',
-        select: 'name image'
-      });
+      .populate([
+        {
+          path: 'comments.user',
+          select: 'name image'
+        },
+        {
+          path: 'comments.mentions.user',
+          select: 'name image'
+        }
+      ]);
 
     if (!creation) {
       return NextResponse.json({ error: 'Creation not found' }, { status: 404 });
@@ -63,7 +69,7 @@ export async function POST(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { text } = await request.json();
+    const { text, mentions = [] } = await request.json();
     
     if (!text || !text.trim()) {
       return NextResponse.json({ error: 'Comment text is required' }, { status: 400 });
@@ -78,6 +84,7 @@ export async function POST(
     const newComment = {
       user: user._id,
       text: text.trim(),
+      mentions: mentions,
       createdAt: new Date()
     };
 
@@ -99,18 +106,13 @@ export async function POST(
       });
     }
 
-    // Create notifications for mentioned users
-    const mentions = extractMentions(text.trim());
-    if (mentions.length > 0) {
-      const mentionedUsers = await User.find({ 
-        name: { $in: mentions.map(mention => new RegExp(`^${mention}$`, 'i')) }
-      });
-
-      for (const mentionedUser of mentionedUsers) {
+    // Create notifications for mentioned users (using the new mentions data)
+    if (mentions && mentions.length > 0) {
+      for (const mention of mentions) {
         // Don't notify the commenter themselves
-        if (mentionedUser._id.toString() !== user._id.toString()) {
+        if (mention.user._id !== user._id.toString()) {
           await Notification.create({
-            recipient: mentionedUser._id,
+            recipient: mention.user._id,
             sender: user._id,
             type: 'comment',
             title: 'You were mentioned in a comment!',
@@ -124,11 +126,17 @@ export async function POST(
       }
     }
 
-    // Populate the new comment with user data
-    await creation.populate({
-      path: 'comments.user',
-      select: 'name image'
-    });
+    // Populate the new comment with user data and mentions
+    await creation.populate([
+      {
+        path: 'comments.user',
+        select: 'name image'
+      },
+      {
+        path: 'comments.mentions.user',
+        select: 'name image'
+      }
+    ]);
 
     // Return the newly created comment
     const addedComment = creation.comments[creation.comments.length - 1];

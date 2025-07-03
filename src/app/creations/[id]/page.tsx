@@ -52,6 +52,7 @@ interface Creation {
   likes: User[];
   comments?: Comment[];
   recipe?: Recipe;
+  recipeRating?: number;
   eatenWith?: string;
   cookingTime?: number;
   drankWith?: string;
@@ -136,6 +137,25 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
 
   const hasYummed = creation?.likes.some(like => like._id === session?.user?.id);
   const isOwner = creation?.createdBy._id === session?.user?.id;
+
+  const renderPinchedFingers = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => {
+      const isSelected = i < rating;
+      return (
+        <span 
+          key={i} 
+          className={`inline-block transition-all ${
+            isSelected ? 'opacity-100' : 'opacity-30'
+          }`}
+          style={{
+            filter: isSelected ? 'hue-rotate(0deg) saturate(1.2)' : 'grayscale(80%)'
+          }}
+        >
+          🤌
+        </span>
+      );
+    });
+  };
 
   const handleDelete = async () => {
     if (!creation || deleting) return;
@@ -388,6 +408,17 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                 <p className="text-gray-600 dark:text-gray-300 mt-2">
                   {creation.recipe.description}
                 </p>
+              )}
+              {creation.recipeRating && (
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">My rating:</span>
+                  <div className="flex">
+                    {renderPinchedFingers(creation.recipeRating)}
+                  </div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    ({creation.recipeRating} chef's {creation.recipeRating === 1 ? 'kiss' : 'kisses'})
+                  </span>
+                </div>
               )}
             </div>
             
