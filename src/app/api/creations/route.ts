@@ -19,6 +19,44 @@ const extractMentions = (text: string): string[] => {
   return mentions;
 };
 
+// Helper function to update recipe ratings
+const updateRecipeRating = async (recipeId: string, userId: string, rating: number, creationId: string) => {
+  try {
+    const recipe = await Recipe.findById(recipeId);
+    if (!recipe) return;
+
+    // Check if user has already rated this recipe
+    const existingRatingIndex = recipe.ratings.findIndex(
+      (r: any) => r.user.toString() === userId.toString()
+    );
+
+    if (existingRatingIndex >= 0) {
+      // Update existing rating
+      recipe.ratings[existingRatingIndex].rating = rating;
+      recipe.ratings[existingRatingIndex].creation = creationId;
+    } else {
+      // Add new rating
+      recipe.ratings.push({
+        user: userId,
+        rating: rating,
+        creation: creationId,
+        createdAt: new Date()
+      });
+    }
+
+    // Recalculate average rating
+    const totalRatings = recipe.ratings.length;
+    const sumRatings = recipe.ratings.reduce((sum: number, r: any) => sum + r.rating, 0);
+    
+    recipe.averageRating = totalRatings > 0 ? sumRatings / totalRatings : 0;
+    recipe.totalRatings = totalRatings;
+
+    await recipe.save();
+  } catch (error) {
+    console.error('Error updating recipe rating:', error);
+  }
+};
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -55,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, image, recipe, eatenWith, cookingTime, drankWith, chefName } = body;
+    const { title, description, image, recipe, recipeRating, eatenWith, cookingTime, drankWith, chefName } = body;
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
@@ -74,6 +112,7 @@ export async function POST(request: NextRequest) {
       description: description || '',
       image: image || '',
       recipe: recipe || null,
+      recipeRating: recipeRating || null,
       eatenWith: eatenWith || '',
       cookingTime: cookingTime || 0,
       drankWith: drankWith || '',
@@ -84,6 +123,11 @@ export async function POST(request: NextRequest) {
     });
 
     await creation.save();
+
+    // Update recipe ratings if a rating was provided
+    if (recipe && recipeRating && typeof recipeRating === 'number' && recipeRating >= 0 && recipeRating <= 5) {
+      await updateRecipeRating(recipe, user._id, recipeRating, creation._id);
+    }
     
     // Create notifications for mentions in eatenWith and chefName
     const allMentions = [

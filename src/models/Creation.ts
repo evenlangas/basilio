@@ -62,6 +62,12 @@ const CreationSchema = new mongoose.Schema({
       default: Date.now,
     },
   }],
+  recipeRating: {
+    type: Number,
+    min: 0,
+    max: 5,
+    default: null,
+  },
 }, {
   timestamps: true,
 });

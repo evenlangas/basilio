@@ -27,7 +27,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .populate('createdBy', 'name image')
       .populate('originalChef', 'name image')
       .populate('copiedBy', 'name image')
-      .populate('originalRecipe', 'title');
+      .populate('originalRecipe', 'title')
+      .populate({
+        path: 'ratings.user',
+        select: 'name image'
+      })
+      .populate({
+        path: 'ratings.creation',
+        select: 'title'
+      });
 
     if (!recipe) {
       return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });

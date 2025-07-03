@@ -81,6 +81,36 @@ const RecipeSchema = new mongoose.Schema({
     ref: 'User',
     default: null,
   },
+  ratings: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    rating: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 5,
+    },
+    creation: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Creation',
+      required: true,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  }],
+  averageRating: {
+    type: Number,
+    default: 0,
+  },
+  totalRatings: {
+    type: Number,
+    default: 0,
+  },
 }, {
   timestamps: true,
 });

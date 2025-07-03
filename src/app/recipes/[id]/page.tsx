@@ -51,6 +51,14 @@ interface Recipe {
   isReference?: boolean;
   isPrivate?: boolean;
   createdAt: string;
+  averageRating: number;
+  totalRatings: number;
+  ratings: Array<{
+    user: { _id: string; name: string; image?: string };
+    rating: number;
+    creation: { _id: string; title: string };
+    createdAt: string;
+  }>;
 }
 
 export default function RecipeDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -74,6 +82,8 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
   const [addingToCookbook, setAddingToCookbook] = useState(false);
   const [selectedCookbookId, setSelectedCookbookId] = useState<string>('');
   const [showCopyTypeModal, setShowCopyTypeModal] = useState(false);
+  const [creations, setCreations] = useState<any[]>([]);
+  const [loadingCreations, setLoadingCreations] = useState(false);
 
   useEffect(() => {
     const getParams = async () => {
@@ -93,6 +103,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
     fetchRecipe();
     loadCookbooks();
     loadShoppingLists();
+    loadCreations();
   }, [session, status, router, recipeId]);
 
   // Handle clicks outside dropdowns
@@ -152,6 +163,41 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
     } catch (error) {
       console.error('Error loading shopping lists:', error);
     }
+  };
+
+  const loadCreations = async () => {
+    if (!recipeId) return;
+    setLoadingCreations(true);
+    try {
+      const response = await fetch(`/api/recipes/${recipeId}/creations`);
+      if (response.ok) {
+        const data = await response.json();
+        setCreations(data);
+      }
+    } catch (error) {
+      console.error('Error loading creations:', error);
+    } finally {
+      setLoadingCreations(false);
+    }
+  };
+
+  const renderPinchedFingers = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => {
+      const isSelected = i < rating;
+      return (
+        <span 
+          key={i} 
+          className={`inline-block transition-all ${
+            isSelected ? 'opacity-100' : 'opacity-30'
+          }`}
+          style={{
+            filter: isSelected ? 'hue-rotate(0deg) saturate(1.2)' : 'grayscale(80%)'
+          }}
+        >
+          🤌
+        </span>
+      );
+    });
   };
 
   const addToCookbook = async (cookbookId: string, copyType: 'copy' | 'reference') => {
@@ -371,6 +417,16 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                     <IoPeople className="mr-1 text-gray-500" size={18} />
                     {recipe.servings || 1} serving{recipe.servings !== 1 ? 's' : ''}
                   </div>
+                  {recipe.totalRatings > 0 ? (
+                    <div className="flex items-center">
+                      <div className="flex mr-2">
+                        {renderPinchedFingers(Math.round(recipe.averageRating))}
+                      </div>
+                      <span>{recipe.averageRating.toFixed(1)} ({recipe.totalRatings} rating{recipe.totalRatings !== 1 ? 's' : ''})</span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400">No ratings yet</span>
+                  )}
                   <Link 
                     href={`/profile/${recipe.createdBy._id}`}
                     className="flex items-center hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
@@ -620,6 +676,73 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Creations using this recipe */}
+            <div className="mt-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                  Creations using this recipe ({creations.length})
+                </h2>
+                {creations.length > 0 && (
+                  <Link
+                    href={`/recipes/${recipeId}/creations`}
+                    className="text-green-600 hover:text-green-700 font-medium text-sm"
+                  >
+                    View all →
+                  </Link>
+                )}
+              </div>
+              
+              {loadingCreations ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 mx-auto"></div>
+                </div>
+              ) : creations.length === 0 ? (
+                <div className="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <p className="text-gray-500 dark:text-gray-400">
+                    No creations using this recipe yet. Be the first to share your creation!
+                  </p>
+                  <Link
+                    href="/create"
+                    className="inline-block mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Share Your Creation
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {creations.slice(0, 6).map((creation: any) => (
+                    <Link key={creation._id} href={`/creations/${creation._id}`}>
+                      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
+                        {creation.image && (
+                          <img
+                            src={creation.image}
+                            alt={creation.title}
+                            className="w-full h-32 object-cover"
+                          />
+                        )}
+                        <div className="p-3">
+                          <h3 className="font-medium text-gray-900 dark:text-white text-sm mb-1 line-clamp-1">
+                            {creation.title}
+                          </h3>
+                          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                            <span>by {creation.createdBy.name}</span>
+                            {creation.recipeRating && (
+                              <div className="flex items-center gap-1">
+                                <div className="flex">
+                                  {renderPinchedFingers(creation.recipeRating)}
+                                </div>
+                                <span>({creation.recipeRating})</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

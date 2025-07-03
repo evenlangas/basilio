@@ -23,6 +23,13 @@ interface Recipe {
   description?: string;
   cookingTime?: number;
   servings?: number;
+  image?: string;
+  createdBy: User;
+  averageRating: number;
+  totalRatings: number;
+  createdAt: string;
+  tags?: string[];
+  mealType?: string;
 }
 
 interface Creation {
@@ -45,10 +52,38 @@ interface Creation {
   }>;
 }
 
+interface FeedItem {
+  type: 'creation' | 'recipe';
+  _id: string;
+  title: string;
+  description?: string;
+  image?: string;
+  createdBy: User;
+  createdAt: string;
+  // Creation-specific fields
+  likes?: User[];
+  recipe?: Recipe;
+  eatenWith?: string;
+  cookingTime?: number;
+  drankWith?: string;
+  chefName?: string;
+  comments?: Array<{
+    user: User;
+    text: string;
+    createdAt: string;
+  }>;
+  // Recipe-specific fields
+  averageRating?: number;
+  totalRatings?: number;
+  tags?: string[];
+  mealType?: string;
+  servings?: number;
+}
+
 export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [creations, setCreations] = useState<Creation[]>([]);
+  const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [yummingStates, setYummingStates] = useState<{[key: string]: boolean}>({});
 
@@ -59,19 +94,19 @@ export default function Home() {
       return;
     }
     
-    // Load creations from followed users
-    loadCreations();
+    // Load feed items (creations and recipes)
+    loadFeed();
   }, [session, status, router]);
 
-  const loadCreations = async () => {
+  const loadFeed = async () => {
     try {
-      const response = await fetch('/api/creations/feed');
+      const response = await fetch('/api/feed');
       if (response.ok) {
         const data = await response.json();
-        setCreations(data);
+        setFeedItems(data);
       }
     } catch (error) {
-      console.error('Error loading creations:', error);
+      console.error('Error loading feed:', error);
     } finally {
       setLoading(false);
     }
@@ -88,8 +123,8 @@ export default function Home() {
       
       if (response.ok) {
         const data = await response.json();
-        setCreations(prev => prev.map(creation => 
-          creation._id === creationId ? data.creation : creation
+        setFeedItems(prev => prev.map(item => 
+          item._id === creationId && item.type === 'creation' ? { ...data.creation, type: 'creation' } : item
         ));
       }
     } catch (error) {
@@ -99,8 +134,28 @@ export default function Home() {
     }
   };
 
-  const hasYummed = (creation: Creation) => {
-    return creation.likes.some(like => like._id === session?.user?.id);
+  const hasYummed = (item: FeedItem) => {
+    if (item.type !== 'creation' || !item.likes) return false;
+    return item.likes.some(like => like._id === session?.user?.id);
+  };
+
+  const renderPinchedFingers = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => {
+      const isSelected = i < rating;
+      return (
+        <span 
+          key={i} 
+          className={`inline-block transition-all ${
+            isSelected ? 'opacity-100' : 'opacity-30'
+          }`}
+          style={{
+            filter: isSelected ? 'hue-rotate(0deg) saturate(1.2)' : 'grayscale(80%)'
+          }}
+        >
+          🤌
+        </span>
+      );
+    });
   };
 
   if (status === 'loading') {
@@ -133,13 +188,13 @@ export default function Home() {
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto" style={{ borderBottomColor: 'var(--color-primary-600)' }}></div>
           </div>
-        ) : creations.length === 0 ? (
+        ) : feedItems.length === 0 ? (
           <div className="text-center py-12">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              No creations yet
+              No feed items yet
             </h2>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              Follow other chefs to see their creations in your feed
+              Follow other chefs to see their creations and recipes in your feed
             </p>
             <Link
               href="/search"
@@ -154,106 +209,154 @@ export default function Home() {
           </div>
         ) : (
           <div className="space-y-4 sm:space-y-6">
-            {creations.map((creation) => (
-              <Link key={creation._id} href={`/creations/${creation._id}`} className="block bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
-                {/* Header */}
-                <div className="p-3 sm:p-4 flex items-center gap-3">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
-                    {creation.createdBy.image ? (
+            {feedItems.map((item) => (
+              item.type === 'creation' ? (
+                // Creation Card (existing design)
+                <Link key={item._id} href={`/creations/${item._id}`} className="block bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                  {/* Header */}
+                  <div className="p-3 sm:p-4 flex items-center gap-3">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      {item.createdBy.image ? (
+                        <img 
+                          src={item.createdBy.image} 
+                          alt={item.createdBy.name}
+                          className="w-full h-full rounded-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-gray-600 dark:text-gray-300 font-medium text-sm sm:text-base">
+                          {item.createdBy.name.charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
+                        {item.createdBy.name}
+                      </h3>
+                      {item.chefName && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          Chef: <ChefDisplay chefName={item.chefName} className="text-xs" showProfilePicture={false} />
+                        </p>
+                      )}
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                        {new Date(item.createdAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Image and Content */}
+                  <div>
+                    {item.image && (
                       <img 
-                        src={creation.createdBy.image} 
-                        alt={creation.createdBy.name}
-                        className="w-full h-full rounded-full object-cover"
+                        src={item.image} 
+                        alt={item.title}
+                        className="w-full h-48 sm:h-64 object-cover hover:opacity-95 transition-opacity"
                       />
-                    ) : (
-                      <span className="text-gray-600 dark:text-gray-300 font-medium text-sm sm:text-base">
-                        {creation.createdBy.name.charAt(0).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
-                      {creation.createdBy.name}
-                    </h3>
-                    {creation.chefName && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                        Chef: <ChefDisplay chefName={creation.chefName} className="text-xs" showProfilePicture={false} />
-                      </p>
-                    )}
-                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(creation.createdAt).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Image and Content */}
-                <div>
-                  {creation.image && (
-                    <img 
-                      src={creation.image} 
-                      alt={creation.title}
-                      className="w-full h-48 sm:h-64 object-cover hover:opacity-95 transition-opacity"
-                    />
-                  )}
-
-                  {/* Content */}
-                  <div className="p-3 sm:p-4">
-                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm sm:text-base hover:underline">
-                      {creation.title}
-                    </h4>
-                    {creation.description && (
-                      <p className="text-gray-600 dark:text-gray-300 mb-3 text-sm sm:text-base line-clamp-2">
-                        {creation.description}
-                      </p>
                     )}
 
+                    {/* Content */}
+                    <div className="p-3 sm:p-4">
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm sm:text-base hover:underline">
+                        {item.title}
+                      </h4>
+                      {item.description && (
+                        <p className="text-gray-600 dark:text-gray-300 mb-3 text-sm sm:text-base line-clamp-2">
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Actions */}
-                <div className="px-3 sm:px-4 pb-3 sm:pb-4">
-                  <div className="flex items-center gap-4 sm:gap-6">
-                    <button 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleYum(creation._id);
-                      }}
-                      disabled={yummingStates[creation._id]}
-                      className={`flex items-center gap-1 sm:gap-2 transition-colors ${
-                        hasYummed(creation)
-                          ? 'text-green-600'
-                          : 'text-gray-600 dark:text-gray-300 hover:text-green-600'
-                      }`}
-                    >
-                      {hasYummed(creation) ? <FaGrinHearts size={18} style={{ color: 'var(--color-primary-600)' }} /> : <FaRegGrinHearts size={18} />}
-                      <span className="text-sm font-medium">
-                        {creation.likes.length} {creation.likes.length === 1 ? 'yum' : 'yums'}
-                      </span>
-                    </button>
-                    <Link
-                      href={`/creations/${creation._id}/comments`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        window.location.href = `/creations/${creation._id}/comments`;
-                      }}
-                      className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-                    >
-                      <IoChatbubbleOutline size={18} />
-                      <span className="text-sm font-medium">
-                        {creation.comments?.length || 0} {(creation.comments?.length || 0) === 1 ? 'comment' : 'comments'}
-                      </span>
-                    </Link>
+                  {/* Actions */}
+                  <div className="px-3 sm:px-4 pb-3 sm:pb-4">
+                    <div className="flex items-center gap-4 sm:gap-6">
+                      <button 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleYum(item._id);
+                        }}
+                        disabled={yummingStates[item._id]}
+                        className={`flex items-center gap-1 sm:gap-2 transition-colors ${
+                          hasYummed(item)
+                            ? 'text-green-600'
+                            : 'text-gray-600 dark:text-gray-300 hover:text-green-600'
+                        }`}
+                      >
+                        {hasYummed(item) ? <FaGrinHearts size={18} style={{ color: 'var(--color-primary-600)' }} /> : <FaRegGrinHearts size={18} />}
+                        <span className="text-sm font-medium">
+                          {item.likes?.length || 0} {(item.likes?.length || 0) === 1 ? 'yum' : 'yums'}
+                        </span>
+                      </button>
+                      <Link
+                        href={`/creations/${item._id}/comments`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          window.location.href = `/creations/${item._id}/comments`;
+                        }}
+                        className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                      >
+                        <IoChatbubbleOutline size={18} />
+                        <span className="text-sm font-medium">
+                          {item.comments?.length || 0} {(item.comments?.length || 0) === 1 ? 'comment' : 'comments'}
+                        </span>
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
+              ) : (
+                // Recipe Card (smaller, compact design)
+                <Link key={item._id} href={`/recipes/${item._id}`} className="block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-200 dark:border-gray-700">
+                  <div className="p-3 flex items-center gap-3">
+                    <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      {item.createdBy.image ? (
+                        <img 
+                          src={item.createdBy.image} 
+                          alt={item.createdBy.name}
+                          className="w-full h-full rounded-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-gray-600 dark:text-gray-300 font-medium text-xs">
+                          {item.createdBy.name.charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <IoRestaurantOutline size={14} className="text-green-500" />
+                        <h3 className="font-medium text-gray-900 dark:text-white text-sm truncate">
+                          {item.title}
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                        <span>by {item.createdBy.name}</span>
+                        {item.totalRatings && item.totalRatings > 0 ? (
+                          <div className="flex items-center gap-1">
+                            <div className="flex">
+                              {renderPinchedFingers(Math.round(item.averageRating || 0))}
+                            </div>
+                            <span>({item.totalRatings})</span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">No ratings yet</span>
+                        )}
+                        {item.cookingTime && (
+                          <div className="flex items-center gap-1">
+                            <IoTimeOutline size={12} />
+                            <span>{item.cookingTime}min</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              )
             ))}
           </div>
         )}
