@@ -4,6 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import Creation from '@/models/Creation';
 import User from '@/models/User';
+import Notification from '@/models/Notification';
 
 export async function GET(
   request: NextRequest,
@@ -71,6 +72,21 @@ export async function POST(
 
     creation.comments.push(newComment);
     await creation.save();
+
+    // Create notification if user is commenting on someone else's creation
+    if (creation.createdBy.toString() !== user._id.toString()) {
+      await Notification.create({
+        recipient: creation.createdBy,
+        sender: user._id,
+        type: 'comment',
+        title: 'Someone commented on your creation!',
+        message: `${user.name} commented on your creation "${creation.title}"`,
+        data: {
+          creationId: creation._id,
+          commentId: newComment._id,
+        },
+      });
+    }
 
     // Populate the new comment with user data
     await creation.populate({

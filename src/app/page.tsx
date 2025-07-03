@@ -237,12 +237,20 @@ export default function Home() {
                         {creation.likes.length} {creation.likes.length === 1 ? 'yum' : 'yums'}
                       </span>
                     </button>
-                    <div className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300">
+                    <Link
+                      href={`/creations/${creation._id}/comments`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.location.href = `/creations/${creation._id}/comments`;
+                      }}
+                      className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    >
                       <IoChatbubbleOutline size={18} />
                       <span className="text-sm font-medium">
                         {creation.comments?.length || 0} {(creation.comments?.length || 0) === 1 ? 'comment' : 'comments'}
                       </span>
-                    </div>
+                    </Link>
                   </div>
                 </div>
               </Link>

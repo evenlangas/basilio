@@ -13,7 +13,7 @@ const NotificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['cookbook_invite', 'shopping_list_invite', 'follow_request'],
+    enum: ['cookbook_invite', 'shopping_list_invite', 'follow_request', 'yum', 'comment'],
     required: true,
   },
   title: {
@@ -32,6 +32,13 @@ const NotificationSchema = new mongoose.Schema({
     shoppingListId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'ShoppingList',
+    },
+    creationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Creation',
+    },
+    commentId: {
+      type: mongoose.Schema.Types.ObjectId,
     },
   },
   read: {

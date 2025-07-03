@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:host": "next dev --turbopack --hostname 0.0.0.0",
+    "dev:mobile": "NEXTAUTH_URL=http://$(hostname -I | awk '{print $1}'):3000 next dev --turbopack --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

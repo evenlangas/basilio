@@ -4,6 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import Creation from '@/models/Creation';
 import User from '@/models/User';
+import Notification from '@/models/Notification';
 
 export async function POST(
   request: NextRequest,
@@ -38,6 +39,20 @@ export async function POST(
     } else {
       // Add yum
       creation.likes.push(user._id);
+      
+      // Create notification if user is yumming someone else's creation
+      if (creation.createdBy.toString() !== user._id.toString()) {
+        await Notification.create({
+          recipient: creation.createdBy,
+          sender: user._id,
+          type: 'yum',
+          title: 'Someone yummed your creation!',
+          message: `${user.name} yummed your creation "${creation.title}"`,
+          data: {
+            creationId: creation._id,
+          },
+        });
+      }
     }
 
     await creation.save();
