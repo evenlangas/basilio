@@ -13,12 +13,18 @@ import {
   IoSunny,
   IoNotifications,
   IoLockClosed,
-  IoShield
+  IoShield,
+  IoCreateOutline,
+  IoCheckmarkOutline,
+  IoCloseOutline
 } from 'react-icons/io5';
 
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -32,6 +38,43 @@ export default function SettingsPage() {
     if (confirm('Are you sure you want to sign out?')) {
       await signOut();
     }
+  };
+
+  const handleEditName = () => {
+    setNewName(session?.user?.name || '');
+    setIsEditingName(true);
+  };
+
+  const handleSaveName = async () => {
+    if (!newName.trim() || isUpdatingName) return;
+
+    setIsUpdatingName(true);
+    try {
+      const response = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: newName.trim() }),
+      });
+
+      if (response.ok) {
+        // Refresh the session to get updated data
+        window.location.reload();
+      } else {
+        alert('Failed to update name. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error updating name:', error);
+      alert('Failed to update name. Please try again.');
+    } finally {
+      setIsUpdatingName(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingName(false);
+    setNewName('');
   };
 
   if (status === 'loading') {
@@ -105,14 +148,59 @@ export default function SettingsPage() {
                       </span>
                     )}
                   </div>
-                  <div>
-                    <h3 className="font-medium text-gray-900 dark:text-white">
-                      {session.user?.name || 'Unknown User'}
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {session.user?.email}
-                    </p>
+                  <div className="flex-1">
+                    {isEditingName ? (
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={newName}
+                          onChange={(e) => setNewName(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          placeholder="Enter your display name"
+                          autoFocus
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleSaveName}
+                            disabled={!newName.trim() || isUpdatingName}
+                            className="flex items-center gap-1 px-3 py-1 text-sm text-white rounded transition-colors disabled:opacity-50"
+                            style={{ backgroundColor: newName.trim() ? 'var(--color-primary-600)' : '#9CA3AF' }}
+                          >
+                            <IoCheckmarkOutline size={14} />
+                            {isUpdatingName ? 'Saving...' : 'Save'}
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                          >
+                            <IoCloseOutline size={14} />
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium text-gray-900 dark:text-white">
+                            {session.user?.name || 'Unknown User'}
+                          </h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {session.user?.email}
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleEditName}
+                          className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                        >
+                          <IoCreateOutline size={14} />
+                          Edit Name
+                        </button>
+                      </div>
+                    )}
                   </div>
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  <p>💡 <strong>Tip:</strong> You can use just your first name or a nickname. This is what others will see when you're mentioned with @username.</p>
                 </div>
               </div>
             </div>

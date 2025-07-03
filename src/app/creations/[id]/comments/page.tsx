@@ -296,7 +296,7 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
           </button>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-visible">
           {/* Simple Creation Header */}
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <h1 className="text-lg font-bold text-gray-900 dark:text-white mb-3">
@@ -322,7 +322,7 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
           </div>
 
           {/* Comments Section */}
-          <div className="p-4">
+          <div className="p-4 overflow-visible">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Comments ({comments.length})
@@ -337,7 +337,7 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
 
 
             {/* Comments List */}
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-visible">
               {loadingComments ? (
                 <div className="text-center py-6">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 mx-auto" style={{ borderBottomColor: 'var(--color-primary-600)' }}></div>
@@ -355,7 +355,7 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
                   const isDeleting = deletingCommentId === comment._id;
 
                   return (
-                    <div key={comment._id} className="flex gap-3">
+                    <div key={comment._id} className="flex gap-3 overflow-visible">
                       <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
                         {comment.user.image ? (
                           <img 
@@ -370,7 +370,7 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
                         )}
                       </div>
                       <div className="flex-1">
-                        <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2 relative">
+                        <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2 relative overflow-visible">
                           <div className="flex items-start justify-between mb-1">
                             <div className="flex-1 min-w-0">
                               <Link 
@@ -408,7 +408,7 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
                                 
                                 {showMenuForComment === comment._id && (
                                   <div 
-                                    className="absolute right-0 top-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-50 min-w-[100px]"
+                                    className="absolute right-0 top-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-[60] min-w-[100px]"
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     <button
