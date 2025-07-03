@@ -8,7 +8,7 @@ import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import ChefDisplay from '@/components/ChefDisplay';
 import UserMentions from '@/components/UserMentions';
-import { IoRestaurantOutline, IoArrowBack, IoTimeOutline, IoPeopleOutline, IoCreateOutline, IoTrashOutline, IoChatbubbleOutline } from 'react-icons/io5';
+import { IoRestaurantOutline, IoArrowBack, IoTimeOutline, IoPeopleOutline, IoCreateOutline, IoTrashOutline, IoChatbubbleOutline, IoEllipsisVertical } from 'react-icons/io5';
 import { FaGrinHearts, FaRegGrinHearts } from 'react-icons/fa';
 
 interface User {
@@ -71,6 +71,7 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
   const [deleting, setDeleting] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(true);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -82,6 +83,17 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
     loadCreation();
     loadComments();
   }, [session, status, router, id]);
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (showOptionsMenu) {
+        setShowOptionsMenu(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showOptionsMenu]);
 
 
   const loadCreation = async () => {
@@ -193,7 +205,7 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
       <Navigation />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header with Back and Edit buttons */}
+        {/* Header with Back button */}
         <div className="mb-6 flex items-center justify-between">
           <button
             onClick={() => router.back()}
@@ -202,25 +214,13 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
             <IoArrowBack size={20} />
             <span>Back</span>
           </button>
-          
-          {isOwner && (
-            <Link
-              href={`/creations/${id}/edit`}
-              className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors"
-              style={{ backgroundColor: 'var(--color-primary-600)' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-700)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-600)'}
-            >
-              <IoCreateOutline size={18} />
-              <span>Edit</span>
-            </Link>
-          )}
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-visible">
+        {/* Creation Card - matching feed layout */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
           {/* Header */}
-          <div className="p-4 flex items-center gap-3">
-            <div className="w-12 h-12 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+          <div className="p-3 sm:p-4 flex items-center gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
               {creation.createdBy.image ? (
                 <img 
                   src={creation.createdBy.image} 
@@ -228,35 +228,72 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                   className="w-full h-full rounded-full object-cover"
                 />
               ) : (
-                <span className="text-gray-600 dark:text-gray-300 font-medium text-lg">
+                <span className="text-gray-600 dark:text-gray-300 font-medium text-sm sm:text-base">
                   {creation.createdBy.name.charAt(0).toUpperCase()}
                 </span>
               )}
             </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
                 {creation.createdBy.name}
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              {creation.chefName && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  Chef: <ChefDisplay chefName={creation.chefName} className="text-xs" showProfilePicture={false} />
+                </p>
+              )}
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 {new Date(creation.createdAt).toLocaleDateString('en-US', {
                   year: 'numeric',
-                  month: 'long',
+                  month: 'short',
                   day: 'numeric',
                   hour: '2-digit',
                   minute: '2-digit'
                 })}
               </p>
             </div>
-            {/* Delete button for owner */}
+            {/* Three-dot menu for owner */}
             {isOwner && (
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors disabled:opacity-50"
-                title="Delete creation"
-              >
-                <IoTrashOutline size={20} />
-              </button>
+              <div className="relative">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowOptionsMenu(!showOptionsMenu);
+                  }}
+                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <IoEllipsisVertical size={20} className="text-gray-600 dark:text-gray-400" />
+                </button>
+                
+                {showOptionsMenu && (
+                  <div 
+                    className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="py-2">
+                      <Link
+                        href={`/creations/${id}/edit`}
+                        className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        onClick={() => setShowOptionsMenu(false)}
+                      >
+                        <IoCreateOutline size={16} />
+                        <span>Edit</span>
+                      </Link>
+                      <button
+                        onClick={() => {
+                          setShowOptionsMenu(false);
+                          handleDelete();
+                        }}
+                        disabled={deleting}
+                        className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full text-left disabled:opacity-50"
+                      >
+                        <IoTrashOutline size={16} />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
@@ -265,86 +302,102 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
             <img 
               src={creation.image} 
               alt={creation.title}
-              className="w-full h-64 sm:h-96 object-cover"
+              className="w-full h-48 sm:h-64 object-cover"
             />
           )}
 
           {/* Content */}
-          <div className="p-4">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+          <div className="p-3 sm:p-4">
+            <h4 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm sm:text-base">
               {creation.title}
-            </h1>
-            
+            </h4>
             {creation.description && (
-              <p className="text-gray-600 dark:text-gray-300 mb-4 text-lg leading-relaxed">
+              <p className="text-gray-600 dark:text-gray-300 mb-3 text-sm sm:text-base line-clamp-2">
                 {creation.description}
               </p>
             )}
+          </div>
 
-            {/* Creation Details */}
-            {(creation.eatenWith || creation.cookingTime || creation.drankWith || creation.chefName) && (
-              <div className="flex flex-wrap gap-4 mb-4 text-sm text-gray-600 dark:text-gray-400">
-                {creation.eatenWith && (
-                  <div className="flex items-center gap-1">
-                    <IoPeopleOutline size={16} />
-                    <span>Eaten with: </span>
-                    <UserMentions text={creation.eatenWith} />
-                  </div>
-                )}
-                {creation.cookingTime && (
-                  <div className="flex items-center gap-1">
-                    <IoTimeOutline size={16} />
-                    <span>Cooking time: {creation.cookingTime} minutes</span>
-                  </div>
-                )}
-                {creation.drankWith && (
-                  <div className="flex items-center gap-1">
-                    <span>🥤 Drank with: {creation.drankWith}</span>
-                  </div>
-                )}
-                {creation.chefName && (
-                  <div className="flex items-center gap-1">
-                    <span>👨‍🍳 Chef: </span>
-                    <ChefDisplay chefName={creation.chefName} />
-                  </div>
-                )}
+          {/* Actions - matching feed layout */}
+          <div className="px-3 sm:px-4 pb-3 sm:pb-4">
+            {/* Chef's Kisses - Show first for mobile */}
+            {creation.recipeRating && (
+              <div className="flex items-center justify-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300 mb-4">
+                <div className="flex">
+                  {renderPinchedFingers(creation.recipeRating)}
+                </div>
+                <span className="text-sm font-medium">
+                  {creation.recipeRating} chef's {creation.recipeRating === 1 ? 'kiss' : 'kisses'}
+                </span>
               </div>
             )}
             
-            {/* Yum Actions */}
-            <div className="flex items-center gap-6 py-4 border-t border-gray-200 dark:border-gray-700">
+            {/* Yums and Comments counts - above buttons */}
+            <div className="flex items-center justify-center gap-6 mb-3">
+              <div className="text-center">
+                <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {creation.likes?.length || 0}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  {(creation.likes?.length || 0) === 1 ? 'yum' : 'yums'}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {comments?.length || 0}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  {(comments?.length || 0) === 1 ? 'comment' : 'comments'}
+                </div>
+              </div>
+            </div>
+            
+            {/* Action buttons - bigger and more inviting */}
+            <div className="flex items-center gap-4 sm:gap-6">
               <button 
                 onClick={handleYum}
                 disabled={yumming}
-                className={`flex items-center gap-2 transition-colors ${
-                  hasYummed 
-                    ? 'text-green-600' 
-                    : 'text-gray-600 dark:text-gray-300 hover:text-green-600'
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all ${
+                  hasYummed
+                    ? 'bg-green-50 text-green-600 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
+                    : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-green-900/20 dark:hover:text-green-400 dark:hover:border-green-800'
                 }`}
               >
-                {hasYummed ? <FaGrinHearts size={24} style={{ color: 'var(--color-primary-600)' }} /> : <FaRegGrinHearts size={24} />}
-                <span className="font-medium">
-                  {hasYummed ? 'Yummed' : 'Yum'}
+                {hasYummed ? <FaGrinHearts size={20} style={{ color: 'var(--color-primary-600)' }} /> : <FaRegGrinHearts size={20} />}
+                <span className="text-sm sm:text-base">
+                  Yum
                 </span>
               </button>
-              
-              {creation.likes.length > 0 && (
-                <button
-                  onClick={() => setShowYumList(!showYumList)}
-                  className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-                >
-                  {creation.likes.length} {creation.likes.length === 1 ? 'yum' : 'yums'}
-                </button>
-              )}
+              <Link
+                href={`/creations/${id}/comments`}
+                className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 dark:hover:border-blue-800 transition-all"
+              >
+                <IoChatbubbleOutline size={20} />
+                <span className="text-sm sm:text-base">
+                  Comment
+                </span>
+              </Link>
             </div>
+          </div>
+        </div>
 
-            {/* Yum List */}
-            {showYumList && creation.likes.length > 0 && (
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                <h4 className="font-medium text-gray-900 dark:text-white mb-3">
-                  Yummed by:
-                </h4>
-                <div className="space-y-2">
+        {/* Additional Information Section */}
+        <div className="mt-6 space-y-6">
+          {/* Yum List */}
+          {creation.likes.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+              <button
+                onClick={() => setShowYumList(!showYumList)}
+                className="flex items-center justify-between w-full text-left"
+              >
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  Yummed by {creation.likes.length} {creation.likes.length === 1 ? 'person' : 'people'}
+                </h3>
+                <IoArrowBack size={16} className={`text-gray-400 transition-transform ${showYumList ? 'rotate-90' : 'rotate-180'}`} />
+              </button>
+              
+              {showYumList && (
+                <div className="mt-4 space-y-2">
                   {creation.likes.map((user) => (
                     <div key={user._id} className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -366,25 +419,36 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Comments Section */}
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-              <Link
-                href={`/creations/${id}/comments`}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <IoChatbubbleOutline size={20} className="text-gray-600 dark:text-gray-400" />
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {comments.length === 0 ? 'Add a comment' : `${comments.length} comment${comments.length === 1 ? '' : 's'}`}
-                  </span>
-                </div>
-                <IoArrowBack size={16} className="text-gray-400 rotate-180" />
-              </Link>
+              )}
             </div>
-          </div>
+          )}
+
+          {/* Creation Details */}
+          {(creation.eatenWith || creation.cookingTime || creation.drankWith) && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Creation Details</h3>
+              <div className="space-y-3">
+                {creation.eatenWith && (
+                  <div className="flex items-center gap-2">
+                    <IoPeopleOutline size={16} className="text-gray-500" />
+                    <span className="text-gray-600 dark:text-gray-300">Eaten with: </span>
+                    <UserMentions text={creation.eatenWith} />
+                  </div>
+                )}
+                {creation.cookingTime && (
+                  <div className="flex items-center gap-2">
+                    <IoTimeOutline size={16} className="text-gray-500" />
+                    <span className="text-gray-600 dark:text-gray-300">Cooking time: {creation.cookingTime} minutes</span>
+                  </div>
+                )}
+                {creation.drankWith && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-600 dark:text-gray-300">🥤 Drank with: {creation.drankWith}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Recipe Section */}
