@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
 
 interface User {
   _id: string;
@@ -23,6 +22,7 @@ interface MentionInputProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  reset?: boolean;
 }
 
 export default function MentionInput({
@@ -31,7 +31,8 @@ export default function MentionInput({
   onSubmit,
   placeholder = "Write a comment...",
   className = "",
-  disabled = false
+  disabled = false,
+  reset = false
 }: MentionInputProps) {
   const [suggestions, setSuggestions] = useState<User[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -39,9 +40,18 @@ export default function MentionInput({
   const [mentionStart, setMentionStart] = useState<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [mentions, setMentions] = useState<MentionData[]>([]);
+  const [confirmedUsers, setConfirmedUsers] = useState<User[]>([]);
 
   // Debounce search
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Reset confirmed users when reset prop changes
+  useEffect(() => {
+    if (reset) {
+      setConfirmedUsers([]);
+      setMentions([]);
+    }
+  }, [reset]);
 
   const searchUsers = async (query: string) => {
     if (query.length < 1) {
@@ -70,8 +80,9 @@ export default function MentionInput({
       const startIndex = match.index;
       const endIndex = match.index + match[0].length;
       
-      // Find if this username matches any of our known users
-      const user = suggestions.find(u => u.name.toLowerCase() === username.toLowerCase());
+      // Find if this username matches any of our known users (current suggestions or confirmed users)
+      const allUsers = [...suggestions, ...confirmedUsers];
+      const user = allUsers.find(u => u.name.toLowerCase() === username.toLowerCase());
       if (user) {
         extractedMentions.push({
           user,
@@ -85,42 +96,6 @@ export default function MentionInput({
     return extractedMentions;
   };
 
-  const renderTextWithLinks = (text: string, mentions: MentionData[]) => {
-    if (!mentions.length) return text;
-
-    const parts = [];
-    let lastIndex = 0;
-
-    // Sort mentions by start index
-    const sortedMentions = [...mentions].sort((a, b) => a.startIndex - b.startIndex);
-
-    sortedMentions.forEach((mention) => {
-      // Add text before mention
-      if (mention.startIndex > lastIndex) {
-        parts.push(text.slice(lastIndex, mention.startIndex));
-      }
-      
-      // Add linked mention
-      parts.push(
-        <Link
-          key={`mention-${mention.startIndex}`}
-          href={`/profile/${mention.user._id}`}
-          className="text-blue-600 hover:text-blue-800 font-medium"
-        >
-          @{mention.username}
-        </Link>
-      );
-      
-      lastIndex = mention.endIndex;
-    });
-
-    // Add remaining text
-    if (lastIndex < text.length) {
-      parts.push(text.slice(lastIndex));
-    }
-
-    return parts;
-  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
@@ -161,9 +136,36 @@ export default function MentionInput({
     setShowSuggestions(false);
     setMentionStart(null);
     
-    const newMentions = extractMentions(newValue);
-    setMentions(newMentions);
-    onChange(newValue, newMentions);
+    // Add user to confirmed users if not already there
+    const updatedConfirmedUsers = confirmedUsers.find(u => u._id === user._id) 
+      ? confirmedUsers 
+      : [...confirmedUsers, user];
+    setConfirmedUsers(updatedConfirmedUsers);
+    
+    // Extract all mentions from the new text using updated confirmed users
+    const allUsers = [...suggestions, ...updatedConfirmedUsers];
+    const mentionRegex = /@(\w+)/g;
+    const extractedMentions: MentionData[] = [];
+    let match;
+
+    while ((match = mentionRegex.exec(newValue)) !== null) {
+      const username = match[1];
+      const startIndex = match.index;
+      const endIndex = match.index + match[0].length;
+      
+      const foundUser = allUsers.find(u => u.name.toLowerCase() === username.toLowerCase());
+      if (foundUser) {
+        extractedMentions.push({
+          user: foundUser,
+          username,
+          startIndex,
+          endIndex
+        });
+      }
+    }
+    
+    setMentions(extractedMentions);
+    onChange(newValue, extractedMentions);
 
     // Focus back on input
     setTimeout(() => {
@@ -197,19 +199,6 @@ export default function MentionInput({
     }
   };
 
-  // Preview component for showing text with links
-  const TextPreview = () => {
-    if (!value.trim()) return null;
-    
-    return (
-      <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border text-sm">
-        <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Preview:</span>
-        <div className="text-gray-700 dark:text-gray-300">
-          {renderTextWithLinks(value, mentions)}
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="relative">
@@ -223,6 +212,13 @@ export default function MentionInput({
         rows={3}
         disabled={disabled}
       />
+      
+      {/* Show count of confirmed mentions */}
+      {mentions.length > 0 && (
+        <div className="absolute bottom-1 right-2 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
+          {mentions.length} mention{mentions.length === 1 ? '' : 's'}
+        </div>
+      )}
       
       {/* Suggestions dropdown */}
       {showSuggestions && suggestions.length > 0 && (
@@ -249,7 +245,7 @@ export default function MentionInput({
                     </span>
                   )}
                 </div>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                <span className="text-sm font-medium text-green-600 dark:text-green-400">
                   @{user.name}
                 </span>
               </div>
@@ -257,8 +253,6 @@ export default function MentionInput({
           ))}
         </div>
       )}
-      
-      <TextPreview />
     </div>
   );
 }

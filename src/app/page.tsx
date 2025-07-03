@@ -295,6 +295,39 @@ export default function Home() {
 
                   {/* Actions */}
                   <div className="px-3 sm:px-4 pb-3 sm:pb-4">
+                    {/* Chef's Kisses - Show first for mobile */}
+                    {item.recipeRating && (
+                      <div className="flex items-center justify-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300 mb-4">
+                        <div className="flex">
+                          {renderPinchedFingers(item.recipeRating)}
+                        </div>
+                        <span className="text-sm font-medium">
+                          {item.recipeRating} chef's {item.recipeRating === 1 ? 'kiss' : 'kisses'}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Yums and Comments counts - above buttons */}
+                    <div className="flex items-center justify-center gap-6 mb-3">
+                      <div className="text-center">
+                        <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                          {item.likes?.length || 0}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {(item.likes?.length || 0) === 1 ? 'yum' : 'yums'}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                          {item.comments?.length || 0}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {(item.comments?.length || 0) === 1 ? 'comment' : 'comments'}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Action buttons - bigger and more inviting */}
                     <div className="flex items-center gap-4 sm:gap-6">
                       <button 
                         onClick={(e) => {
@@ -303,15 +336,15 @@ export default function Home() {
                           handleYum(item._id);
                         }}
                         disabled={yummingStates[item._id]}
-                        className={`flex items-center gap-1 sm:gap-2 transition-colors ${
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all ${
                           hasYummed(item)
-                            ? 'text-green-600'
-                            : 'text-gray-600 dark:text-gray-300 hover:text-green-600'
+                            ? 'bg-green-50 text-green-600 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
+                            : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-green-900/20 dark:hover:text-green-400 dark:hover:border-green-800'
                         }`}
                       >
-                        {hasYummed(item) ? <FaGrinHearts size={18} style={{ color: 'var(--color-primary-600)' }} /> : <FaRegGrinHearts size={18} />}
-                        <span className="text-sm font-medium">
-                          {item.likes?.length || 0} {(item.likes?.length || 0) === 1 ? 'yum' : 'yums'}
+                        {hasYummed(item) ? <FaGrinHearts size={20} style={{ color: 'var(--color-primary-600)' }} /> : <FaRegGrinHearts size={20} />}
+                        <span className="text-sm sm:text-base">
+                          Yum
                         </span>
                       </button>
                       <Link
@@ -321,23 +354,13 @@ export default function Home() {
                           e.stopPropagation();
                           window.location.href = `/creations/${item._id}/comments`;
                         }}
-                        className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                        className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 dark:hover:border-blue-800 transition-all"
                       >
-                        <IoChatbubbleOutline size={18} />
-                        <span className="text-sm font-medium">
-                          {item.comments?.length || 0} {(item.comments?.length || 0) === 1 ? 'comment' : 'comments'}
+                        <IoChatbubbleOutline size={20} />
+                        <span className="text-sm sm:text-base">
+                          Comment
                         </span>
                       </Link>
-                      {item.recipeRating && (
-                        <div className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300">
-                          <div className="flex">
-                            {renderPinchedFingers(item.recipeRating)}
-                          </div>
-                          <span className="text-sm font-medium">
-                            {item.recipeRating} chef's {item.recipeRating === 1 ? 'kiss' : 'kisses'}
-                          </span>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </Link>

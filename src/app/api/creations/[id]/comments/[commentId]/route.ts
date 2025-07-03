@@ -7,7 +7,7 @@ import User from '@/models/User';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; commentId: string } }
+  { params }: { params: Promise<{ id: string; commentId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -28,14 +28,15 @@ export async function PUT(
       return NextResponse.json({ error: 'Comment text is required' }, { status: 400 });
     }
 
-    const creation = await Creation.findById(params.id);
+    const { id, commentId } = await params;
+    const creation = await Creation.findById(id);
     if (!creation) {
       return NextResponse.json({ error: 'Creation not found' }, { status: 404 });
     }
 
     // Find the comment to edit
     const commentIndex = creation.comments.findIndex(
-      (comment: any) => comment._id.toString() === params.commentId
+      (comment: any) => comment._id.toString() === commentId
     );
 
     if (commentIndex === -1) {
@@ -71,7 +72,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; commentId: string } }
+  { params }: { params: Promise<{ id: string; commentId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -86,14 +87,15 @@ export async function DELETE(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const creation = await Creation.findById(params.id);
+    const { id, commentId } = await params;
+    const creation = await Creation.findById(id);
     if (!creation) {
       return NextResponse.json({ error: 'Creation not found' }, { status: 404 });
     }
 
     // Find the comment to delete
     const commentIndex = creation.comments.findIndex(
-      (comment: any) => comment._id.toString() === params.commentId
+      (comment: any) => comment._id.toString() === commentId
     );
 
     if (commentIndex === -1) {

@@ -67,6 +67,7 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
   const [mentionSuggestions, setMentionSuggestions] = useState<User[]>([]);
   const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
+  const [resetMentionInput, setResetMentionInput] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -143,6 +144,8 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
         setNewComment('');
         setNewCommentMentions([]);
         setShowCommentInput(false);
+        setResetMentionInput(true);
+        setTimeout(() => setResetMentionInput(false), 100);
       }
     } catch (error) {
       console.error('Error submitting comment:', error);
@@ -539,6 +542,7 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
                     onSubmit={handleSubmitComment}
                     placeholder="Write a comment... (Use @username to mention someone, Press Enter to post)"
                     disabled={submittingComment}
+                    reset={resetMentionInput}
                   />
 
                   <div className="flex justify-between items-center mt-2">

@@ -44,7 +44,7 @@ export default function CommentText({ text, mentions = [], className = "" }: Com
         <Link
           key={`mention-${mention.startIndex}-${index}`}
           href={`/profile/${mention.user._id}`}
-          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium hover:underline"
+          className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 font-medium hover:underline"
         >
           @{mention.username}
         </Link>
