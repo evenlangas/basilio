@@ -6,6 +6,17 @@ import Creation from '@/models/Creation';
 import User from '@/models/User';
 import Notification from '@/models/Notification';
 
+// Helper function to extract user mentions from text
+const extractMentions = (text: string): string[] => {
+  const mentionRegex = /@(\w+)/g;
+  const mentions = [];
+  let match;
+  while ((match = mentionRegex.exec(text)) !== null) {
+    mentions.push(match[1]);
+  }
+  return mentions;
+};
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -86,6 +97,31 @@ export async function POST(
           commentId: newComment._id,
         },
       });
+    }
+
+    // Create notifications for mentioned users
+    const mentions = extractMentions(text.trim());
+    if (mentions.length > 0) {
+      const mentionedUsers = await User.find({ 
+        name: { $in: mentions.map(mention => new RegExp(`^${mention}$`, 'i')) }
+      });
+
+      for (const mentionedUser of mentionedUsers) {
+        // Don't notify the commenter themselves
+        if (mentionedUser._id.toString() !== user._id.toString()) {
+          await Notification.create({
+            recipient: mentionedUser._id,
+            sender: user._id,
+            type: 'comment',
+            title: 'You were mentioned in a comment!',
+            message: `${user.name} mentioned you in a comment on "${creation.title}"`,
+            data: {
+              creationId: creation._id,
+              commentId: newComment._id,
+            },
+          });
+        }
+      }
     }
 
     // Populate the new comment with user data

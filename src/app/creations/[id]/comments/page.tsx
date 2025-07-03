@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import ChefDisplay from '@/components/ChefDisplay';
+import UserMentions from '@/components/UserMentions';
 import { IoArrowBack, IoTimeOutline, IoSendOutline, IoEllipsisVertical, IoCheckmarkOutline, IoCloseOutline, IoCreateOutline, IoTrashOutline, IoAddOutline, IoChatbubbleOutline } from 'react-icons/io5';
 
 interface User {
@@ -49,6 +50,9 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
   const [showMenuForComment, setShowMenuForComment] = useState<string | null>(null);
   const [showCommentInput, setShowCommentInput] = useState(false);
+  const [mentionSuggestions, setMentionSuggestions] = useState<User[]>([]);
+  const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -93,7 +97,7 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
       const response = await fetch(`/api/creations/${id}/comments`);
       if (response.ok) {
         const data = await response.json();
-        setComments(data.reverse());
+        setComments(data);
       }
     } catch (error) {
       console.error('Error loading comments:', error);
@@ -118,7 +122,7 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
 
       if (response.ok) {
         const comment = await response.json();
-        setComments(prev => [comment, ...prev]);
+        setComments(prev => [...prev, comment]);
         setNewComment('');
         setShowCommentInput(false);
       }
@@ -130,9 +134,80 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !showMentionSuggestions) {
       e.preventDefault();
       handleSubmitComment();
+    }
+    if (e.key === 'Escape') {
+      setShowMentionSuggestions(false);
+    }
+  };
+
+  const searchUsers = async (query: string) => {
+    if (query.length < 1) {
+      setMentionSuggestions([]);
+      setShowMentionSuggestions(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`);
+      if (response.ok) {
+        const users = await response.json();
+        setMentionSuggestions(users);
+        setShowMentionSuggestions(users.length > 0);
+      }
+    } catch (error) {
+      console.error('Error searching users:', error);
+    }
+  };
+
+  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setNewComment(value);
+
+    // Check for @ mentions
+    const cursorPosition = e.target.selectionStart;
+    const textBeforeCursor = value.substring(0, cursorPosition);
+    const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
+
+    if (mentionMatch) {
+      const query = mentionMatch[1];
+      setMentionQuery(query);
+      searchUsers(query);
+    } else {
+      setShowMentionSuggestions(false);
+      setMentionSuggestions([]);
+    }
+  };
+
+  const insertMention = (user: User) => {
+    const cursorPosition = document.querySelector('textarea')?.selectionStart || 0;
+    const textBeforeCursor = newComment.substring(0, cursorPosition);
+    const textAfterCursor = newComment.substring(cursorPosition);
+    
+    // Find the @ symbol and replace the partial mention
+    const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
+    if (mentionMatch) {
+      const mentionStart = textBeforeCursor.lastIndexOf('@');
+      const newText = 
+        newComment.substring(0, mentionStart) + 
+        `@${user.name} ` + 
+        textAfterCursor;
+      
+      setNewComment(newText);
+      setShowMentionSuggestions(false);
+      setMentionSuggestions([]);
+      
+      // Focus back to textarea
+      setTimeout(() => {
+        const textarea = document.querySelector('textarea');
+        if (textarea) {
+          const newCursorPosition = mentionStart + user.name.length + 2;
+          textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+          textarea.focus();
+        }
+      }, 0);
     }
   };
 
@@ -312,7 +387,7 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
                                   hour: '2-digit',
                                   minute: '2-digit'
                                 })}
-                                {comment.updatedAt && comment.updatedAt !== comment.createdAt && (
+                                {comment.updatedAt && new Date(comment.updatedAt).getTime() > new Date(comment.createdAt).getTime() + 5000 && (
                                   <span className="ml-1">(edited)</span>
                                 )}
                               </span>
@@ -385,9 +460,9 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
                               </div>
                             </div>
                           ) : (
-                            <p className="text-gray-900 dark:text-gray-100 text-sm leading-relaxed">
-                              {comment.text}
-                            </p>
+                            <div className="text-gray-900 dark:text-gray-100 text-sm leading-relaxed">
+                              <UserMentions text={comment.text} />
+                            </div>
                           )}
                         </div>
                       </div>
@@ -433,28 +508,61 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
                     </span>
                   )}
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 relative">
                   <textarea
                     value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
+                    onChange={handleCommentChange}
                     onKeyPress={handleKeyPress}
-                    placeholder="Write a comment... (Press Enter to post)"
+                    placeholder="Write a comment... (Use @username to mention someone, Press Enter to post)"
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                     rows={3}
                     autoFocus
                   />
+                  
+                  {/* Mention Suggestions Dropdown */}
+                  {showMentionSuggestions && mentionSuggestions.length > 0 && (
+                    <div className="absolute bottom-full left-0 right-0 mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
+                      {mentionSuggestions.map((user) => (
+                        <button
+                          key={user._id}
+                          onClick={() => insertMention(user)}
+                          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                        >
+                          <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                            {user.image ? (
+                              <img 
+                                src={user.image} 
+                                alt={user.name}
+                                className="w-full h-full rounded-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-gray-600 dark:text-gray-300 font-medium text-sm">
+                                {user.name.charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-gray-900 dark:text-gray-100 font-medium">
+                            @{user.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="flex justify-between items-center mt-2">
                     <button
                       onClick={() => {
                         setShowCommentInput(false);
                         setNewComment('');
+                        setShowMentionSuggestions(false);
+                        setMentionSuggestions([]);
                       }}
                       className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                     >
                       Cancel
                     </button>
                     <div className="flex gap-2">
-                      <span className="text-xs text-gray-400">Press Enter to post</span>
+                      <span className="text-xs text-gray-400">Use @username to mention • Press Enter to post</span>
                       <button
                         onClick={() => handleSubmitComment()}
                         disabled={!newComment.trim() || submittingComment}
