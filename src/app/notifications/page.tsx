@@ -10,8 +10,10 @@ import {
   IoNotifications,
   IoBook,
   IoCart,
-  IoPersonCircle
+  IoPersonCircle,
+  IoChatbubbleOutline
 } from 'react-icons/io5';
+import { FaGrinHearts } from 'react-icons/fa';
 
 interface Notification {
   _id: string;
@@ -20,7 +22,7 @@ interface Notification {
     name: string;
     image?: string;
   };
-  type: 'cookbook_invite' | 'shopping_list_invite' | 'follow_request';
+  type: 'cookbook_invite' | 'shopping_list_invite' | 'follow_request' | 'comment' | 'yum';
   title: string;
   message: string;
   data: {
@@ -32,6 +34,11 @@ interface Notification {
       _id: string;
       name: string;
     };
+    creationId?: {
+      _id: string;
+      title: string;
+    };
+    commentId?: string;
   };
   read: boolean;
   status: 'pending' | 'accepted' | 'declined';
@@ -106,14 +113,52 @@ export default function NotificationsPage() {
     }
   };
 
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.read) {
+      markAsRead(notification._id);
+    }
+    
+    if (notification.type === 'comment' && notification.data.creationId) {
+      router.push(`/creations/${notification.data.creationId._id}`);
+    } else if (notification.type === 'yum' && notification.data.creationId) {
+      router.push(`/creations/${notification.data.creationId._id}`);
+    }
+  };
+
+  const getRelativeTime = (dateString: string) => {
+    const now = new Date();
+    const notificationDate = new Date(dateString);
+    const diffInMs = now.getTime() - notificationDate.getTime();
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+    if (diffInHours < 24) {
+      if (diffInHours === 0) {
+        const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+        return diffInMinutes <= 1 ? 'Just now' : `${diffInMinutes} minutes ago`;
+      }
+      return `${diffInHours} hour${diffInHours === 1 ? '' : 's'} ago`;
+    } else if (diffInDays === 1) {
+      return '1 day ago';
+    } else if (diffInDays < 7) {
+      return `${diffInDays} days ago`;
+    } else {
+      return notificationDate.toLocaleDateString();
+    }
+  };
+
   const getIcon = (type: string) => {
     switch (type) {
       case 'cookbook_invite':
-        return <IoBook className="text-orange-500" size={20} />;
+        return <IoBook className="text-green-500" size={20} />;
       case 'shopping_list_invite':
         return <IoCart className="text-green-500" size={20} />;
       case 'follow_request':
-        return <IoPersonCircle className="text-blue-500" size={20} />;
+        return <IoPersonCircle className="text-green-500" size={20} />;
+      case 'comment':
+        return <IoChatbubbleOutline className="text-green-500" size={20} />;
+      case 'yum':
+        return <FaGrinHearts className="text-green-500" size={20} />;
       default:
         return <IoNotifications className="text-gray-500" size={20} />;
     }
@@ -159,68 +204,78 @@ export default function NotificationsPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {notifications.map((notification) => (
               <div
                 key={notification._id}
-                className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 ${
+                className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border-l-4 ${
                   !notification.read 
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10' 
+                    ? 'border-green-500 bg-green-50 dark:bg-green-900/10' 
                     : 'border-gray-200 dark:border-gray-700'
-                }`}
-                onClick={() => !notification.read && markAsRead(notification._id)}
+                } ${(notification.type === 'comment' || notification.type === 'yum') ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700' : ''}`}
+                onClick={() => handleNotificationClick(notification)}
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3">
                   <div className="flex-shrink-0">
                     {getIcon(notification.type)}
                   </div>
                   
                   <div className="flex-1 min-w-0">
+                    {/* Show header for all notification types */}
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {notification.title}
+                      <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                        {notification.type === 'comment' && 'New Comment'}
+                        {notification.type === 'yum' && 'New Yum'}
+                        {(notification.type === 'cookbook_invite' || notification.type === 'shopping_list_invite' || notification.type === 'follow_request') && notification.title}
                       </h3>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(notification.createdAt).toLocaleDateString()}
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {getRelativeTime(notification.createdAt)}
                       </span>
                     </div>
                     
-                    <p className="text-gray-700 dark:text-gray-300 mb-4">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
                       {notification.message}
                     </p>
                     
-                    {notification.status === 'pending' && (
-                      <div className="flex gap-3">
+                    {/* Show approve/decline buttons only for invite-type notifications */}
+                    {(notification.type === 'cookbook_invite' || notification.type === 'shopping_list_invite' || notification.type === 'follow_request') && notification.status === 'pending' && (
+                      <div className="flex gap-2">
                         <button
-                          onClick={() => handleResponse(notification._id, 'accepted')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleResponse(notification._id, 'accepted');
+                          }}
                           disabled={responding === notification._id}
-                          className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                          className="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 text-sm"
                         >
-                          <IoCheckmark size={16} />
+                          <IoCheckmark size={14} />
                           Accept
                         </button>
                         <button
-                          onClick={() => handleResponse(notification._id, 'declined')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleResponse(notification._id, 'declined');
+                          }}
                           disabled={responding === notification._id}
-                          className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                          className="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 text-sm"
                         >
-                          <IoClose size={16} />
+                          <IoClose size={14} />
                           Decline
                         </button>
                       </div>
                     )}
                     
-                    {notification.status === 'accepted' && (
+                    {(notification.type === 'cookbook_invite' || notification.type === 'shopping_list_invite' || notification.type === 'follow_request') && notification.status === 'accepted' && (
                       <div className="flex items-center gap-2 text-green-600">
-                        <IoCheckmark size={16} />
-                        <span className="text-sm font-medium">Accepted</span>
+                        <IoCheckmark size={14} />
+                        <span className="text-xs font-medium">Accepted</span>
                       </div>
                     )}
                     
-                    {notification.status === 'declined' && (
-                      <div className="flex items-center gap-2 text-red-600">
-                        <IoClose size={16} />
-                        <span className="text-sm font-medium">Declined</span>
+                    {(notification.type === 'cookbook_invite' || notification.type === 'shopping_list_invite' || notification.type === 'follow_request') && notification.status === 'declined' && (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <IoClose size={14} />
+                        <span className="text-xs font-medium">Declined</span>
                       </div>
                     )}
                   </div>

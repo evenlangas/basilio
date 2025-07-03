@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import Notification from '@/models/Notification';
 import Cookbook from '@/models/Cookbook';
 import ShoppingList from '@/models/ShoppingList';
+import Creation from '@/models/Creation';
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,11 +20,13 @@ export async function GET(request: NextRequest) {
     // Ensure models are registered
     Cookbook;
     ShoppingList;
+    Creation;
 
     const notifications = await Notification.find({ recipient: session.user.id })
       .populate('sender', 'name image')
       .populate('data.cookbookId', 'name')
       .populate('data.shoppingListId', 'name')
+      .populate('data.creationId', 'title')
       .sort({ createdAt: -1 })
       .limit(50);
 
