@@ -87,8 +87,6 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
   const [addingToCookbook, setAddingToCookbook] = useState(false);
   const [selectedCookbookId, setSelectedCookbookId] = useState<string>('');
   const [showCopyTypeModal, setShowCopyTypeModal] = useState(false);
-  const [creations, setCreations] = useState<any[]>([]);
-  const [loadingCreations, setLoadingCreations] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
 
   useEffect(() => {
@@ -109,7 +107,6 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
     fetchRecipe();
     loadCookbooks();
     loadShoppingLists();
-    loadCreations();
   }, [session, status, router, recipeId]);
 
   // Handle clicks outside dropdowns
@@ -174,21 +171,6 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
     }
   };
 
-  const loadCreations = async () => {
-    if (!recipeId) return;
-    setLoadingCreations(true);
-    try {
-      const response = await fetch(`/api/recipes/${recipeId}/creations`);
-      if (response.ok) {
-        const data = await response.json();
-        setCreations(data);
-      }
-    } catch (error) {
-      console.error('Error loading creations:', error);
-    } finally {
-      setLoadingCreations(false);
-    }
-  };
 
   const renderPinchedFingers = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => {
@@ -445,12 +427,14 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                 {recipe.totalRatings > 0 ? (
                   <Link 
                     href={`/recipes/${recipeId}/creations`}
-                    className="flex items-center hover:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer mb-3"
+                    className="flex items-center w-full hover:text-green-700 dark:hover:text-green-400 transition-colors duration-200 cursor-pointer mb-3 group"
                   >
                     <div className="flex mr-2">
                       {renderPinchedFingers(Math.round(recipe.averageRating))}
                     </div>
-                    <span>{recipe.averageRating.toFixed(1)} ({recipe.totalRatings} rating{recipe.totalRatings !== 1 ? 's' : ''})</span>
+                    <span className="text-gray-700 dark:text-gray-300 group-hover:text-green-700 dark:group-hover:text-green-400 font-medium">
+                      {recipe.averageRating.toFixed(1)} ({recipe.totalRatings} rating{recipe.totalRatings !== 1 ? 's' : ''})
+                    </span>
                   </Link>
                 ) : (
                   <span className="text-gray-400 mb-3 block">No ratings yet</span>
@@ -600,199 +584,137 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 sm:gap-8 p-4 sm:p-6">
-            <div>
-              <div className="mb-4">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
-                  <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-0 text-gray-900 dark:text-gray-100">Ingredients</h2>
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Servings:</label>
-                      <div className="flex items-center space-x-1">
-                        <button
-                          onClick={() => setServings(Math.max(1, servings - 1))}
-                          disabled={servings <= 1}
-                          className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
-                        >
-                          <IoRemove size={16} className="text-gray-600 dark:text-gray-400" />
-                        </button>
-                        <span className="w-8 text-center font-medium text-gray-900 dark:text-gray-100">
-                          {servings}
-                        </span>
-                        <button
-                          onClick={() => setServings(Math.min(50, servings + 1))}
-                          disabled={servings >= 50}
-                          className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
-                        >
-                          <IoAdd size={16} className="text-gray-600 dark:text-gray-400" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 relative">
-                      {/* Shopping List Dropdown */}
-                      <div className="relative dropdown-container">
-                        <button
-                          onClick={() => {
-                            setShowListDropdown(!showListDropdown);
-                            setShowCookbookDropdown(false);
-                          }}
-                          disabled={addingToList}
-                          className="inline-flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <IoCart size={16} />
-                          <span>Add to List</span>
-                        </button>
-                        
-                        {showListDropdown && (
-                          <div className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 animate-in slide-in-from-top-2 duration-200">
-                            <div className="p-2 max-h-64 overflow-y-auto">
-                              {shoppingLists.length === 0 ? (
-                                <p className="text-gray-500 dark:text-gray-400 text-center py-4 text-sm">
-                                  No shopping lists found
-                                </p>
-                              ) : (
-                                shoppingLists.map((list) => (
-                                  <button
-                                    key={list._id}
-                                    onClick={() => addToShoppingList(list._id)}
-                                    disabled={addingToList}
-                                    className="w-full text-left p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
-                                  >
-                                    <div className="font-medium text-gray-900 dark:text-white text-sm">
-                                      {list.name}
-                                    </div>
-                                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                                      {list.items.length} items
-                                    </div>
-                                  </button>
-                                ))
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                {recipe.ingredients.map((ingredient, index) => {
-                  const originalServings = recipe.servings || 1;
-                  const multiplier = servings / originalServings;
-                  
-                  let displayAmount = ingredient.amount;
-                  if (multiplier !== 1 && ingredient.amount) {
-                    const num = parseFloat(ingredient.amount);
-                    if (!isNaN(num)) {
-                      const adjusted = num * multiplier;
-                      displayAmount = adjusted % 1 === 0 ? adjusted.toString() : adjusted.toFixed(2);
-                    }
-                  }
-                  
-                  return (
-                    <div key={index} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        className="mr-3 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                      />
-                      <span>
-                        <strong>
-                          {displayAmount} {ingredient.unit}
-                          {multiplier !== 1 && (
-                            <span className="text-green-600 text-xs ml-1">
-                              (adjusted)
-                            </span>
-                          )}
-                        </strong> {ingredient.name}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <h2 className="text-xl sm:text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Instructions</h2>
-              <div className="space-y-4">
-                {recipe.instructions.map((instruction, index) => (
-                  <div key={index} className="flex">
-                    <div className="w-8 h-8 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full flex items-center justify-center text-sm font-medium mr-4 flex-shrink-0">
-                      {instruction.step}
-                    </div>
-                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                      {instruction.description}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Creations using this recipe */}
-            <div className="mt-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                  Creations using this recipe ({creations.length})
-                </h2>
-                {creations.length > 0 && (
-                  <Link
-                    href={`/recipes/${recipeId}/creations`}
-                    className="text-green-600 hover:text-green-700 font-medium text-sm"
-                  >
-                    View all →
-                  </Link>
-                )}
-              </div>
-              
-              {loadingCreations ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 mx-auto"></div>
-                </div>
-              ) : creations.length === 0 ? (
-                <div className="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <p className="text-gray-500 dark:text-gray-400">
-                    No creations using this recipe yet. Be the first to share your creation!
-                  </p>
-                  <Link
-                    href="/create"
-                    className="inline-block mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    Share Your Creation
-                  </Link>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {creations.slice(0, 6).map((creation: any) => (
-                    <Link key={creation._id} href={`/creations/${creation._id}`}>
-                      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
-                        {creation.image && (
-                          <img
-                            src={creation.image}
-                            alt={creation.title}
-                            className="w-full h-32 object-cover"
-                          />
-                        )}
-                        <div className="p-3">
-                          <h3 className="font-medium text-gray-900 dark:text-white text-sm mb-1 line-clamp-1">
-                            {creation.title}
-                          </h3>
-                          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                            <span>by {creation.createdBy.name}</span>
-                            {creation.recipeRating && (
-                              <div className="flex items-center gap-1">
-                                <div className="flex">
-                                  {renderPinchedFingers(creation.recipeRating)}
-                                </div>
-                                <span>({creation.recipeRating})</span>
-                              </div>
-                            )}
-                          </div>
+          <div className={`grid gap-6 sm:gap-8 p-4 sm:p-6 ${(recipe.ingredients && recipe.ingredients.length > 0) && (recipe.instructions && recipe.instructions.length > 0) ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
+            {recipe.ingredients && recipe.ingredients.length > 0 && (
+              <div>
+                <div className="mb-4">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
+                    <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-0 text-gray-900 dark:text-gray-100">Ingredients</h2>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Servings:</label>
+                        <div className="flex items-center space-x-1">
+                          <button
+                            onClick={() => setServings(Math.max(1, servings - 1))}
+                            disabled={servings <= 1}
+                            className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+                          >
+                            <IoRemove size={16} className="text-gray-600 dark:text-gray-400" />
+                          </button>
+                          <span className="w-8 text-center font-medium text-gray-900 dark:text-gray-100">
+                            {servings}
+                          </span>
+                          <button
+                            onClick={() => setServings(Math.min(50, servings + 1))}
+                            disabled={servings >= 50}
+                            className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+                          >
+                            <IoAdd size={16} className="text-gray-600 dark:text-gray-400" />
+                          </button>
                         </div>
                       </div>
-                    </Link>
+                      <div className="flex sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 relative">
+                        {/* Shopping List Dropdown */}
+                        <div className="relative dropdown-container">
+                          <button
+                            onClick={() => {
+                              setShowListDropdown(!showListDropdown);
+                              setShowCookbookDropdown(false);
+                            }}
+                            disabled={addingToList}
+                            className="inline-flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <IoCart size={16} />
+                            <span>Add to List</span>
+                          </button>
+                          
+                          {showListDropdown && (
+                            <div className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 animate-in slide-in-from-top-2 duration-200">
+                              <div className="p-2 max-h-64 overflow-y-auto">
+                                {shoppingLists.length === 0 ? (
+                                  <p className="text-gray-500 dark:text-gray-400 text-center py-4 text-sm">
+                                    No shopping lists found
+                                  </p>
+                                ) : (
+                                  shoppingLists.map((list) => (
+                                    <button
+                                      key={list._id}
+                                      onClick={() => addToShoppingList(list._id)}
+                                      disabled={addingToList}
+                                      className="w-full text-left p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                                    >
+                                      <div className="font-medium text-gray-900 dark:text-white text-sm">
+                                        {list.name}
+                                      </div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        {list.items.length} items
+                                      </div>
+                                    </button>
+                                  ))
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {recipe.ingredients.map((ingredient, index) => {
+                    const originalServings = recipe.servings || 1;
+                    const multiplier = servings / originalServings;
+                    
+                    let displayAmount = ingredient.amount;
+                    if (multiplier !== 1 && ingredient.amount) {
+                      const num = parseFloat(ingredient.amount);
+                      if (!isNaN(num)) {
+                        const adjusted = num * multiplier;
+                        displayAmount = adjusted % 1 === 0 ? adjusted.toString() : adjusted.toFixed(2);
+                      }
+                    }
+                    
+                    return (
+                      <div key={index} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          className="mr-3 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                        />
+                        <span>
+                          <strong>
+                            {displayAmount} {ingredient.unit}
+                            {multiplier !== 1 && (
+                              <span className="text-green-600 text-xs ml-1">
+                                (adjusted)
+                              </span>
+                            )}
+                          </strong> {ingredient.name}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {recipe.instructions && recipe.instructions.length > 0 && (
+              <div>
+                <h2 className="text-xl sm:text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Instructions</h2>
+                <div className="space-y-4">
+                  {recipe.instructions.map((instruction, index) => (
+                    <div key={index} className="flex">
+                      <div className="w-8 h-8 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full flex items-center justify-center text-sm font-medium mr-4 flex-shrink-0">
+                        {instruction.step}
+                      </div>
+                      <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                        {instruction.description}
+                      </p>
+                    </div>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
           </div>
 
           <div className="px-4 sm:px-6 py-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">

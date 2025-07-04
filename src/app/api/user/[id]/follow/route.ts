@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
+import Notification from '@/models/Notification';
 
 export async function POST(
   request: NextRequest,
@@ -47,6 +48,16 @@ export async function POST(
       if (!isAlreadyPending) {
         targetUser.pendingFollowers.push(currentUser._id);
         await targetUser.save();
+        
+        // Create follow request notification
+        await Notification.create({
+          recipient: targetUser._id,
+          sender: currentUser._id,
+          type: 'follow_request',
+          title: 'New follow request',
+          message: `${currentUser.name} wants to follow you`,
+          data: {},
+        });
       }
       
       return NextResponse.json({ message: 'Follow request sent' });
@@ -67,6 +78,16 @@ export async function POST(
       currentUser.save(),
       targetUser.save()
     ]);
+    
+    // Create follow notification for public accounts
+    await Notification.create({
+      recipient: targetUser._id,
+      sender: currentUser._id,
+      type: 'follow',
+      title: 'New follower',
+      message: `${currentUser.name} is now following you`,
+      data: {},
+    });
 
     return NextResponse.json({ message: 'Successfully followed user' });
   } catch (error) {
