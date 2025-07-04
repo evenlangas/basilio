@@ -97,47 +97,49 @@ export async function PUT(
     ];
 
     // Handle recipe rating updates
-    if (recipe && recipeRating !== undefined) {
-      // Remove old rating if it exists
-      if (creation.recipe && creation.recipeRating && creation.recipe.toString() === recipe) {
-        await Recipe.findByIdAndUpdate(creation.recipe, {
-          $pull: { 
-            ratings: { 
-              user: user._id, 
-              creation: creation._id 
-            }
-          }
-        });
-      }
-      
-      // Add new rating if provided
-      if (recipeRating > 0) {
-        await Recipe.findByIdAndUpdate(recipe, {
-          $push: {
-            ratings: {
-              user: user._id,
-              rating: recipeRating,
-              creation: creation._id,
-              createdAt: new Date()
-            }
-          }
-        });
-        
-        // Update aggregated rating data
-        const recipeDoc = await Recipe.findById(recipe);
-        if (recipeDoc) {
-          const ratings = recipeDoc.ratings || [];
-          const totalRatings = ratings.length;
-          const averageRating = totalRatings > 0 
-            ? ratings.reduce((sum, r) => sum + r.rating, 0) / totalRatings 
-            : 0;
-          
-          await Recipe.findByIdAndUpdate(recipe, {
-            totalRatings,
-            averageRating
+    // Helper function to safely update recipe ratings
+    const updateRecipeRating = async (recipeId: string, userId: string, rating: number, creationId: string) => {
+      try {
+        const recipeDoc = await Recipe.findById(recipeId);
+        if (!recipeDoc) return;
+
+        // Remove any existing rating from this user for this creation
+        recipeDoc.ratings = recipeDoc.ratings.filter(
+          (r: any) => !(r.user.toString() === userId.toString() && r.creation.toString() === creationId.toString())
+        );
+
+        // Add new rating if rating > 0
+        if (rating > 0) {
+          recipeDoc.ratings.push({
+            user: userId,
+            rating: rating,
+            creation: creationId,
+            createdAt: new Date()
           });
         }
+
+        // Recalculate average rating
+        const totalRatings = recipeDoc.ratings.length;
+        const sumRatings = recipeDoc.ratings.reduce((sum: number, r: any) => sum + r.rating, 0);
+        
+        recipeDoc.averageRating = totalRatings > 0 ? sumRatings / totalRatings : 0;
+        recipeDoc.totalRatings = totalRatings;
+
+        await recipeDoc.save();
+      } catch (error) {
+        console.error('Error updating recipe rating:', error);
       }
+    };
+
+    // Step 1: Remove old rating from previous recipe (if changing recipes)
+    if (creation.recipe && creation.recipe.toString() !== recipe) {
+      await updateRecipeRating(creation.recipe.toString(), user._id.toString(), 0, creation._id.toString());
+    }
+    
+    // Step 2: Update rating for current recipe
+    if (recipe) {
+      const finalRating = recipeRating || 0;
+      await updateRecipeRating(recipe, user._id.toString(), finalRating, creation._id.toString());
     }
 
     // Update the creation
@@ -243,6 +245,30 @@ export async function DELETE(
     // Check if user owns this creation
     if (creation.createdBy.toString() !== user._id.toString()) {
       return NextResponse.json({ error: 'Unauthorized - can only delete your own creations' }, { status: 403 });
+    }
+
+    // Remove rating from recipe if this creation had a rating
+    if (creation.recipe && creation.recipeRating) {
+      try {
+        const recipeDoc = await Recipe.findById(creation.recipe);
+        if (recipeDoc) {
+          // Remove this creation's rating from the recipe
+          recipeDoc.ratings = recipeDoc.ratings.filter(
+            (r: any) => r.creation.toString() !== creation._id.toString()
+          );
+
+          // Recalculate average rating
+          const totalRatings = recipeDoc.ratings.length;
+          const sumRatings = recipeDoc.ratings.reduce((sum: number, r: any) => sum + r.rating, 0);
+          
+          recipeDoc.averageRating = totalRatings > 0 ? sumRatings / totalRatings : 0;
+          recipeDoc.totalRatings = totalRatings;
+
+          await recipeDoc.save();
+        }
+      } catch (error) {
+        console.error('Error removing rating from recipe:', error);
+      }
     }
 
     await Creation.findByIdAndDelete(params.id);
