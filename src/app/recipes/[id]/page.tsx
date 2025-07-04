@@ -15,7 +15,12 @@ import {
   IoPerson, 
   IoCart,
   IoBook,
-  IoPersonCircle 
+  IoPersonCircle,
+  IoEllipsisVertical,
+  IoCreateOutline,
+  IoTrashOutline,
+  IoRemove,
+  IoAdd
 } from 'react-icons/io5';
 import { getCountryByCode } from '@/utils/countries';
 
@@ -84,6 +89,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
   const [showCopyTypeModal, setShowCopyTypeModal] = useState(false);
   const [creations, setCreations] = useState<any[]>([]);
   const [loadingCreations, setLoadingCreations] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
 
   useEffect(() => {
     const getParams = async () => {
@@ -113,6 +119,9 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
       if (!target.closest('.dropdown-container')) {
         setShowCookbookDropdown(false);
         setShowListDropdown(false);
+      }
+      if (!target.closest('.options-menu-container')) {
+        setShowOptionsMenu(false);
       }
     };
 
@@ -385,9 +394,74 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4">
               <div className="flex-1">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                  {recipe.title}
-                </h1>
+                <div className="flex justify-between items-start mb-2">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 flex-1">
+                    {recipe.title}
+                  </h1>
+                  
+                  {canEdit && (
+                    <div className="relative options-menu-container ml-4">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowOptionsMenu(!showOptionsMenu);
+                        }}
+                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <IoEllipsisVertical size={20} className="text-gray-600 dark:text-gray-400" />
+                      </button>
+                      
+                      {showOptionsMenu && (
+                        <div 
+                          className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="py-2">
+                            <Link
+                              href={`/recipes/${recipeId}/edit`}
+                              className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              onClick={() => setShowOptionsMenu(false)}
+                            >
+                              <IoCreateOutline size={16} />
+                              <span>Edit</span>
+                            </Link>
+                            <button
+                              onClick={() => {
+                                setShowOptionsMenu(false);
+                                deleteRecipe();
+                              }}
+                              className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full text-left"
+                            >
+                              <IoTrashOutline size={16} />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                {recipe.totalRatings > 0 ? (
+                  <Link 
+                    href={`/recipes/${recipeId}/creations`}
+                    className="flex items-center hover:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer mb-3"
+                  >
+                    <div className="flex mr-2">
+                      {renderPinchedFingers(Math.round(recipe.averageRating))}
+                    </div>
+                    <span>{recipe.averageRating.toFixed(1)} ({recipe.totalRatings} rating{recipe.totalRatings !== 1 ? 's' : ''})</span>
+                  </Link>
+                ) : (
+                  <span className="text-gray-400 mb-3 block">No ratings yet</span>
+                )}
+                
+                <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  <div className="flex items-center">
+                    <IoTime className="mr-1 text-gray-500" size={18} />
+                    {recipe.cookingTime || 0} minutes
+                  </div>
+                </div>
                 
                 {recipe.description && (
                   <p className="text-gray-600 dark:text-gray-400 mb-4">{recipe.description}</p>
@@ -408,28 +482,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                   </div>
                 )}
                 
-                <div className="flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  <div className="flex items-center">
-                    <IoTime className="mr-1 text-gray-500" size={18} />
-                    {recipe.cookingTime || 0} minutes
-                  </div>
-                  <div className="flex items-center">
-                    <IoPeople className="mr-1 text-gray-500" size={18} />
-                    {recipe.servings || 1} serving{recipe.servings !== 1 ? 's' : ''}
-                  </div>
-                  {recipe.totalRatings > 0 ? (
-                    <Link 
-                      href={`/recipes/${recipeId}/creations`}
-                      className="flex items-center hover:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer"
-                    >
-                      <div className="flex mr-2">
-                        {renderPinchedFingers(Math.round(recipe.averageRating))}
-                      </div>
-                      <span>{recipe.averageRating.toFixed(1)} ({recipe.totalRatings} rating{recipe.totalRatings !== 1 ? 's' : ''})</span>
-                    </Link>
-                  ) : (
-                    <span className="text-gray-400">No ratings yet</span>
-                  )}
+                <div className="flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-400 mb-6">
                   <Link 
                     href={`/profile/${recipe.createdBy._id}`}
                     className="flex items-center hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
@@ -445,6 +498,53 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                     )}
                     {recipe.createdBy.name}
                   </Link>
+                </div>
+                
+                {/* Add to Cookbook Button */}
+                <div className="mb-4">
+                  <div className="relative dropdown-container">
+                    <button
+                      onClick={() => {
+                        setShowCookbookDropdown(!showCookbookDropdown);
+                        setShowListDropdown(false);
+                      }}
+                      disabled={addingToCookbook}
+                      className="inline-flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <IoBook size={16} />
+                      <span>Add to Cookbook</span>
+                    </button>
+                    
+                    {showCookbookDropdown && (
+                      <div className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 animate-in slide-in-from-top-2 duration-200">
+                        <div className="p-2 max-h-64 overflow-y-auto">
+                          {cookbooks.length === 0 ? (
+                            <p className="text-gray-500 dark:text-gray-400 text-center py-4 text-sm">
+                              No cookbooks found
+                            </p>
+                          ) : (
+                            cookbooks.map((cookbook) => (
+                              <button
+                                key={cookbook._id}
+                                onClick={() => showCopyTypeModalHandler(cookbook._id)}
+                                disabled={addingToCookbook}
+                                className="w-full text-left p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                              >
+                                <div className="font-medium text-gray-900 dark:text-white text-sm">
+                                  {cookbook.name}
+                                </div>
+                                {cookbook.description && (
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    {cookbook.description}
+                                  </div>
+                                )}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Attribution Section - only for copies, not references */}
@@ -497,23 +597,6 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                   )}
                 </div>
               </div>
-              
-              {canEdit && (
-                <div className="flex space-x-2 sm:ml-4 mt-4 sm:mt-0">
-                  <button
-                    onClick={() => router.push(`/recipes/${recipeId}/edit`)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={deleteRecipe}
-                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    Delete
-                  </button>
-                </div>
-              )}
             </div>
           </div>
 
@@ -522,19 +605,30 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
               <div className="mb-4">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
                   <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-0 text-gray-900 dark:text-gray-100">Ingredients</h2>
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
                     <div className="flex items-center space-x-2">
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Servings:</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="50"
-                        value={servings}
-                        onChange={(e) => setServings(parseInt(e.target.value) || 1)}
-                        className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      />
+                      <div className="flex items-center space-x-1">
+                        <button
+                          onClick={() => setServings(Math.max(1, servings - 1))}
+                          disabled={servings <= 1}
+                          className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+                        >
+                          <IoRemove size={16} className="text-gray-600 dark:text-gray-400" />
+                        </button>
+                        <span className="w-8 text-center font-medium text-gray-900 dark:text-gray-100">
+                          {servings}
+                        </span>
+                        <button
+                          onClick={() => setServings(Math.min(50, servings + 1))}
+                          disabled={servings >= 50}
+                          className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+                        >
+                          <IoAdd size={16} className="text-gray-600 dark:text-gray-400" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 relative">
+                    <div className="flex sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 relative">
                       {/* Shopping List Dropdown */}
                       <div className="relative dropdown-container">
                         <button
@@ -543,9 +637,9 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                             setShowCookbookDropdown(false);
                           }}
                           disabled={addingToList}
-                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center space-x-1 w-full sm:w-auto"
+                          className="inline-flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <IoCart size={18} />
+                          <IoCart size={16} />
                           <span>Add to List</span>
                         </button>
                         
@@ -570,54 +664,6 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                                     <div className="text-xs text-gray-500 dark:text-gray-400">
                                       {list.items.length} items
                                     </div>
-                                  </button>
-                                ))
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Cookbook Dropdown */}
-                      <div className="relative dropdown-container">
-                        <button
-                          onClick={() => {
-                            setShowCookbookDropdown(!showCookbookDropdown);
-                            setShowListDropdown(false);
-                          }}
-                          disabled={addingToCookbook}
-                          className="text-white px-3 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center space-x-1 w-full sm:w-auto"
-                          style={{ backgroundColor: 'var(--color-primary-600)' }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-700)'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-600)'}
-                        >
-                          <IoBook size={18} />
-                          <span>Add to Cookbook</span>
-                        </button>
-                        
-                        {showCookbookDropdown && (
-                          <div className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 animate-in slide-in-from-top-2 duration-200">
-                            <div className="p-2 max-h-64 overflow-y-auto">
-                              {cookbooks.length === 0 ? (
-                                <p className="text-gray-500 dark:text-gray-400 text-center py-4 text-sm">
-                                  No cookbooks found
-                                </p>
-                              ) : (
-                                cookbooks.map((cookbook) => (
-                                  <button
-                                    key={cookbook._id}
-                                    onClick={() => showCopyTypeModalHandler(cookbook._id)}
-                                    disabled={addingToCookbook}
-                                    className="w-full text-left p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
-                                  >
-                                    <div className="font-medium text-gray-900 dark:text-white text-sm">
-                                      {cookbook.name}
-                                    </div>
-                                    {cookbook.description && (
-                                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                        {cookbook.description}
-                                      </div>
-                                    )}
                                   </button>
                                 ))
                               )}
@@ -754,12 +800,6 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
               <span>
                 Created on {new Date(recipe.createdAt).toLocaleDateString()}
               </span>
-              <button
-                onClick={() => router.push('/recipes')}
-                className="text-green-600 hover:text-green-700 font-medium text-left sm:text-right"
-              >
-                ← Back to Recipes
-              </button>
             </div>
           </div>
         </div>
