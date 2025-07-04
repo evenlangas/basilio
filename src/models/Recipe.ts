@@ -115,4 +115,19 @@ const RecipeSchema = new mongoose.Schema({
   timestamps: true,
 });
 
+// Optional database indexes for improved performance
+// These indexes are recommended but not required for basic functionality
+// Run scripts/create-recipe-indexes.js to create them for optimal performance
+
+// Basic indexes that are most beneficial
+RecipeSchema.index({ createdBy: 1, createdAt: -1 }); // User's recipes by date
+RecipeSchema.index({ isPrivate: 1, averageRating: -1, totalRatings: -1 }); // Public recipes by popularity
+RecipeSchema.index({ createdAt: -1 }); // Recent recipes
+
+// Additional performance indexes (create via script for large datasets)
+// RecipeSchema.index({ title: 'text', description: 'text', tags: 'text' });
+// RecipeSchema.index({ isPrivate: 1, createdAt: -1 });
+// RecipeSchema.index({ createdBy: 1, isPrivate: 1 });
+// RecipeSchema.index({ totalRatings: -1, averageRating: -1 });
+
 export default mongoose.models.Recipe || mongoose.model('Recipe', RecipeSchema);

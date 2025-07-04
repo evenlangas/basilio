@@ -6,14 +6,10 @@ import { useEffect, useState, use } from 'react';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import UserSearchInput from '@/components/UserSearchInput';
+import RecipeSearchInput from '@/components/RecipeSearchInput';
 import CameraInput from '@/components/CameraInput';
 import { IoArrowBack, IoCamera, IoClose, IoBook, IoTime, IoPeople } from 'react-icons/io5';
 
-interface Recipe {
-  _id: string;
-  title: string;
-  image?: string;
-}
 
 interface Creation {
   _id: string;
@@ -48,7 +44,6 @@ export default function EditCreationPage({ params }: { params: Promise<{ id: str
   const [drankWith, setDrankWith] = useState('');
   const [chefName, setChefName] = useState('');
   const [recipeRating, setRecipeRating] = useState(0);
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -60,7 +55,6 @@ export default function EditCreationPage({ params }: { params: Promise<{ id: str
     }
     
     loadCreation();
-    loadRecipes();
   }, [session, status, router, id]);
 
   const loadCreation = async () => {
@@ -96,17 +90,6 @@ export default function EditCreationPage({ params }: { params: Promise<{ id: str
     }
   };
 
-  const loadRecipes = async () => {
-    try {
-      const response = await fetch('/api/recipes');
-      if (response.ok) {
-        const data = await response.json();
-        setRecipes(data);
-      }
-    } catch (error) {
-      console.error('Error loading recipes:', error);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -263,19 +246,12 @@ export default function EditCreationPage({ params }: { params: Promise<{ id: str
             <label htmlFor="recipe" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Link to Recipe
             </label>
-            <select
-              id="recipe"
+            <RecipeSearchInput
               value={recipe}
-              onChange={(e) => setRecipe(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            >
-              <option value="">Select a recipe (optional)</option>
-              {recipes.map((r) => (
-                <option key={r._id} value={r._id}>
-                  {r.title}
-                </option>
-              ))}
-            </select>
+              onChange={(recipeId) => setRecipe(recipeId)}
+              label=""
+              placeholder="Search for any recipe..."
+            />
           </div>
 
           {/* Recipe Rating */}
