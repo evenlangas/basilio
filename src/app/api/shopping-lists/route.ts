@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
     const shoppingLists = await ShoppingList.find(query)
       .populate('createdBy', 'name')
       .populate('items.addedBy', 'name')
+      .populate('invitedUsers', 'name image')
       .sort({ createdAt: -1 });
 
     return NextResponse.json(shoppingLists);

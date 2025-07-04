@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
-import { IoAdd, IoCart, IoPeople, IoCheckbox, IoSquareOutline } from 'react-icons/io5';
+import { IoAdd, IoCart, IoPeople } from 'react-icons/io5';
 
 interface ShoppingList {
   _id: string;
@@ -22,7 +22,11 @@ interface ShoppingList {
     _id: string;
     name: string;
   };
-  invitedUsers: string[];
+  invitedUsers: {
+    _id: string;
+    name: string;
+    image?: string;
+  }[];
   createdAt: string;
 }
 
@@ -113,67 +117,52 @@ export default function ListsPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {lists.map((list) => {
-              const completedItems = list.items.filter(item => item.completed).length;
-              const totalItems = list.items.length;
-              const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+              const allMembers = [list.createdBy, ...list.invitedUsers];
+              const uncheckedItems = list.items.filter(item => !item.completed).length;
               
               return (
                 <Link
                   key={list._id}
                   href={`/lists/${list._id}`}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
-                      {list.name}
-                    </h3>
-                    {list.invitedUsers.length > 0 && (
-                      <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-                        <IoPeople size={16} />
-                        <span className="text-sm">{list.invitedUsers.length}</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Progress Bar */}
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300 mb-2">
-                      <span>{completedItems} of {totalItems} items</span>
-                      <span>{Math.round(progress)}%</span>
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
+                        {list.name}
+                      </h3>
                     </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <div 
-                        className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${progress}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  
-                  {/* Recent Items Preview */}
-                  <div className="space-y-2">
-                    {list.items.slice(0, 3).map((item, index) => (
-                      <div key={index} className="flex items-center gap-2 text-sm">
-                        {item.completed ? (
-                          <IoCheckbox className="text-green-500" />
-                        ) : (
-                          <IoSquareOutline className="text-gray-400" />
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {uncheckedItems} {uncheckedItems === 1 ? 'item' : 'items'} remaining
+                      </span>
+                      
+                      {/* Members Profile Pictures */}
+                      <div className="flex items-center gap-2">
+                        {allMembers.slice(0, 5).map((member, index) => (
+                          <div key={member._id} className="relative">
+                            {member.image ? (
+                              <img
+                                src={member.image}
+                                alt={member.name}
+                                className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800"
+                                style={{ zIndex: 5 - index }}
+                              />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 border-2 border-white dark:border-gray-800">
+                                {member.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        {allMembers.length > 5 && (
+                          <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 border-2 border-white dark:border-gray-800">
+                            +{allMembers.length - 5}
+                          </div>
                         )}
-                        <span className={`${item.completed ? 'line-through text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
-                          {item.name}
-                        </span>
                       </div>
-                    ))}
-                    {list.items.length > 3 && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        +{list.items.length - 3} more items
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Created {new Date(list.createdAt).toLocaleDateString()}
-                    </p>
+                    </div>
                   </div>
                 </Link>
               );

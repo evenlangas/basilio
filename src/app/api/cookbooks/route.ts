@@ -29,6 +29,7 @@ export async function GET() {
       ]
     })
     .populate('createdBy', 'name')
+    .populate('invitedUsers', 'name image')
     .sort({ createdAt: -1 });
 
     return NextResponse.json(cookbooks);

@@ -18,7 +18,11 @@ interface Cookbook {
     _id: string;
     name: string;
   };
-  invitedUsers: string[];
+  invitedUsers: {
+    _id: string;
+    name: string;
+    image?: string;
+  }[];
   image?: string;
   createdAt: string;
 }
@@ -119,45 +123,69 @@ export default function CookbooksPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {cookbooks.map((cookbook) => (
-              <Link
-                key={cookbook._id}
-                href={`/cookbooks/${cookbook._id}`}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-              >
-                
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
-                      {cookbook.name}
-                    </h3>
-                    <div className="flex items-center gap-1">
-                      {cookbook.isPrivate ? (
-                        <IoLockClosed size={16} className="text-gray-500" />
-                      ) : (
-                        <IoGlobe size={16} className="text-green-500" />
-                      )}
+            {cookbooks.map((cookbook) => {
+              const allMembers = [cookbook.createdBy, ...cookbook.invitedUsers];
+              
+              return (
+                <Link
+                  key={cookbook._id}
+                  href={`/cookbooks/${cookbook._id}`}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                >
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
+                        {cookbook.name}
+                      </h3>
+                      <div className="flex items-center gap-1">
+                        {cookbook.isPrivate ? (
+                          <IoLockClosed size={16} className="text-gray-500" />
+                        ) : (
+                          <IoGlobe size={16} className="text-green-500" />
+                        )}
+                      </div>
+                    </div>
+                    
+                    {cookbook.description && (
+                      <p className="text-gray-600 dark:text-gray-300 mb-3 text-sm">
+                        {cookbook.description}
+                      </p>
+                    )}
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {cookbook.recipes.length} recipes
+                      </span>
+                      
+                      {/* Members Profile Pictures */}
+                      <div className="flex items-center gap-2">
+                        {allMembers.slice(0, 5).map((member, index) => (
+                          <div key={member._id} className="relative">
+                            {member.image ? (
+                              <img
+                                src={member.image}
+                                alt={member.name}
+                                className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800"
+                                style={{ zIndex: 5 - index }}
+                              />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 border-2 border-white dark:border-gray-800">
+                                {member.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        {allMembers.length > 5 && (
+                          <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 border-2 border-white dark:border-gray-800">
+                            +{allMembers.length - 5}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  
-                  {cookbook.description && (
-                    <p className="text-gray-600 dark:text-gray-300 mb-3 text-sm">
-                      {cookbook.description}
-                    </p>
-                  )}
-                  
-                  <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                    <span>{cookbook.recipes.length} recipes</span>
-                    {cookbook.invitedUsers.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        <IoPeople size={14} />
-                        <span>{cookbook.invitedUsers.length}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         )}
       </main>
