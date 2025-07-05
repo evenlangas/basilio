@@ -233,20 +233,6 @@ export default function Home() {
       <Navigation />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header with Search */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-            Home
-          </h1>
-          <Link
-            href="/search"
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
-          >
-            <IoSearchOutline size={18} />
-            <span className="text-sm sm:text-base text-gray-600 dark:text-gray-300 hidden sm:inline">Search</span>
-          </Link>
-        </div>
-
         {/* Feed */}
         {loading ? (
           <div className="text-center py-12">
@@ -261,7 +247,7 @@ export default function Home() {
               Follow other chefs to see their creations and recipes in your feed
             </p>
             <Link
-              href="/search"
+              href="/explore"
               className="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors"
               style={{ backgroundColor: 'var(--color-primary-600)' }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-700)'}

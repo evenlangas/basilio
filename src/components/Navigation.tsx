@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { IoLeaf, IoBook, IoCart, IoHome, IoPersonCircle, IoAdd, IoRestaurant, IoCreate, IoList, IoNotifications, IoEllipsisVertical, IoSettings } from 'react-icons/io5';
+import { IoLeaf, IoBook, IoCart, IoHome, IoPersonCircle, IoAdd, IoRestaurant, IoCreate, IoList, IoNotifications, IoEllipsisVertical, IoSettings, IoSearchOutline } from 'react-icons/io5';
 
 export default function Navigation() {
   const { data: session } = useSession();
@@ -122,6 +122,18 @@ export default function Navigation() {
           
           <div className="nav-right">
             <Link
+              href="/explore"
+              className="nav-link flex items-center gap-2"
+              style={{
+                fontSize: 'var(--text-sm)',
+                color: 'var(--color-text-secondary)',
+                padding: 'var(--spacing-md)'
+              }}
+            >
+              <IoSearchOutline size={16} />
+              Explore
+            </Link>
+            <Link
               href="/notifications"
               className="nav-link flex items-center gap-2 relative"
               style={{
@@ -180,6 +192,17 @@ export default function Navigation() {
           </Link>
           
           <div className="nav-right">
+            <Link
+              href="/explore"
+              className="p-2 rounded-lg transition-colors"
+              style={{
+                color: 'var(--color-text-secondary)',
+                backgroundColor: 'var(--color-bg-tertiary)'
+              }}
+              title="Explore"
+            >
+              <IoSearchOutline size={18} />
+            </Link>
             <Link
               href="/notifications"
               className="p-2 rounded-lg transition-colors relative"

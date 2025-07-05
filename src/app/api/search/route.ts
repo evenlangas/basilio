@@ -4,6 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Recipe from '@/models/Recipe';
+import Cookbook from '@/models/Cookbook';
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,6 +22,7 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
     Recipe;
+    Cookbook;
     
     const searchRegex = new RegExp(query, 'i');
     
@@ -46,6 +48,18 @@ export async function GET(request: NextRequest) {
     .select('title description image tags createdBy')
     .limit(10);
 
+    // Search cookbooks
+    const cookbooks = await Cookbook.find({
+      $or: [
+        { name: searchRegex },
+        { description: searchRegex }
+      ]
+    })
+    .populate('createdBy', 'name')
+    .populate('invitedUsers', 'name')
+    .select('name description image createdBy invitedUsers recipes')
+    .limit(10);
+
     // Format results
     const results = [
       ...users.map(user => ({
@@ -64,6 +78,18 @@ export async function GET(request: NextRequest) {
         createdBy: {
           name: recipe.createdBy.name,
         },
+      })),
+      ...cookbooks.map(cookbook => ({
+        type: 'cookbook' as const,
+        id: cookbook._id.toString(),
+        name: cookbook.name,
+        description: cookbook.description,
+        image: cookbook.image,
+        createdBy: {
+          name: cookbook.createdBy.name,
+        },
+        members: (cookbook.invitedUsers?.length || 0) + 1, // +1 for creator
+        recipes: cookbook.recipes?.length || 0,
       })),
     ];
 
