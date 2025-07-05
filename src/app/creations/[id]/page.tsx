@@ -130,6 +130,19 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
   const handleYum = async () => {
     if (!creation || yumming) return;
     
+    const userHasYummed = hasYummed;
+    const currentUser = { _id: session?.user?.id, name: session?.user?.name, image: session?.user?.image };
+    
+    // Optimistic update - update UI immediately
+    setCreation(prev => {
+      if (!prev) return prev;
+      const currentLikes = prev.likes || [];
+      const newLikes = userHasYummed 
+        ? currentLikes.filter(like => like._id !== session?.user?.id)
+        : [...currentLikes, currentUser];
+      return { ...prev, likes: newLikes };
+    });
+    
     setYumming(true);
     try {
       const response = await fetch(`/api/creations/${creation._id}/yum`, {
@@ -139,9 +152,28 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
       if (response.ok) {
         const data = await response.json();
         setCreation(data.creation);
+      } else {
+        // Revert optimistic update on error
+        setCreation(prev => {
+          if (!prev) return prev;
+          const currentLikes = prev.likes || [];
+          const revertedLikes = userHasYummed 
+            ? [...currentLikes, currentUser]
+            : currentLikes.filter(like => like._id !== session?.user?.id);
+          return { ...prev, likes: revertedLikes };
+        });
       }
     } catch (error) {
       console.error('Error yumming creation:', error);
+      // Revert optimistic update on error
+      setCreation(prev => {
+        if (!prev) return prev;
+        const currentLikes = prev.likes || [];
+        const revertedLikes = userHasYummed 
+          ? [...currentLikes, currentUser]
+          : currentLikes.filter(like => like._id !== session?.user?.id);
+        return { ...prev, likes: revertedLikes };
+      });
     } finally {
       setYumming(false);
     }
@@ -356,7 +388,6 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
             <div className="flex items-center gap-4 sm:gap-6">
               <button 
                 onClick={handleYum}
-                disabled={yumming}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all ${
                   hasYummed
                     ? 'bg-green-50 text-green-600 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'

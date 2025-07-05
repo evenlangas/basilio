@@ -157,29 +157,12 @@ export default function CookbooksPage() {
                         {cookbook.recipes.length} recipes
                       </span>
                       
-                      {/* Members Profile Pictures */}
-                      <div className="flex items-center gap-2">
-                        {allMembers.slice(0, 5).map((member, index) => (
-                          <div key={member._id} className="relative">
-                            {member.image ? (
-                              <img
-                                src={member.image}
-                                alt={member.name}
-                                className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800"
-                                style={{ zIndex: 5 - index }}
-                              />
-                            ) : (
-                              <div className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 border-2 border-white dark:border-gray-800">
-                                {member.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                        {allMembers.length > 5 && (
-                          <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 border-2 border-white dark:border-gray-800">
-                            +{allMembers.length - 5}
-                          </div>
-                        )}
+                      {/* Members Count Icon */}
+                      <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                        <IoPeople size={16} />
+                        <span className="text-sm font-medium">
+                          {allMembers.length}
+                        </span>
                       </div>
                     </div>
                   </div>

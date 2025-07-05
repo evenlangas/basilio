@@ -14,9 +14,10 @@ interface ChefDisplayProps {
   chefName: string;
   className?: string;
   showProfilePicture?: boolean;
+  asLink?: boolean;
 }
 
-export default function ChefDisplay({ chefName, className = "", showProfilePicture = true }: ChefDisplayProps) {
+export default function ChefDisplay({ chefName, className = "", showProfilePicture = true, asLink = true }: ChefDisplayProps) {
   const [chefUser, setChefUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -53,14 +54,8 @@ export default function ChefDisplay({ chefName, className = "", showProfilePictu
   if (!chefName.trim()) return null;
 
   if (chefUser) {
-    return (
-      <Link
-        href={`/profile/${chefUser._id}`}
-        className={`inline-flex items-center gap-1 transition-colors font-medium ${className}`}
-        style={{ color: 'var(--color-primary-600)' }}
-        onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary-700)'}
-        onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-primary-600)'}
-      >
+    const content = (
+      <>
         {showProfilePicture && (
           <div className="w-4 h-4 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
             {chefUser.image ? (
@@ -75,8 +70,31 @@ export default function ChefDisplay({ chefName, className = "", showProfilePictu
           </div>
         )}
         {chefUser.name}
-      </Link>
+      </>
     );
+
+    if (asLink) {
+      return (
+        <Link
+          href={`/profile/${chefUser._id}`}
+          className={`inline-flex items-center gap-1 transition-colors font-medium ${className}`}
+          style={{ color: 'var(--color-primary-600)' }}
+          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary-700)'}
+          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-primary-600)'}
+        >
+          {content}
+        </Link>
+      );
+    } else {
+      return (
+        <span 
+          className={`inline-flex items-center gap-1 font-medium ${className}`}
+          style={{ color: 'var(--color-primary-600)' }}
+        >
+          {content}
+        </span>
+      );
+    }
   }
 
   // If no user found, display as plain text

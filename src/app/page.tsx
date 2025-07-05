@@ -136,7 +136,26 @@ export default function Home() {
   const handleYum = async (creationId: string) => {
     if (yummingStates[creationId]) return;
     
+    const currentItem = feedItems.find(item => item._id === creationId && item.type === 'creation');
+    if (!currentItem) return;
+    
+    const userHasYummed = hasYummed(currentItem);
+    const currentUser = { _id: session?.user?.id, name: session?.user?.name, image: session?.user?.image };
+    
+    // Optimistic update - update UI immediately
+    setFeedItems(prev => prev.map(item => {
+      if (item._id === creationId && item.type === 'creation') {
+        const currentLikes = item.likes || [];
+        const newLikes = userHasYummed 
+          ? currentLikes.filter(like => like._id !== session?.user?.id)
+          : [...currentLikes, currentUser];
+        return { ...item, likes: newLikes };
+      }
+      return item;
+    }));
+    
     setYummingStates(prev => ({ ...prev, [creationId]: true }));
+    
     try {
       const response = await fetch(`/api/creations/${creationId}/yum`, {
         method: 'POST',
@@ -144,12 +163,36 @@ export default function Home() {
       
       if (response.ok) {
         const data = await response.json();
+        // Update with server response to ensure consistency
         setFeedItems(prev => prev.map(item => 
           item._id === creationId && item.type === 'creation' ? { ...data.creation, type: 'creation' } : item
         ));
+      } else {
+        // Revert optimistic update on error
+        setFeedItems(prev => prev.map(item => {
+          if (item._id === creationId && item.type === 'creation') {
+            const currentLikes = item.likes || [];
+            const revertedLikes = userHasYummed 
+              ? [...currentLikes, currentUser]
+              : currentLikes.filter(like => like._id !== session?.user?.id);
+            return { ...item, likes: revertedLikes };
+          }
+          return item;
+        }));
       }
     } catch (error) {
       console.error('Error yumming creation:', error);
+      // Revert optimistic update on error
+      setFeedItems(prev => prev.map(item => {
+        if (item._id === creationId && item.type === 'creation') {
+          const currentLikes = item.likes || [];
+          const revertedLikes = userHasYummed 
+            ? [...currentLikes, currentUser]
+            : currentLikes.filter(like => like._id !== session?.user?.id);
+          return { ...item, likes: revertedLikes };
+        }
+        return item;
+      }));
     } finally {
       setYummingStates(prev => ({ ...prev, [creationId]: false }));
     }
@@ -255,7 +298,7 @@ export default function Home() {
                       </h3>
                       {item.chefName && (
                         <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                          Chef: <ChefDisplay chefName={item.chefName} className="text-xs" showProfilePicture={false} />
+                          Chef: <ChefDisplay chefName={item.chefName} className="text-xs" showProfilePicture={false} asLink={false} />
                         </p>
                       )}
                       <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
@@ -335,7 +378,6 @@ export default function Home() {
                           e.stopPropagation();
                           handleYum(item._id);
                         }}
-                        disabled={yummingStates[item._id]}
                         className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all ${
                           hasYummed(item)
                             ? 'bg-green-50 text-green-600 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
@@ -347,12 +389,11 @@ export default function Home() {
                           Yum
                         </span>
                       </button>
-                      <Link
-                        href={`/creations/${item._id}/comments`}
+                      <button
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          window.location.href = `/creations/${item._id}/comments`;
+                          router.push(`/creations/${item._id}/comments`);
                         }}
                         className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 dark:hover:border-blue-800 transition-all"
                       >
@@ -360,7 +401,7 @@ export default function Home() {
                         <span className="text-sm sm:text-base">
                           Comment
                         </span>
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </Link>
