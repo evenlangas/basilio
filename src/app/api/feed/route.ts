@@ -34,7 +34,8 @@ export async function GET() {
     })
     .populate('createdBy', 'name image')
     .populate('likes', 'name image')
-    .populate('recipe', 'title description cookingTime servings')
+    .populate('recipes.recipe', 'title description cookingTime servings averageRating')
+    .populate('recipe', 'title description cookingTime servings averageRating')
     .sort({ createdAt: -1 })
     .limit(25); // Limit to recent 25 creations
 

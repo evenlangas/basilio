@@ -8,7 +8,7 @@ import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import UserSearchInput from '@/components/UserSearchInput';
 import RecipeSearchInput from '@/components/RecipeSearchInput';
 import CameraInput from '@/components/CameraInput';
-import { IoArrowBack, IoCamera, IoClose, IoBook, IoTime, IoPeople } from 'react-icons/io5';
+import { IoArrowBack, IoCamera, IoClose, IoBook, IoTime, IoPeople, IoRestaurantOutline } from 'react-icons/io5';
 
 
 export default function CreatePage() {
@@ -18,8 +18,7 @@ export default function CreatePage() {
   const [description, setDescription] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
-  const [recipe, setRecipe] = useState<string>('');
-  const [recipeRating, setRecipeRating] = useState<number | null>(null);
+  const [recipes, setRecipes] = useState<Array<{recipe: string, rating: number | null}>>([]);
   const [eatenWith, setEatenWith] = useState('');
   const [cookingTime, setCookingTime] = useState('');
   const [drankWith, setDrankWith] = useState('');
@@ -50,6 +49,45 @@ export default function CreatePage() {
   const removeImage = () => {
     setImage(null);
     setImagePreview('');
+  };
+
+  const addRecipe = () => {
+    setRecipes([...recipes, { recipe: '', rating: null }]);
+  };
+
+  const removeRecipe = (index: number) => {
+    setRecipes(recipes.filter((_, i) => i !== index));
+  };
+
+  const updateRecipe = (index: number, recipeId: string) => {
+    const newRecipes = [...recipes];
+    newRecipes[index].recipe = recipeId;
+    setRecipes(newRecipes);
+  };
+
+  const updateRecipeRating = (index: number, rating: number | null) => {
+    const newRecipes = [...recipes];
+    newRecipes[index].rating = rating;
+    setRecipes(newRecipes);
+  };
+
+  const renderPinchedFingers = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => {
+      const isSelected = i < rating;
+      return (
+        <span 
+          key={i} 
+          className={`inline-block transition-all cursor-pointer ${
+            isSelected ? 'opacity-100' : 'opacity-30'
+          }`}
+          style={{
+            filter: isSelected ? 'hue-rotate(0deg) saturate(1.2)' : 'grayscale(80%)'
+          }}
+        >
+          🤌
+        </span>
+      );
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,8 +130,7 @@ export default function CreatePage() {
           title: title.trim(),
           description: description.trim(),
           image: imageUrl,
-          recipe: recipe || null,
-          recipeRating: recipe && recipeRating ? recipeRating : null,
+          recipes: recipes.filter(r => r.recipe), // Only include recipes that have been selected
           eatenWith: eatenWith.trim(),
           cookingTime: cookingTime ? parseInt(cookingTime) : 0,
           drankWith: drankWith.trim(),
@@ -202,63 +239,86 @@ export default function CreatePage() {
             />
           </div>
 
-          {/* Recipe Link */}
+          {/* Recipes */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
-            <label htmlFor="recipe" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Link to Recipe
-            </label>
-            <RecipeSearchInput
-              value={recipe}
-              onChange={(recipeId) => {
-                setRecipe(recipeId);
-                // Reset rating when recipe changes
-                if (!recipeId) {
-                  setRecipeRating(null);
-                }
-              }}
-              label=""
-              placeholder="Search for any recipe..."
-            />
+            <div className="flex items-center justify-between mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <IoBook size={16} className="inline mr-1" />
+                Recipes Used
+              </label>
+              <button
+                type="button"
+                onClick={addRecipe}
+                className="px-3 py-1 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+              >
+                + Add Recipe
+              </button>
+            </div>
 
-            {/* Recipe Rating */}
-            {recipe && (
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Rate this recipe (Chef's kisses 🤌)
-                </label>
-                <div className="flex items-center gap-2">
-                  {Array.from({ length: 5 }, (_, i) => {
-                    const rating = i + 1;
-                    const isSelected = rating <= (recipeRating || 0);
-                    return (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => setRecipeRating(rating === recipeRating ? null : rating)}
-                        className={`text-2xl transition-all duration-200 hover:scale-110 ${
-                          isSelected 
-                            ? 'filter-none' 
-                            : 'opacity-30 grayscale hover:opacity-60 hover:grayscale-0'
-                        }`}
-                        style={{
-                          filter: isSelected ? 'hue-rotate(0deg) saturate(1.2)' : 'grayscale(80%)'
-                        }}
-                      >
-                        🤌
-                      </button>
-                    );
-                  })}
-                  {recipeRating && (
-                    <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                      {recipeRating} chef's {recipeRating === 1 ? 'kiss' : 'kisses'}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Rate how well this recipe worked for you
-                </p>
-              </div>
+            {recipes.length === 0 && (
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
+                No recipes added yet. Click "Add Recipe" to link a recipe to this creation.
+              </p>
             )}
+
+            {recipes.map((recipeItem, index) => (
+              <div key={index} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 mb-4 last:mb-0">
+                <div className="flex items-start gap-3">
+                  <IoRestaurantOutline size={16} className="text-gray-500 dark:text-gray-400 mt-2 flex-shrink-0" />
+                  <div className="flex-1">
+                    <RecipeSearchInput
+                      value={recipeItem.recipe}
+                      onChange={(recipeId) => updateRecipe(index, recipeId)}
+                      label=""
+                      placeholder="Search for a recipe..."
+                    />
+                    
+                    {recipeItem.recipe && (
+                      <div className="mt-3">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Rate this recipe
+                        </label>
+                        <div className="flex items-center gap-2">
+                          {Array.from({ length: 5 }, (_, i) => {
+                            const rating = i + 1;
+                            const isSelected = rating <= (recipeItem.rating || 0);
+                            return (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => updateRecipeRating(index, rating === recipeItem.rating ? null : rating)}
+                                className={`text-xl transition-all duration-200 hover:scale-110 ${
+                                  isSelected 
+                                    ? 'filter-none' 
+                                    : 'opacity-30 grayscale hover:opacity-60 hover:grayscale-0'
+                                }`}
+                                style={{
+                                  filter: isSelected ? 'hue-rotate(0deg) saturate(1.2)' : 'grayscale(80%)'
+                                }}
+                              >
+                                🤌
+                              </button>
+                            );
+                          })}
+                          {recipeItem.rating && (
+                            <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                              {recipeItem.rating.toFixed(1)} 🤌
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeRecipe(index)}
+                    className="text-red-500 hover:text-red-700 transition-colors p-1"
+                  >
+                    <IoClose size={20} />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Additional Details */}
@@ -269,7 +329,7 @@ export default function CreatePage() {
               value={eatenWith}
               onChange={setEatenWith}
               placeholder="Search users or type custom text..."
-              label="🍽️ Who did you eat this with?"
+              label="👥 Who did you eat this with?"
               allowFreeText={true}
             />
 

@@ -13,9 +13,29 @@ const CreationSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  recipes: [{
+    recipe: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Recipe',
+      required: true,
+    },
+    rating: {
+      type: Number,
+      min: 0,
+      max: 5,
+      default: null,
+    },
+  }],
+  // Legacy field for backward compatibility
   recipe: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Recipe',
+    default: null,
+  },
+  recipeRating: {
+    type: Number,
+    min: 0,
+    max: 5,
     default: null,
   },
   eatenWith: {
@@ -71,12 +91,6 @@ const CreationSchema = new mongoose.Schema({
       default: Date.now,
     },
   }],
-  recipeRating: {
-    type: Number,
-    min: 0,
-    max: 5,
-    default: null,
-  },
 }, {
   timestamps: true,
 });

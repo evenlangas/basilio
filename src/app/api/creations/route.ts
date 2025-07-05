@@ -75,7 +75,7 @@ export async function GET() {
     // Get creations from this user
     const creations = await Creation.find({ createdBy: user._id })
       .populate('createdBy', 'name image')
-      .populate('recipe', 'title')
+      .populate('recipes.recipe', 'title')
       .sort({ createdAt: -1 });
 
     return NextResponse.json(creations);
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, image, recipe, recipeRating, eatenWith, cookingTime, drankWith, chefName } = body;
+    const { title, description, image, recipes, eatenWith, cookingTime, drankWith, chefName } = body;
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
@@ -111,8 +111,7 @@ export async function POST(request: NextRequest) {
       title,
       description: description || '',
       image: image || '',
-      recipe: recipe || null,
-      recipeRating: recipeRating || null,
+      recipes: recipes || [],
       eatenWith: eatenWith || '',
       cookingTime: cookingTime || 0,
       drankWith: drankWith || '',
@@ -124,9 +123,13 @@ export async function POST(request: NextRequest) {
 
     await creation.save();
 
-    // Update recipe ratings if a rating was provided
-    if (recipe && recipeRating && typeof recipeRating === 'number' && recipeRating >= 0 && recipeRating <= 5) {
-      await updateRecipeRating(recipe, user._id, recipeRating, creation._id);
+    // Update recipe ratings if ratings were provided
+    if (recipes && Array.isArray(recipes)) {
+      for (const recipeItem of recipes) {
+        if (recipeItem.recipe && recipeItem.rating && typeof recipeItem.rating === 'number' && recipeItem.rating >= 0 && recipeItem.rating <= 5) {
+          await updateRecipeRating(recipeItem.recipe, user._id, recipeItem.rating, creation._id);
+        }
+      }
     }
     
     // Create notifications for mentions in eatenWith and chefName
@@ -182,7 +185,7 @@ export async function POST(request: NextRequest) {
     });
 
     await creation.populate('createdBy', 'name image');
-    await creation.populate('recipe', 'title');
+    await creation.populate('recipes.recipe', 'title');
 
     return NextResponse.json(creation, { status: 201 });
   } catch (error) {

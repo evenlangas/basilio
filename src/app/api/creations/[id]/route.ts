@@ -41,8 +41,8 @@ export async function GET(
       .populate('createdBy', 'name image')
       .populate('likes', 'name image')
       .populate({
-        path: 'recipe',
-        select: 'title description cookingTime servings image ingredients instructions'
+        path: 'recipes.recipe',
+        select: 'title description cookingTime servings image ingredients instructions averageRating'
       });
 
     if (!creation) {
@@ -88,7 +88,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { title, description, image, recipe, eatenWith, cookingTime, drankWith, chefName, recipeRating } = body;
+    const { title, description, image, recipes, eatenWith, cookingTime, drankWith, chefName } = body;
 
     // Get old mentions to compare with new ones
     const oldMentions = [
@@ -131,15 +131,22 @@ export async function PUT(
       }
     };
 
-    // Step 1: Remove old rating from previous recipe (if changing recipes)
-    if (creation.recipe && creation.recipe.toString() !== recipe) {
-      await updateRecipeRating(creation.recipe.toString(), user._id.toString(), 0, creation._id.toString());
+    // Step 1: Remove old ratings from previous recipes
+    if (creation.recipes && creation.recipes.length > 0) {
+      for (const oldRecipeItem of creation.recipes) {
+        if (oldRecipeItem.recipe && oldRecipeItem.rating) {
+          await updateRecipeRating(oldRecipeItem.recipe.toString(), user._id.toString(), 0, creation._id.toString());
+        }
+      }
     }
     
-    // Step 2: Update rating for current recipe
-    if (recipe) {
-      const finalRating = recipeRating || 0;
-      await updateRecipeRating(recipe, user._id.toString(), finalRating, creation._id.toString());
+    // Step 2: Update ratings for current recipes
+    if (recipes && Array.isArray(recipes)) {
+      for (const recipeItem of recipes) {
+        if (recipeItem.recipe && recipeItem.rating && typeof recipeItem.rating === 'number' && recipeItem.rating >= 0 && recipeItem.rating <= 5) {
+          await updateRecipeRating(recipeItem.recipe, user._id.toString(), recipeItem.rating, creation._id.toString());
+        }
+      }
     }
 
     // Update the creation
@@ -149,8 +156,7 @@ export async function PUT(
         title,
         description,
         image,
-        recipe: recipe || null,
-        recipeRating: recipeRating > 0 ? recipeRating : null,
+        recipes: recipes || [],
         eatenWith,
         cookingTime,
         drankWith,
@@ -160,8 +166,8 @@ export async function PUT(
     ).populate('createdBy', 'name image')
      .populate('likes', 'name image')
      .populate({
-       path: 'recipe',
-       select: 'title description cookingTime servings image ingredients instructions'
+       path: 'recipes.recipe',
+       select: 'title description cookingTime servings image ingredients instructions averageRating'
      });
 
     // Create notifications for new mentions in eatenWith and chefName
@@ -247,27 +253,31 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized - can only delete your own creations' }, { status: 403 });
     }
 
-    // Remove rating from recipe if this creation had a rating
-    if (creation.recipe && creation.recipeRating) {
-      try {
-        const recipeDoc = await Recipe.findById(creation.recipe);
-        if (recipeDoc) {
-          // Remove this creation's rating from the recipe
-          recipeDoc.ratings = recipeDoc.ratings.filter(
-            (r: any) => r.creation.toString() !== creation._id.toString()
-          );
+    // Remove ratings from recipes if this creation had ratings
+    if (creation.recipes && creation.recipes.length > 0) {
+      for (const recipeItem of creation.recipes) {
+        if (recipeItem.recipe && recipeItem.rating) {
+          try {
+            const recipeDoc = await Recipe.findById(recipeItem.recipe);
+            if (recipeDoc) {
+              // Remove this creation's rating from the recipe
+              recipeDoc.ratings = recipeDoc.ratings.filter(
+                (r: any) => r.creation.toString() !== creation._id.toString()
+              );
 
-          // Recalculate average rating
-          const totalRatings = recipeDoc.ratings.length;
-          const sumRatings = recipeDoc.ratings.reduce((sum: number, r: any) => sum + r.rating, 0);
-          
-          recipeDoc.averageRating = totalRatings > 0 ? sumRatings / totalRatings : 0;
-          recipeDoc.totalRatings = totalRatings;
+              // Recalculate average rating
+              const totalRatings = recipeDoc.ratings.length;
+              const sumRatings = recipeDoc.ratings.reduce((sum: number, r: any) => sum + r.rating, 0);
+              
+              recipeDoc.averageRating = totalRatings > 0 ? sumRatings / totalRatings : 0;
+              recipeDoc.totalRatings = totalRatings;
 
-          await recipeDoc.save();
+              await recipeDoc.save();
+            }
+          } catch (error) {
+            console.error('Error removing rating from recipe:', error);
+          }
         }
-      } catch (error) {
-        console.error('Error removing rating from recipe:', error);
       }
     }
 

@@ -51,8 +51,10 @@ interface Creation {
   createdBy: User;
   likes: User[];
   comments?: Comment[];
-  recipe?: Recipe;
-  recipeRating?: number;
+  recipes?: Array<{
+    recipe: Recipe;
+    rating?: number;
+  }>;
   eatenWith?: string;
   cookingTime?: number;
   drankWith?: string;
@@ -67,7 +69,6 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
   const [creation, setCreation] = useState<Creation | null>(null);
   const [loading, setLoading] = useState(true);
   const [yumming, setYumming] = useState(false);
-  const [showYumList, setShowYumList] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(true);
@@ -352,17 +353,6 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
 
           {/* Actions - matching feed layout */}
           <div className="px-3 sm:px-4 pb-3 sm:pb-4">
-            {/* Chef's Kisses - Show first for mobile */}
-            {creation.recipeRating && (
-              <div className="flex items-center justify-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300 mb-4">
-                <div className="flex">
-                  {renderPinchedFingers(creation.recipeRating)}
-                </div>
-                <span className="text-sm font-medium">
-                  {creation.recipeRating} chef's {creation.recipeRating === 1 ? 'kiss' : 'kisses'}
-                </span>
-              </div>
-            )}
             
             {/* Yums and Comments - Strava style */}
             <div className="flex items-center justify-center gap-6 mb-3">
@@ -446,45 +436,6 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
 
         {/* Additional Information Section */}
         <div className="mt-6 space-y-6">
-          {/* Yum List */}
-          {creation.likes.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-              <button
-                onClick={() => setShowYumList(!showYumList)}
-                className="flex items-center justify-between w-full text-left"
-              >
-                <h3 className="font-semibold text-gray-900 dark:text-white">
-                  Yummed by {creation.likes.length} {creation.likes.length === 1 ? 'person' : 'people'}
-                </h3>
-                <IoArrowBack size={16} className={`text-gray-400 transition-transform ${showYumList ? 'rotate-90' : 'rotate-180'}`} />
-              </button>
-              
-              {showYumList && (
-                <div className="mt-4 space-y-2">
-                  {creation.likes.map((user) => (
-                    <div key={user._id} className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
-                        {user.image ? (
-                          <img 
-                            src={user.image} 
-                            alt={user.name}
-                            className="w-full h-full rounded-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-gray-600 dark:text-gray-300 font-medium text-sm">
-                            {user.name.charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-gray-900 dark:text-white">
-                        {user.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Creation Details */}
           {(creation.eatenWith || creation.cookingTime || creation.drankWith) && (
@@ -494,89 +445,91 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                 {creation.eatenWith && (
                   <div className="flex items-center gap-2">
                     <IoPeopleOutline size={16} className="text-gray-500" />
-                    <span className="text-gray-600 dark:text-gray-300">Eaten with: </span>
+                    <span className="text-gray-600 dark:text-gray-300"></span>
                     <UserMentions text={creation.eatenWith} />
                   </div>
                 )}
                 {creation.cookingTime && (
                   <div className="flex items-center gap-2">
                     <IoTimeOutline size={16} className="text-gray-500" />
-                    <span className="text-gray-600 dark:text-gray-300">Cooking time: {creation.cookingTime} minutes</span>
+                    <span className="text-gray-600 dark:text-gray-300">{creation.cookingTime} minutes</span>
                   </div>
                 )}
                 {creation.drankWith && (
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-600 dark:text-gray-300">🥤 Drank with: {creation.drankWith}</span>
+                    <span className="text-gray-600 dark:text-gray-300">🥤 {creation.drankWith}</span>
                   </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Recipes Section */}
+          {((creation.recipes && creation.recipes.length > 0) || creation.recipe) && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <IoRestaurantOutline size={18} />
+                Recipe{((creation.recipes && creation.recipes.length > 1) || (!creation.recipes && creation.recipe)) ? 's' : ''} Used
+              </h3>
+              <div className="space-y-3">
+                {/* New format: multiple recipes */}
+                {creation.recipes && creation.recipes.length > 0 ? (
+                  creation.recipes.map((recipeItem, index) => (
+                    <div key={index} className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <IoRestaurantOutline size={14} className="text-gray-500 dark:text-gray-400" />
+                        <Link 
+                          href={`/recipes/${recipeItem.recipe._id}`}
+                          className="text-green-600 dark:text-green-400 hover:underline font-medium"
+                        >
+                          {recipeItem.recipe.title}
+                        </Link>
+                        <span className="text-gray-500 dark:text-gray-400">
+                          ({recipeItem.recipe.averageRating ? recipeItem.recipe.averageRating.toFixed(1) : '0.0'} 🤌)
+                        </span>
+                      </div>
+                      {recipeItem.rating && (
+                        <div className="flex items-center gap-2 ml-5">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Your rating:</span>
+                          <div className="flex">
+                            {renderPinchedFingers(recipeItem.rating)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  /* Old format: single recipe - for backward compatibility */
+                  creation.recipe && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <IoRestaurantOutline size={14} className="text-gray-500 dark:text-gray-400" />
+                        <Link 
+                          href={`/recipes/${creation.recipe._id}`}
+                          className="text-green-600 dark:text-green-400 hover:underline font-medium"
+                        >
+                          {creation.recipe.title}
+                        </Link>
+                        <span className="text-gray-500 dark:text-gray-400">
+                          ({creation.recipe.averageRating ? creation.recipe.averageRating.toFixed(1) : '0.0'} 🤌)
+                        </span>
+                      </div>
+                      {creation.recipeRating && (
+                        <div className="flex items-center gap-2 ml-5">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Your rating:</span>
+                          <div className="flex">
+                            {renderPinchedFingers(creation.recipeRating)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
                 )}
               </div>
             </div>
           )}
         </div>
 
-        {/* Recipe Section */}
-        {creation.recipe && (
-          <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2 mb-2">
-                <IoRestaurantOutline size={20} className="text-gray-600 dark:text-gray-400" />
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Recipe Used
-                </h2>
-              </div>
-              <Link
-                href={`/recipes/${creation.recipe._id}`}
-                className="text-lg font-semibold hover:underline"
-                style={{ color: 'var(--color-primary-600)' }}
-              >
-                {creation.recipe.title}
-              </Link>
-              {creation.recipe.description && (
-                <p className="text-gray-600 dark:text-gray-300 mt-2">
-                  {creation.recipe.description}
-                </p>
-              )}
-              {creation.recipeRating && (
-                <div className="mt-3 flex items-center gap-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">My rating:</span>
-                  <div className="flex">
-                    {renderPinchedFingers(creation.recipeRating)}
-                  </div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    ({creation.recipeRating} chef's {creation.recipeRating === 1 ? 'kiss' : 'kisses'})
-                  </span>
-                </div>
-              )}
-            </div>
-            
-            <div className="p-4">
-              <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
-                {creation.recipe.cookingTime && (
-                  <div className="flex items-center gap-1">
-                    <IoTimeOutline size={16} />
-                    <span>{creation.recipe.cookingTime} minutes</span>
-                  </div>
-                )}
-                {creation.recipe.servings && (
-                  <div className="flex items-center gap-1">
-                    <IoPeopleOutline size={16} />
-                    <span>{creation.recipe.servings} servings</span>
-                  </div>
-                )}
-              </div>
-              
-              <Link
-                href={`/recipes/${creation.recipe._id}`}
-                className="inline-flex items-center px-4 py-2 text-white rounded-lg transition-colors"
-                style={{ backgroundColor: 'var(--color-primary-600)' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-700)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-600)'}
-              >
-                View Full Recipe
-              </Link>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );

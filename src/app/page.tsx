@@ -8,7 +8,7 @@ import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import ChefDisplay from '@/components/ChefDisplay';
 import UserMentions from '@/components/UserMentions';
-import { IoSearchOutline, IoRestaurantOutline, IoTimeOutline, IoChatbubbleOutline } from 'react-icons/io5';
+import { IoSearchOutline, IoRestaurantOutline, IoTimeOutline, IoChatbubbleOutline, IoPeopleOutline } from 'react-icons/io5';
 import { FaGrinHearts, FaRegGrinHearts } from 'react-icons/fa';
 
 interface User {
@@ -39,6 +39,10 @@ interface Creation {
   image: string;
   createdBy: User;
   likes: User[];
+  recipes?: Array<{
+    recipe: Recipe;
+    rating?: number;
+  }>;
   recipe?: Recipe;
   recipeRating?: number;
   eatenWith?: string;
@@ -63,6 +67,10 @@ interface FeedItem {
   createdAt: string;
   // Creation-specific fields
   likes?: User[];
+  recipes?: Array<{
+    recipe: Recipe;
+    rating?: number;
+  }>;
   recipe?: Recipe;
   recipeRating?: number;
   eatenWith?: string;
@@ -319,22 +327,60 @@ export default function Home() {
                           {item.description}
                         </p>
                       )}
+                      
+                      {/* Eaten With */}
+                      {item.eatenWith && (
+                        <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-sm mb-2">
+                          <IoPeopleOutline size={16} />
+                          <span>{item.eatenWith}</span>
+                        </div>
+                      )}
+                      
+                      {/* Recipe Information */}
+                      {((item.recipes && item.recipes.length > 0) || item.recipe) && (
+                        <div className="space-y-1 mb-3">
+                          {/* New format: multiple recipes */}
+                          {item.recipes && item.recipes.length > 0 ? (
+                            item.recipes.map((recipeItem, index) => (
+                              <div key={index} className="flex items-center gap-1 text-sm">
+                                <IoRestaurantOutline size={14} className="text-gray-500 dark:text-gray-400" />
+                                <Link 
+                                  href={`/recipes/${recipeItem.recipe._id}`}
+                                  className="text-green-600 dark:text-green-400 hover:underline font-medium"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {recipeItem.recipe.title}
+                                </Link>
+                                <span className="text-gray-500 dark:text-gray-400">
+                                  ({recipeItem.recipe.averageRating ? recipeItem.recipe.averageRating.toFixed(1) : '0.0'} 🤌)
+                                </span>
+                              </div>
+                            ))
+                          ) : (
+                            /* Old format: single recipe - for backward compatibility */
+                            item.recipe && (
+                              <div className="flex items-center gap-1 text-sm">
+                                <IoRestaurantOutline size={14} className="text-gray-500 dark:text-gray-400" />
+                                <Link 
+                                  href={`/recipes/${item.recipe._id}`}
+                                  className="text-green-600 dark:text-green-400 hover:underline font-medium"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {item.recipe.title}
+                                </Link>
+                                <span className="text-gray-500 dark:text-gray-400">
+                                  ({item.recipe.averageRating ? item.recipe.averageRating.toFixed(1) : '0.0'} 🤌)
+                                </span>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   {/* Actions */}
                   <div className="px-3 sm:px-4 pb-3 sm:pb-4">
-                    {/* Chef's Kisses - Show first for mobile */}
-                    {item.recipeRating && (
-                      <div className="flex items-center justify-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300 mb-4">
-                        <div className="flex">
-                          {renderPinchedFingers(item.recipeRating)}
-                        </div>
-                        <span className="text-sm font-medium">
-                          {item.recipeRating} chef's {item.recipeRating === 1 ? 'kiss' : 'kisses'}
-                        </span>
-                      </div>
-                    )}
                     
                     {/* Yums and Comments - Strava style */}
                     <div className="flex items-center justify-center gap-6 mb-3">
