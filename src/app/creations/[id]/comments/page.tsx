@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
@@ -45,6 +45,7 @@ interface Creation {
 export default function CommentsPage({ params }: { params: Promise<{ id: string }> }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { id } = use(params);
   const [creation, setCreation] = useState<Creation | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,7 +79,12 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
     
     loadCreation();
     loadComments();
-  }, [session, status, router, id]);
+
+    // Auto-focus comment input if focus parameter is present
+    if (searchParams.get('focus') === 'true') {
+      setShowCommentInput(true);
+    }
+  }, [session, status, router, id, searchParams]);
 
   useEffect(() => {
     const handleClickOutside = () => {

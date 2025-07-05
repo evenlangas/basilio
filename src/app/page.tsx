@@ -336,24 +336,64 @@ export default function Home() {
                       </div>
                     )}
                     
-                    {/* Yums and Comments counts - above buttons */}
+                    {/* Yums and Comments - Strava style */}
                     <div className="flex items-center justify-center gap-6 mb-3">
-                      <div className="text-center">
-                        <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {item.likes?.length || 0}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {(item.likes?.length || 0) === 1 ? 'yum' : 'yums'}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {item.comments?.length || 0}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {(item.comments?.length || 0) === 1 ? 'comment' : 'comments'}
-                        </div>
-                      </div>
+                      {/* Yums with profile pictures */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          router.push(`/creations/${item._id}/yums`);
+                        }}
+                        className="flex items-center gap-2 hover:opacity-75 transition-opacity"
+                      >
+                        {item.likes && item.likes.length > 0 ? (
+                          <>
+                            <div className="flex -space-x-2">
+                              {item.likes.slice(0, 3).map((user, index) => (
+                                <div 
+                                  key={user._id} 
+                                  className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center"
+                                  style={{ zIndex: 3 - index }}
+                                >
+                                  {user.image ? (
+                                    <img 
+                                      src={user.image} 
+                                      alt={user.name}
+                                      className="w-full h-full rounded-full object-cover"
+                                    />
+                                  ) : (
+                                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                                      {user.name.charAt(0).toUpperCase()}
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            <span className="text-sm text-gray-600 dark:text-gray-300">
+                              {item.likes.length} yummed
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            0 yummed
+                          </span>
+                        )}
+                      </button>
+
+                      {/* Comments */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          router.push(`/creations/${item._id}/comments`);
+                        }}
+                        className="flex items-center gap-2 hover:opacity-75 transition-opacity"
+                      >
+                        <span className="text-sm text-gray-600 dark:text-gray-300">
+                          {item.comments?.length || 0} {(item.comments?.length || 0) === 1 ? 'comment' : 'comments'}
+                        </span>
+                      </button>
                     </div>
                     
                     {/* Action buttons - bigger and more inviting */}
@@ -379,7 +419,7 @@ export default function Home() {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          router.push(`/creations/${item._id}/comments`);
+                          router.push(`/creations/${item._id}/comments?focus=true`);
                         }}
                         className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 dark:hover:border-blue-800 transition-all"
                       >
