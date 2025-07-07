@@ -199,7 +199,7 @@ export default function YouPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* My Recipes */}
               <Link
-                href="/recipes"
+                href={`/profile/${session?.user?.id}/recipes`}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-center gap-4">
@@ -215,7 +215,7 @@ export default function YouPage() {
 
               {/* My Creations */}
               <Link
-                href="/creations"
+                href={`/profile/${session?.user?.id}/creations`}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-center gap-4">

@@ -81,7 +81,10 @@ export default function UserCreationsPage({ params }: { params: Promise<{ id: st
 
   const fetchCreations = async () => {
     try {
-      const response = await fetch(`/api/user/${userId}/creations`);
+      // Use different API endpoint if viewing own creations
+      const isOwnProfile = session?.user?.id === userId;
+      const endpoint = isOwnProfile ? '/api/creations' : `/api/user/${userId}/creations`;
+      const response = await fetch(endpoint);
       if (response.ok) {
         const data = await response.json();
         setCreations(data);
@@ -135,7 +138,7 @@ export default function UserCreationsPage({ params }: { params: Promise<{ id: st
           </button>
           <div>
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100">
-              {user.name}'s Creations
+              {session?.user?.id === userId ? 'My Creations' : `${user.name}'s Creations`}
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-400">
               {creations.length} creation{creations.length !== 1 ? 's' : ''}
@@ -159,16 +162,26 @@ export default function UserCreationsPage({ params }: { params: Promise<{ id: st
               <FaGrinHearts className="text-4xl" style={{ color: 'var(--color-primary-500)' }} size={48} />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              {searchTerm ? 'No creations found' : user.isPrivate ? 'Private Profile' : 'No creations yet'}
+              {searchTerm ? 'No creations found' : session?.user?.id === userId ? 'No creations yet' : user.isPrivate ? 'Private Profile' : 'No creations yet'}
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
               {searchTerm 
                 ? 'Try adjusting your search terms'
+                : session?.user?.id === userId
+                ? 'Start sharing your culinary creations with the world'
                 : user.isPrivate
                 ? 'This user\'s creations are private'
                 : `${user.name} hasn't shared any creations yet`
               }
             </p>
+            {!searchTerm && session?.user?.id === userId && (
+              <Link
+                href="/creations/new"
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                Share Your First Creation
+              </Link>
+            )}
           </div>
         ) : (
           <div className="space-y-4 sm:space-y-6 mb-8">

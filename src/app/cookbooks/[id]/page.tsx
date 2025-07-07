@@ -15,9 +15,12 @@ import {
   IoGlobe,
   IoPeople,
   IoTrash,
-  IoPersonCircle
+  IoPersonCircle,
+  IoRestaurant,
+  IoTime
 } from 'react-icons/io5';
 import { getCountryByCode } from '@/utils/countries';
+import { getTagsDisplay } from '@/utils/tags';
 
 interface Recipe {
   _id: string;
@@ -29,6 +32,8 @@ interface Recipe {
   tags: string[];
   cuisine?: string;
   mealType?: string;
+  averageRating?: number;
+  totalRatings?: number;
   isReference?: boolean;
   originalRecipe?: { _id: string; title: string };
   originalChef?: { _id: string; name: string; image?: string };
@@ -249,55 +254,81 @@ export default function CookbookPage({ params }: { params: Promise<{ id: string 
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
                 {(cookbook.allRecipes || cookbook.recipes).map((recipe) => (
                   <Link
                     key={recipe._id}
                     href={`/recipes/${recipe._id}`}
-                    className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                    className="recipe-card card"
                   >
-                    {recipe.image && (
-                      <div className="h-24 bg-gray-200 dark:bg-gray-700">
-                        <img 
-                          src={recipe.image} 
+                    {recipe.image ? (
+                      <div className="h-40 sm:h-48 overflow-hidden">
+                        <img
+                          src={recipe.image}
                           alt={recipe.title}
-                          className="w-full h-full object-cover"
+                          className="recipe-image"
                         />
                       </div>
+                    ) : (
+                      <div className="h-40 sm:h-48 flex items-center justify-center" style={{backgroundColor: 'var(--color-bg-tertiary)'}}>
+                        <div className="text-center" style={{color: 'var(--color-text-tertiary)'}}>
+                          <div className="text-3xl sm:text-4xl mb-2">
+                            <IoRestaurant size={40} />
+                          </div>
+                          <div className="text-xs sm:text-sm">No image</div>
+                        </div>
+                      </div>
                     )}
-                    
-                    <div className="p-3">
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-base mb-1 line-clamp-1">
+                    <div className="recipe-content">
+                      <h3 className="recipe-title">
                         {recipe.title}
                       </h3>
                       
                       {recipe.description && (
-                        <p className="text-gray-600 dark:text-gray-300 mb-2 text-xs line-clamp-1">
+                        <p className="recipe-description">
                           {recipe.description}
                         </p>
                       )}
                       
-                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                        <div className="flex items-center gap-2">
-                          <span>{recipe.cookingTime}m</span>
-                          <span>{recipe.servings} servings</span>
-                        </div>
+                      <div className="recipe-meta">
+                        <span className="flex items-center">
+                          <IoTime className="mr-1" size={16} />
+                          {recipe.cookingTime || 0}m
+                        </span>
+                        {recipe.totalRatings && recipe.totalRatings > 0 ? (
+                          <span>
+                            {recipe.averageRating?.toFixed(1)} 🤌 ({recipe.totalRatings} creation{recipe.totalRatings !== 1 ? 's' : ''})
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">No ratings yet</span>
+                        )}
                       </div>
                       
-                      {((recipe.cuisine && getCountryByCode(recipe.cuisine)) || recipe.mealType) && (
-                        <div className="flex items-center gap-2">
+                      {(recipe.cuisine && getCountryByCode(recipe.cuisine)) || recipe.mealType || recipe.tags.length > 0 ? (
+                        <div className="flex items-center gap-2 mb-3 sm:mb-4">
                           {recipe.cuisine && getCountryByCode(recipe.cuisine) && (
-                            <span className="text-base" title={getCountryByCode(recipe.cuisine)?.name}>
+                            <span className="text-lg" title={getCountryByCode(recipe.cuisine)?.name}>
                               {getCountryByCode(recipe.cuisine)?.flag}
                             </span>
                           )}
                           {recipe.mealType && (
-                            <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded capitalize">
+                            <span className="badge badge-success capitalize">
                               {recipe.mealType}
                             </span>
                           )}
+                          {recipe.tags.length > 0 && (
+                            <span title={recipe.tags.join(', ')}>
+                              {getTagsDisplay(recipe.tags)}
+                            </span>
+                          )}
                         </div>
-                      )}
+                      ) : null}
+                      
+                      <div className="flex items-center justify-between" style={{fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)'}}>
+                        <span className="truncate mr-2">
+                          {recipe.createdBy?.name || 'Unknown'}
+                        </span>
+                      </div>
                     </div>
                   </Link>
                 ))}

@@ -10,6 +10,7 @@ import ChefDisplay from '@/components/ChefDisplay';
 import UserMentions from '@/components/UserMentions';
 import { IoSearchOutline, IoRestaurantOutline, IoTimeOutline, IoChatbubbleOutline, IoPeopleOutline } from 'react-icons/io5';
 import { FaGrinHearts, FaRegGrinHearts } from 'react-icons/fa';
+import { getTagsDisplay } from '@/utils/tags';
 
 interface User {
   _id: string;
@@ -504,12 +505,9 @@ export default function Home() {
                       <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
                         <span>by {item.createdBy.name}</span>
                         {item.totalRatings && item.totalRatings > 0 ? (
-                          <div className="flex items-center gap-1">
-                            <div className="flex">
-                              {renderPinchedFingers(Math.round(item.averageRating || 0))}
-                            </div>
-                            <span>({item.totalRatings})</span>
-                          </div>
+                          <span>
+                            {item.averageRating.toFixed(1)} 🤌 ({item.totalRatings} creation{item.totalRatings !== 1 ? 's' : ''})
+                          </span>
                         ) : (
                           <span className="text-gray-400">No ratings yet</span>
                         )}
@@ -518,6 +516,11 @@ export default function Home() {
                             <IoTimeOutline size={12} />
                             <span>{item.cookingTime}min</span>
                           </div>
+                        )}
+                        {item.tags && item.tags.length > 0 && (
+                          <span title={item.tags.join(', ')}>
+                            {getTagsDisplay(item.tags)}
+                          </span>
                         )}
                       </div>
                     </div>

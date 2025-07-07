@@ -23,6 +23,7 @@ import {
   IoAdd
 } from 'react-icons/io5';
 import { getCountryByCode } from '@/utils/countries';
+import { getTagsDisplay } from '@/utils/tags';
 
 interface Ingredient {
   name: string;
@@ -559,17 +560,32 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
 
 
                 <div className="flex items-center gap-4 mb-4 text-sm">
-                  {(recipe.cuisine && getCountryByCode(recipe.cuisine)) || recipe.mealType ? (
-                    <div className="flex items-center gap-3">
+                  {(recipe.cuisine && getCountryByCode(recipe.cuisine)) || recipe.mealType || recipe.tags.length > 0 ? (
+                    <div className="flex items-center gap-3 flex-wrap">
                       {recipe.cuisine && getCountryByCode(recipe.cuisine) && (
-                        <span className="text-2xl" title={getCountryByCode(recipe.cuisine)?.name}>
-                          {getCountryByCode(recipe.cuisine)?.flag}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl" title={getCountryByCode(recipe.cuisine)?.name}>
+                            {getCountryByCode(recipe.cuisine)?.flag}
+                          </span>
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {getCountryByCode(recipe.cuisine)?.name}
+                          </span>
+                        </div>
                       )}
                       {recipe.mealType && (
                         <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-xs font-medium capitalize">
                           {recipe.mealType}
                         </span>
+                      )}
+                      {recipe.tags.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg" title={recipe.tags.join(', ')}>
+                            {getTagsDisplay(recipe.tags)}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {recipe.tags.join(', ')}
+                          </span>
+                        </div>
                       )}
                     </div>
                   ) : null}

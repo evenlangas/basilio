@@ -10,10 +10,10 @@ import {
   IoArrowBack,
   IoBook, 
   IoRestaurant, 
-  IoTime, 
-  IoPeople
+  IoTime
 } from 'react-icons/io5';
 import { getCountryByCode } from '@/utils/countries';
+import { getTagsDisplay } from '@/utils/tags';
 
 interface Recipe {
   _id: string;
@@ -29,6 +29,9 @@ interface Recipe {
   mealType?: string;
   createdBy: { _id: string; name: string };
   createdAt: string;
+  averageRating: number;
+  totalRatings: number;
+  tags?: string[];
 }
 
 interface UserProfile {
@@ -79,7 +82,10 @@ export default function UserRecipesPage({ params }: { params: Promise<{ id: stri
 
   const fetchRecipes = async () => {
     try {
-      const response = await fetch(`/api/user/${userId}/recipes`);
+      // Use different API endpoint if viewing own recipes
+      const isOwnProfile = session?.user?.id === userId;
+      const endpoint = isOwnProfile ? '/api/recipes' : `/api/user/${userId}/recipes`;
+      const response = await fetch(endpoint);
       if (response.ok) {
         const data = await response.json();
         setRecipes(data);
@@ -129,7 +135,7 @@ export default function UserRecipesPage({ params }: { params: Promise<{ id: stri
           </button>
           <div>
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100">
-              {user.name}'s Recipes
+              {session?.user?.id === userId ? 'My Recipes' : `${user.name}'s Recipes`}
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-400">
               {recipes.length} recipe{recipes.length !== 1 ? 's' : ''}
@@ -153,16 +159,26 @@ export default function UserRecipesPage({ params }: { params: Promise<{ id: stri
               <IoBook className="text-4xl text-gray-400" size={48} />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              {searchTerm ? 'No recipes found' : user.isPrivate ? 'Private Profile' : 'No recipes yet'}
+              {searchTerm ? 'No recipes found' : session?.user?.id === userId ? 'No recipes yet' : user.isPrivate ? 'Private Profile' : 'No recipes yet'}
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
               {searchTerm 
                 ? 'Try adjusting your search terms'
+                : session?.user?.id === userId
+                ? 'Start building your cookbook by adding your first recipe'
                 : user.isPrivate
                 ? 'This user\'s recipes are private'
                 : `${user.name} hasn't created any recipes yet`
               }
             </p>
+            {!searchTerm && session?.user?.id === userId && (
+              <Link
+                href="/recipes/new"
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                Add Your First Recipe
+              </Link>
+            )}
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
@@ -206,13 +222,16 @@ export default function UserRecipesPage({ params }: { params: Promise<{ id: stri
                       <IoTime className="mr-1" size={16} />
                       {recipe.cookingTime || 0}m
                     </span>
-                    <span className="flex items-center">
-                      <IoPeople className="mr-1" size={16} />
-                      {recipe.servings || 1}
-                    </span>
+                    {recipe.totalRatings && recipe.totalRatings > 0 ? (
+                      <span>
+                        {recipe.averageRating.toFixed(1)} 🤌 ({recipe.totalRatings} creation{recipe.totalRatings !== 1 ? 's' : ''})
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">No ratings yet</span>
+                    )}
                   </div>
                   
-                  {(recipe.cuisine && getCountryByCode(recipe.cuisine)) || recipe.mealType ? (
+                  {(recipe.cuisine && getCountryByCode(recipe.cuisine)) || recipe.mealType || (recipe.tags && recipe.tags.length > 0) ? (
                     <div className="flex items-center gap-2 mb-3 sm:mb-4">
                       {recipe.cuisine && getCountryByCode(recipe.cuisine) && (
                         <span className="text-lg" title={getCountryByCode(recipe.cuisine)?.name}>
@@ -222,6 +241,11 @@ export default function UserRecipesPage({ params }: { params: Promise<{ id: stri
                       {recipe.mealType && (
                         <span className="badge badge-success capitalize">
                           {recipe.mealType}
+                        </span>
+                      )}
+                      {recipe.tags && recipe.tags.length > 0 && (
+                        <span title={recipe.tags.join(', ')}>
+                          {getTagsDisplay(recipe.tags)}
                         </span>
                       )}
                     </div>

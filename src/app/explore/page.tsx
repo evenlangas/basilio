@@ -326,10 +326,9 @@ export default function ExplorePage() {
                         <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                           <span>by {recipe.createdBy.name}</span>
                           {recipe.averageRating && recipe.totalRatings ? (
-                            <div className="flex items-center gap-1">
-                              <IoStar size={14} className="text-yellow-500" />
-                              <span>{recipe.averageRating.toFixed(1)} ({recipe.totalRatings})</span>
-                            </div>
+                            <span>
+                              {recipe.averageRating.toFixed(1)} 🤌 ({recipe.totalRatings} creation{recipe.totalRatings !== 1 ? 's' : ''})
+                            </span>
                           ) : null}
                         </div>
                       </div>
