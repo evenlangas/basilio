@@ -89,3 +89,13 @@ input[type="checkbox"]:checked {
 .slide-in-from-top {
   animation-name: slide-in-from-top;
 }
+
+/* Hide scrollbar for carousels */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;             /* Safari and Chrome */
+}
