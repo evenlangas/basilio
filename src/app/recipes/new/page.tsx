@@ -57,7 +57,6 @@ export default function NewRecipePage() {
   const [cookingTime, setCookingTime] = useState(0);
   const [servings, setServings] = useState(1);
   const [recommendedDrinks, setRecommendedDrinks] = useState('');
-  const [mealType, setMealType] = useState('');
   const [cuisine, setCuisine] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -104,7 +103,6 @@ export default function NewRecipePage() {
         cookingTime,
         servings,
         recommendedDrinks,
-        mealType,
         cuisine,
         tags,
         ingredients: ingredients.filter(ing => ing.name.trim()),
@@ -354,7 +352,7 @@ export default function NewRecipePage() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Cooking Time (minutes)
@@ -379,25 +377,6 @@ export default function NewRecipePage() {
                 onChange={(e) => setServings(parseInt(e.target.value) || 1)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Meal Type
-              </label>
-              <select
-                value={mealType}
-                onChange={(e) => setMealType(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              >
-                <option value="">Select meal type...</option>
-                <option value="breakfast">Breakfast</option>
-                <option value="lunch">Lunch</option>
-                <option value="dinner">Dinner</option>
-                <option value="dessert">Dessert</option>
-                <option value="snack">Snack</option>
-                <option value="appetizer">Appetizer</option>
-              </select>
             </div>
           </div>
 

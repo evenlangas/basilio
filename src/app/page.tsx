@@ -10,7 +10,7 @@ import ChefDisplay from '@/components/ChefDisplay';
 import UserMentions from '@/components/UserMentions';
 import { IoSearchOutline, IoRestaurantOutline, IoTimeOutline, IoChatbubbleOutline, IoPeopleOutline } from 'react-icons/io5';
 import { FaGrinHearts, FaRegGrinHearts } from 'react-icons/fa';
-import { getTagsDisplay } from '@/utils/tags';
+import { getTagsDisplay, getFirstTagByPriority } from '@/utils/tags';
 
 interface User {
   _id: string;
@@ -30,7 +30,6 @@ interface Recipe {
   totalRatings: number;
   createdAt: string;
   tags?: string[];
-  mealType?: string;
 }
 
 interface Creation {
@@ -517,11 +516,14 @@ export default function Home() {
                             <span>{item.cookingTime}min</span>
                           </div>
                         )}
-                        {item.tags && item.tags.length > 0 && (
-                          <span title={item.tags.join(', ')}>
-                            {getTagsDisplay(item.tags)}
-                          </span>
-                        )}
+                        {(() => {
+                          const firstTag = getFirstTagByPriority(item.tags || []);
+                          return firstTag ? (
+                            <span className="badge badge-success capitalize text-xs">
+                              {firstTag.replace('-', ' ')}
+                            </span>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
                   </div>

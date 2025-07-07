@@ -9,75 +9,103 @@ interface TagSelectorProps {
 }
 
 const AVAILABLE_TAGS = [
+  // Meal Types (Most Common)
+  'breakfast',
+  'lunch',
+  'dinner',
+  'dessert',
+  'snack',
+  'appetizer',
+  'side-dish',
+  
+  // Basic Dietary (Very Common)
   'vegetarian',
   'vegan',
-  'halal',
-  'kosher',
   'gluten-free',
   'dairy-free',
-  'nut-free',
-  'low-carb',
-  'keto',
-  'paleo',
-  'spicy',
-  'sweet',
-  'savory',
   'healthy',
-  'comfort-food',
+  
+  // Cooking Style (Common)
   'quick',
   'easy',
-  'protein',
-  'high-fiber',
-  'low-sodium',
-  'organic',
-  'raw',
-  'fermented',
   'baked',
   'grilled',
   'fried',
+  'one-pot',
+  
+  // Flavor Profiles (Common)
+  'spicy',
+  'sweet',
+  'savory',
+  'comfort-food',
+  
+  // Dish Types (Common)
+  'soup',
+  'salad',
+  'pasta',
+  'main-course',
+  
+  // Health & Lifestyle (Common)
+  'low-carb',
+  'high-protein',
+  'heart-healthy',
+  'kid-friendly',
+  'meal-prep',
+  
+  // Protein Sources (Common)
+  'chicken',
+  'beef',
+  'seafood',
+  'fish',
+  'eggs',
+  'vegetable',
+  
+  // Religious/Cultural Dietary
+  'halal',
+  'kosher',
+  
+  // Specific Diets
+  'keto',
+  'paleo',
+  'nut-free',
+  'low-sodium',
+  'diabetic-friendly',
+  
+  // Advanced Cooking Methods
   'steamed',
   'slow-cooked',
-  'one-pot',
-  'meal-prep',
-  'kid-friendly',
-  'diabetic-friendly',
-  'heart-healthy',
+  'fermented',
+  'raw',
+  
+  // Specialized Health
   'anti-inflammatory',
   'immune-boosting',
   'energy-boosting',
   'detox',
+  'high-fiber',
+  
+  // Ingredients/Categories
+  'organic',
   'seasonal',
   'holiday',
-  'appetizer',
-  'main-course',
-  'side-dish',
-  'dessert',
-  'snack',
-  'drink',
-  'soup',
-  'salad',
-  'pasta',
-  'rice',
   'bread',
-  'seafood',
-  'chicken',
-  'beef',
-  'pork',
-  'lamb',
-  'turkey',
-  'fish',
-  'shellfish',
-  'eggs',
+  'rice',
   'cheese',
   'chocolate',
   'fruit',
-  'vegetable',
   'grain',
   'legume',
   'nut',
   'seed',
   'herb',
-  'spice'
+  'spice',
+  
+  // Specialty
+  'pork',
+  'lamb',
+  'turkey',
+  'shellfish',
+  'drink'
 ];
 
 export default function TagSelector({ selectedTags, onTagsChange }: TagSelectorProps) {

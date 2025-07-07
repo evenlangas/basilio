@@ -13,7 +13,7 @@ import {
   IoTime
 } from 'react-icons/io5';
 import { getCountryByCode } from '@/utils/countries';
-import { getTagsDisplay } from '@/utils/tags';
+import { getTagsDisplay, getFirstTagByPriority } from '@/utils/tags';
 
 interface Recipe {
   _id: string;
@@ -231,25 +231,25 @@ export default function UserRecipesPage({ params }: { params: Promise<{ id: stri
                     )}
                   </div>
                   
-                  {(recipe.cuisine && getCountryByCode(recipe.cuisine)) || recipe.mealType || (recipe.tags && recipe.tags.length > 0) ? (
-                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                      {recipe.cuisine && getCountryByCode(recipe.cuisine) && (
-                        <span className="text-lg" title={getCountryByCode(recipe.cuisine)?.name}>
-                          {getCountryByCode(recipe.cuisine)?.flag}
-                        </span>
-                      )}
-                      {recipe.mealType && (
-                        <span className="badge badge-success capitalize">
-                          {recipe.mealType}
-                        </span>
-                      )}
-                      {recipe.tags && recipe.tags.length > 0 && (
-                        <span title={recipe.tags.join(', ')}>
-                          {getTagsDisplay(recipe.tags)}
-                        </span>
-                      )}
-                    </div>
-                  ) : null}
+                  {(() => {
+                    const firstTag = getFirstTagByPriority(recipe.tags || []);
+                    const hasContent = (recipe.cuisine && getCountryByCode(recipe.cuisine)) || firstTag;
+                    
+                    return hasContent ? (
+                      <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                        {recipe.cuisine && getCountryByCode(recipe.cuisine) && (
+                          <span className="text-lg" title={getCountryByCode(recipe.cuisine)?.name}>
+                            {getCountryByCode(recipe.cuisine)?.flag}
+                          </span>
+                        )}
+                        {firstTag && (
+                          <span className="badge badge-success capitalize">
+                            {firstTag.replace('-', ' ')}
+                          </span>
+                        )}
+                      </div>
+                    ) : null;
+                  })()}
                   
                   <div className="flex items-center justify-between" style={{fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)'}}>
                     <span className="truncate mr-2">

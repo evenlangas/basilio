@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import { IoSearchOutline, IoPersonCircle, IoBook, IoRestaurant, IoStar, IoEye } from 'react-icons/io5';
-import { getTagsDisplay } from '@/utils/tags';
+import { getTagsDisplay, getFirstTagByPriority } from '@/utils/tags';
 
 interface SearchResult {
   type: 'user' | 'recipe' | 'cookbook';
@@ -325,13 +325,16 @@ export default function ExplorePage() {
                             {recipe.description}
                           </p>
                         )}
-                        {recipe.tags && recipe.tags.length > 0 && (
-                          <div className="mb-2">
-                            <span className="text-sm" title={recipe.tags.join(', ')}>
-                              {getTagsDisplay(recipe.tags)}
-                            </span>
-                          </div>
-                        )}
+                        {(() => {
+                          const firstTag = getFirstTagByPriority(recipe.tags || []);
+                          return firstTag ? (
+                            <div className="mb-2">
+                              <span className="badge badge-success capitalize text-xs">
+                                {firstTag.replace('-', ' ')}
+                              </span>
+                            </div>
+                          ) : null;
+                        })()}
                         <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                           <span>by {recipe.createdBy.name}</span>
                           {recipe.averageRating && recipe.totalRatings ? (

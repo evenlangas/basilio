@@ -23,7 +23,7 @@ import {
   IoAdd
 } from 'react-icons/io5';
 import { getCountryByCode } from '@/utils/countries';
-import { getTagsDisplay } from '@/utils/tags';
+import { getTagSymbol } from '@/utils/tags';
 
 interface Ingredient {
   name: string;
@@ -559,36 +559,37 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
                 )}
 
 
-                <div className="flex items-center gap-4 mb-4 text-sm">
-                  {(recipe.cuisine && getCountryByCode(recipe.cuisine)) || recipe.mealType || recipe.tags.length > 0 ? (
-                    <div className="flex items-center gap-3 flex-wrap">
-                      {recipe.cuisine && getCountryByCode(recipe.cuisine) && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl" title={getCountryByCode(recipe.cuisine)?.name}>
-                            {getCountryByCode(recipe.cuisine)?.flag}
-                          </span>
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {getCountryByCode(recipe.cuisine)?.name}
-                          </span>
-                        </div>
-                      )}
-                      {recipe.mealType && (
-                        <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-xs font-medium capitalize">
-                          {recipe.mealType}
+                {/* Cuisine Section */}
+                {recipe.cuisine && getCountryByCode(recipe.cuisine) && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-2xl" title={getCountryByCode(recipe.cuisine)?.name}>
+                      {getCountryByCode(recipe.cuisine)?.flag}
+                    </span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {getCountryByCode(recipe.cuisine)?.name}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Tags Section */}
+                {recipe.tags && recipe.tags.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tags</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {recipe.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm font-medium capitalize"
+                        >
+                          <span>{getTagSymbol(tag)}</span>
+                          <span>{tag.replace('-', ' ')}</span>
                         </span>
-                      )}
-                      {recipe.tags.length > 0 && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg" title={recipe.tags.join(', ')}>
-                            {getTagsDisplay(recipe.tags)}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {recipe.tags.join(', ')}
-                          </span>
-                        </div>
-                      )}
+                      ))}
                     </div>
-                  ) : null}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-4 mb-4 text-sm">
                   {recipe.recommendedDrinks && (
                     <div>
                       <span className="font-medium text-gray-700 dark:text-gray-300">Recommended Drinks:</span>
