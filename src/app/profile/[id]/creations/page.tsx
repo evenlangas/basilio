@@ -203,7 +203,7 @@ export default function UserCreationsPage({ params }: { params: Promise<{ id: st
   };
 
   const hasYummed = (creation: Creation) => {
-    if (!creation.likes || !Array.isArray(creation.likes)) return false;
+    if (!creation.likes || !Array.isArray(creation.likes) || creation.likes.length === 0) return false;
     
     if (typeof creation.likes[0] === 'string') {
       return creation.likes.includes(session?.user?.id || '');

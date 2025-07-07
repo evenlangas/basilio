@@ -75,6 +75,7 @@ export async function GET() {
     // Get creations from this user
     const creations = await Creation.find({ createdBy: user._id })
       .populate('createdBy', 'name image')
+      .populate('likes', 'name image')
       .populate('recipes.recipe', 'title')
       .sort({ createdAt: -1 });
 

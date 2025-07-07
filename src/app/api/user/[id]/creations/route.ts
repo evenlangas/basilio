@@ -37,7 +37,9 @@ export async function GET(
 
     // Get creations from this user
     const creations = await Creation.find({ createdBy: params.id })
-      .select('title description image likes createdAt')
+      .populate('createdBy', 'name image')
+      .populate('likes', 'name image')
+      .populate('recipes.recipe', 'title')
       .sort({ createdAt: -1 })
       .limit(20);
 
