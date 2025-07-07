@@ -7,6 +7,7 @@ import Navigation from '@/components/Navigation';
 import { FormSkeleton } from '@/components/SkeletonLoader';
 import { IoCamera } from 'react-icons/io5';
 import CountrySelector from '@/components/CountrySelector';
+import TagSelector from '@/components/TagSelector';
 
 interface Ingredient {
   name: string;
@@ -57,6 +58,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
   const [uploadingImage, setUploadingImage] = useState(false);
   const [ingredients, setIngredients] = useState<Ingredient[]>([{ name: '', amount: '', unit: '' }]);
   const [instructions, setInstructions] = useState<Instruction[]>([{ step: 1, description: '' }]);
+  const [tags, setTags] = useState<string[]>([]);
 
   useEffect(() => {
     const getParams = async () => {
@@ -99,6 +101,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
         setMealType(recipe.mealType || '');
         setCuisine(recipe.cuisine || '');
         setCurrentImage(recipe.image);
+        setTags(recipe.tags || []);
         setIngredients(recipe.ingredients.length > 0 ? recipe.ingredients : [{ name: '', amount: '', unit: '' }]);
         setInstructions(recipe.instructions.length > 0 ? recipe.instructions : [{ step: 1, description: '' }]);
       } else if (response.status === 404) {
@@ -152,6 +155,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
         recommendedDrinks,
         mealType,
         cuisine,
+        tags,
         ingredients: ingredients.filter(ing => ing.name.trim()),
         instructions: instructions.filter(inst => inst.description.trim()),
       };
@@ -478,6 +482,14 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
                 placeholder="Select a country cuisine..."
               />
             </div>
+          </div>
+
+          {/* Tags Section */}
+          <div>
+            <TagSelector
+              selectedTags={tags}
+              onTagsChange={setTags}
+            />
           </div>
 
           <div>

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import { IoSearchOutline, IoPersonCircle, IoBook, IoRestaurant, IoStar, IoEye } from 'react-icons/io5';
+import { getTagsDisplay } from '@/utils/tags';
 
 interface SearchResult {
   type: 'user' | 'recipe' | 'cookbook';
@@ -34,6 +35,7 @@ interface RecommendedRecipe {
   title: string;
   description?: string;
   image?: string;
+  tags?: string[];
   createdBy: {
     _id: string;
     name: string;
@@ -322,6 +324,13 @@ export default function ExplorePage() {
                           <p className="text-sm text-gray-600 dark:text-gray-300 mb-2 line-clamp-2">
                             {recipe.description}
                           </p>
+                        )}
+                        {recipe.tags && recipe.tags.length > 0 && (
+                          <div className="mb-2">
+                            <span className="text-sm" title={recipe.tags.join(', ')}>
+                              {getTagsDisplay(recipe.tags)}
+                            </span>
+                          </div>
                         )}
                         <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                           <span>by {recipe.createdBy.name}</span>

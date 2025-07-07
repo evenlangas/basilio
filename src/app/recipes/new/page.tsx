@@ -8,6 +8,7 @@ import { FormSkeleton } from '@/components/SkeletonLoader';
 import CameraInput from '@/components/CameraInput';
 import { IoCamera } from 'react-icons/io5';
 import CountrySelector from '@/components/CountrySelector';
+import TagSelector from '@/components/TagSelector';
 
 interface Cookbook {
   _id: string;
@@ -66,6 +67,7 @@ export default function NewRecipePage() {
   const [cookbooks, setCookbooks] = useState<Cookbook[]>([]);
   const [selectedCookbook, setSelectedCookbook] = useState<string>('');
   const [isPrivate, setIsPrivate] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,6 +106,7 @@ export default function NewRecipePage() {
         recommendedDrinks,
         mealType,
         cuisine,
+        tags,
         ingredients: ingredients.filter(ing => ing.name.trim()),
         instructions: instructions.filter(inst => inst.description.trim()),
         cookbook: selectedCookbook || undefined,
@@ -424,9 +427,17 @@ export default function NewRecipePage() {
             </div>
           </div>
 
+          {/* Tags Section */}
+          <div>
+            <TagSelector
+              selectedTags={tags}
+              onTagsChange={setTags}
+            />
+          </div>
+
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Ingredients</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Ingredients</h3>
               <button
                 type="button"
                 onClick={addIngredient}
