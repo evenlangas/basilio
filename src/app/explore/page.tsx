@@ -132,7 +132,15 @@ export default function ExplorePage() {
   };
 
   const handleSearch = async (searchQuery: string, filters?: SearchFilters) => {
-    if (!searchQuery.trim()) {
+    // Check if we have any search criteria (query text or filters)
+    const hasFilters = filters?.contentType !== 'all' || 
+                      (filters?.tags && filters.tags.length > 0) || 
+                      filters?.cookingTime?.min || 
+                      filters?.cookingTime?.max || 
+                      filters?.cuisine || 
+                      filters?.sortBy !== 'relevance';
+
+    if (!searchQuery.trim() && !hasFilters) {
       setResults([]);
       return;
     }

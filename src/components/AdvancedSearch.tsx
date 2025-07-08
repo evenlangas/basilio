@@ -46,6 +46,15 @@ export default function AdvancedSearch({ onSearch, loading, initialQuery = '' }:
     onSearch(query, filters);
   };
 
+  const hasFilters = () => {
+    return filters.contentType !== 'all' ||
+           (filters.tags && filters.tags.length > 0) ||
+           filters.cookingTime?.min ||
+           filters.cookingTime?.max ||
+           filters.cuisine ||
+           filters.sortBy !== 'relevance';
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
@@ -136,8 +145,8 @@ export default function AdvancedSearch({ onSearch, loading, initialQuery = '' }:
         />
       </div>
 
-      {/* Search Actions */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+      {/* Advanced Search Toggle */}
+      <div className="flex justify-center sm:justify-start">
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
           className="flex items-center justify-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
@@ -148,18 +157,6 @@ export default function AdvancedSearch({ onSearch, loading, initialQuery = '' }:
             size={14} 
             className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} 
           />
-        </button>
-        
-        <button
-          onClick={handleSearch}
-          disabled={loading}
-          className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-          ) : (
-            'Search'
-          )}
         </button>
       </div>
 
@@ -207,7 +204,7 @@ export default function AdvancedSearch({ onSearch, loading, initialQuery = '' }:
           </div>
 
           {/* Recipe/Creation Specific Filters */}
-          {(filters.contentType === 'recipe' || filters.contentType === 'creation' || filters.contentType === 'all') && (
+          {(filters.contentType === 'recipe' || filters.contentType === 'creation') && (
             <>
               {/* Tags Filter */}
               <div className="space-y-4">
@@ -288,43 +285,41 @@ export default function AdvancedSearch({ onSearch, loading, initialQuery = '' }:
               </div>
 
               {/* Cooking Time Filter (Recipe/Creation) */}
-              {(filters.contentType === 'recipe' || filters.contentType === 'creation' || filters.contentType === 'all') && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Cooking Time (minutes)
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <input
-                        type="number"
-                        placeholder="Min"
-                        value={filters.cookingTime?.min || ''}
-                        onChange={(e) => updateFilter('cookingTime', { 
-                          ...filters.cookingTime, 
-                          min: e.target.value ? parseInt(e.target.value) : undefined 
-                        })}
-                        className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      />
-                    </div>
-                    <span className="text-gray-500 dark:text-gray-400">to</span>
-                    <div>
-                      <input
-                        type="number"
-                        placeholder="Max"
-                        value={filters.cookingTime?.max || ''}
-                        onChange={(e) => updateFilter('cookingTime', { 
-                          ...filters.cookingTime, 
-                          max: e.target.value ? parseInt(e.target.value) : undefined 
-                        })}
-                        className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      />
-                    </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Cooking Time (minutes)
+                </label>
+                <div className="flex items-center gap-3">
+                  <div>
+                    <input
+                      type="number"
+                      placeholder="Min"
+                      value={filters.cookingTime?.min || ''}
+                      onChange={(e) => updateFilter('cookingTime', { 
+                        ...filters.cookingTime, 
+                        min: e.target.value ? parseInt(e.target.value) : undefined 
+                      })}
+                      className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                  <span className="text-gray-500 dark:text-gray-400">to</span>
+                  <div>
+                    <input
+                      type="number"
+                      placeholder="Max"
+                      value={filters.cookingTime?.max || ''}
+                      onChange={(e) => updateFilter('cookingTime', { 
+                        ...filters.cookingTime, 
+                        max: e.target.value ? parseInt(e.target.value) : undefined 
+                      })}
+                      className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* Cuisine Filter (Recipe) */}
-              {(filters.contentType === 'recipe' || filters.contentType === 'all') && (
+              {/* Cuisine Filter (Recipe only) */}
+              {filters.contentType === 'recipe' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Cuisine
@@ -382,6 +377,38 @@ export default function AdvancedSearch({ onSearch, loading, initialQuery = '' }:
               </select>
             </div>
           </div>
+
+          {/* Search Button */}
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={handleSearch}
+              disabled={loading || (!query.trim() && !hasFilters())}
+              className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mx-auto"></div>
+              ) : (
+                'Search'
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Simple Search Button (when advanced search is closed) */}
+      {!showAdvanced && (
+        <div className="flex justify-center">
+          <button
+            onClick={handleSearch}
+            disabled={loading || (!query.trim() && !hasFilters())}
+            className="px-8 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto"></div>
+            ) : (
+              'Search'
+            )}
+          </button>
         </div>
       )}
     </div>

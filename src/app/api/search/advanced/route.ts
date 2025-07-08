@@ -26,12 +26,20 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'relevance';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
 
-    if (!query.trim()) {
+    // Check if we have any search criteria (query text or filters)
+    const hasFilters = contentType !== 'all' || 
+                      tags.length > 0 || 
+                      cookingTimeMin || 
+                      cookingTimeMax || 
+                      cuisine || 
+                      sortBy !== 'relevance';
+
+    if (!query.trim() && !hasFilters) {
       return NextResponse.json([]);
     }
 
     const results: any[] = [];
-    const searchRegex = new RegExp(query, 'i');
+    const searchRegex = query.trim() ? new RegExp(query, 'i') : null;
 
     // Build sort object
     const getSortObject = (type: string) => {
@@ -69,9 +77,12 @@ export async function GET(request: NextRequest) {
 
     // Search Users/Chefs
     if (contentType === 'all' || contentType === 'chef') {
-      const userQuery: any = {
-        name: searchRegex
-      };
+      const userQuery: any = {};
+      
+      // Only add text search if we have a query
+      if (searchRegex) {
+        userQuery.name = searchRegex;
+      }
 
       const users = await User.find(userQuery)
         .select('name image')
@@ -90,12 +101,15 @@ export async function GET(request: NextRequest) {
 
     // Search Recipes
     if (contentType === 'all' || contentType === 'recipe') {
-      const recipeQuery: any = {
-        $or: [
+      const recipeQuery: any = {};
+
+      // Only add text search if we have a query
+      if (searchRegex) {
+        recipeQuery.$or = [
           { title: searchRegex },
           { description: searchRegex }
-        ]
-      };
+        ];
+      }
 
       // Add filters
       if (tags.length > 0) {
@@ -135,12 +149,15 @@ export async function GET(request: NextRequest) {
 
     // Search Creations
     if (contentType === 'all' || contentType === 'creation') {
-      const creationQuery: any = {
-        $or: [
+      const creationQuery: any = {};
+
+      // Only add text search if we have a query
+      if (searchRegex) {
+        creationQuery.$or = [
           { title: searchRegex },
           { description: searchRegex }
-        ]
-      };
+        ];
+      }
 
       // Add filters for creations
       if (cookingTimeMin || cookingTimeMax) {
@@ -175,12 +192,16 @@ export async function GET(request: NextRequest) {
     // Search Cookbooks
     if (contentType === 'all' || contentType === 'cookbook') {
       const cookbookQuery: any = {
-        $or: [
-          { name: searchRegex },
-          { description: searchRegex }
-        ],
         isPrivate: false // Only search public cookbooks
       };
+
+      // Only add text search if we have a query
+      if (searchRegex) {
+        cookbookQuery.$or = [
+          { name: searchRegex },
+          { description: searchRegex }
+        ];
+      }
 
       const cookbooks = await Cookbook.find(cookbookQuery)
         .populate('createdBy', 'name image')
@@ -207,12 +228,14 @@ export async function GET(request: NextRequest) {
     // Sort results by relevance if that's the selected sort
     if (sortBy === 'relevance') {
       results.sort((a, b) => {
-        // Prioritize exact matches in titles
-        const aExactMatch = a.name.toLowerCase().includes(query.toLowerCase());
-        const bExactMatch = b.name.toLowerCase().includes(query.toLowerCase());
-        
-        if (aExactMatch && !bExactMatch) return -1;
-        if (!aExactMatch && bExactMatch) return 1;
+        // If we have a query, prioritize exact matches in titles
+        if (query.trim()) {
+          const aExactMatch = a.name.toLowerCase().includes(query.toLowerCase());
+          const bExactMatch = b.name.toLowerCase().includes(query.toLowerCase());
+          
+          if (aExactMatch && !bExactMatch) return -1;
+          if (!aExactMatch && bExactMatch) return 1;
+        }
         
         // Then sort by creation date (newest first)
         return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
