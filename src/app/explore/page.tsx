@@ -7,21 +7,32 @@ import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import Carousel from '@/components/Carousel';
+import AdvancedSearch, { SearchFilters } from '@/components/AdvancedSearch';
 import { IoSearchOutline, IoPersonCircle, IoBook, IoRestaurant, IoStar, IoEye, IoChatbubbleOutline } from 'react-icons/io5';
 import { FaGrinHearts, FaRegGrinHearts } from 'react-icons/fa';
 import { getTagsDisplay, getFirstTagByPriority } from '@/utils/tags';
 
 interface SearchResult {
-  type: 'user' | 'recipe' | 'cookbook';
+  type: 'user' | 'recipe' | 'cookbook' | 'creation';
   id: string;
   name: string;
   description?: string;
   image?: string;
   createdBy?: {
+    _id: string;
     name: string;
+    image?: string;
   };
   members?: number;
   recipes?: number;
+  likes?: any[];
+  comments?: any[];
+  tags?: string[];
+  cookingTime?: number;
+  cuisine?: string;
+  averageRating?: number;
+  totalRatings?: number;
+  createdAt?: string;
 }
 
 interface RecommendedChef {
@@ -120,7 +131,7 @@ export default function ExplorePage() {
     }
   };
 
-  const handleSearch = async (searchQuery: string) => {
+  const handleSearch = async (searchQuery: string, filters?: SearchFilters) => {
     if (!searchQuery.trim()) {
       setResults([]);
       return;
@@ -128,7 +139,27 @@ export default function ExplorePage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
+      const params = new URLSearchParams({
+        q: searchQuery,
+        contentType: filters?.contentType || 'all',
+        sortBy: filters?.sortBy || 'relevance',
+        sortOrder: filters?.sortOrder || 'desc'
+      });
+
+      if (filters?.tags?.length) {
+        params.append('tags', filters.tags.join(','));
+      }
+      if (filters?.cookingTime?.min) {
+        params.append('cookingTimeMin', filters.cookingTime.min.toString());
+      }
+      if (filters?.cookingTime?.max) {
+        params.append('cookingTimeMax', filters.cookingTime.max.toString());
+      }
+      if (filters?.cuisine) {
+        params.append('cuisine', filters.cuisine);
+      }
+
+      const response = await fetch(`/api/search/advanced?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
         setResults(data);
@@ -140,13 +171,7 @@ export default function ExplorePage() {
     }
   };
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      handleSearch(query);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [query]);
+  // Remove the automatic search effect since we now use the AdvancedSearch component
 
   const handleYum = async (creationId: string) => {
     if (yummingStates[creationId]) return;
@@ -236,49 +261,24 @@ export default function ExplorePage() {
             Explore
           </h1>
           
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <IoSearchOutline size={20} className="text-gray-400" />
-            </div>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search for chefs, recipes, or cookbooks..."
-              className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent"
-              style={{
-                '--tw-ring-color': 'var(--color-primary-500)',
-                'focusRingColor': 'var(--color-primary-500)'
-              } as React.CSSProperties}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'var(--color-primary-500)';
-                e.currentTarget.style.boxShadow = '0 0 0 2px var(--color-primary-500)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = '';
-                e.currentTarget.style.boxShadow = '';
-              }}
-            />
-          </div>
+          <AdvancedSearch 
+            onSearch={handleSearch}
+            loading={loading}
+            initialQuery={query}
+          />
         </div>
 
         {/* Search Results */}
-        {query && (
+        {results.length > 0 && (
           <div className="mb-8">
             {loading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto" style={{ borderBottomColor: 'var(--color-primary-600)' }}></div>
               </div>
-            ) : results.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500 dark:text-gray-400">
-                  No results found for "{query}"
-                </p>
-              </div>
             ) : (
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Search Results
+                  Search Results ({results.length})
                 </h2>
                 {results.map((result) => (
                   <Link
@@ -288,12 +288,14 @@ export default function ExplorePage() {
                         ? `/profile/${result.id}` 
                         : result.type === 'cookbook'
                         ? `/cookbooks/${result.id}`
+                        : result.type === 'creation'
+                        ? `/creations/${result.id}`
                         : `/recipes/${result.id}`
                     }
                     className="block bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
                         {result.image ? (
                           <img 
                             src={result.image} 
@@ -314,19 +316,22 @@ export default function ExplorePage() {
                           <h3 className="font-semibold text-gray-900 dark:text-white">
                             {result.name}
                           </h3>
-                          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                            {result.type === 'user' ? 'Chef' : result.type === 'cookbook' ? 'Cookbook' : 'Recipe'}
+                          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded capitalize">
+                            {result.type === 'user' ? 'Chef' : result.type}
                           </span>
                         </div>
                         
                         {result.description && (
-                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2 line-clamp-2">
                             {result.description}
                           </p>
                         )}
                         
-                        <div className="flex items-center gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
                           {result.type === 'recipe' && result.createdBy && (
+                            <span>by {result.createdBy.name}</span>
+                          )}
+                          {result.type === 'creation' && result.createdBy && (
                             <span>by {result.createdBy.name}</span>
                           )}
                           {result.type === 'cookbook' && result.members && (
@@ -334,6 +339,23 @@ export default function ExplorePage() {
                           )}
                           {result.type === 'cookbook' && result.recipes && (
                             <span>{result.recipes} recipes</span>
+                          )}
+                          {result.type === 'creation' && result.likes && (
+                            <span>{result.likes.length} yums</span>
+                          )}
+                          {result.type === 'creation' && result.comments && (
+                            <span>{result.comments.length} comments</span>
+                          )}
+                          {(result.type === 'recipe' || result.type === 'creation') && result.cookingTime && (
+                            <span>{result.cookingTime}m</span>
+                          )}
+                          {result.type === 'recipe' && result.averageRating && result.totalRatings ? (
+                            <span>{result.averageRating.toFixed(1)} 🤌 ({result.totalRatings})</span>
+                          ) : null}
+                          {result.tags && result.tags.length > 0 && (
+                            <span className="badge badge-success capitalize">
+                              {getFirstTagByPriority(result.tags)?.replace('-', ' ')}
+                            </span>
                           )}
                         </div>
                       </div>
@@ -346,7 +368,7 @@ export default function ExplorePage() {
         )}
 
         {/* Recommendations */}
-        {!query && (
+        {results.length === 0 && (
           <div className="space-y-8">
             {/* Recommended Chefs */}
             <section>
@@ -637,16 +659,10 @@ export default function ExplorePage() {
           </div>
         )}
 
-        {/* Empty state when no query */}
-        {!query && !loadingRecommendations && recommendedChefs.length === 0 && recommendedRecipes.length === 0 && trendingCreations.length === 0 && (
+        {/* Empty state when no results */}
+        {results.length === 0 && loading && (
           <div className="text-center py-12">
-            <IoSearchOutline size={64} className="mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Discover new content
-            </h2>
-            <p className="text-gray-600 dark:text-gray-300">
-              Search for chefs, recipes, and cookbooks to find new inspiration
-            </p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto" style={{ borderBottomColor: 'var(--color-primary-600)' }}></div>
           </div>
         )}
       </main>

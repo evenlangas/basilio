@@ -105,7 +105,8 @@ const AVAILABLE_TAGS = [
   'lamb',
   'turkey',
   'shellfish',
-  'drink'
+  'drink',
+  'pizza'
 ];
 
 export default function TagSelector({ selectedTags, onTagsChange }: TagSelectorProps) {

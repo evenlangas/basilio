@@ -96,7 +96,8 @@ export function getTagSymbol(tag: string): string {
     'lamb': '🐑',
     'turkey': '🦃',
     'shellfish': '🦐',
-    'drink': '🥤'
+    'drink': '🥤',
+    'pizza': '🍕'
   };
   
   return tagSymbols[tag.toLowerCase()] || '🏷️';
@@ -131,7 +132,7 @@ export function getTagsWithoutMealType(tags: string[]): string[] {
 }
 
 // This is the same order as in TagSelector component
-const TAG_PRIORITY_ORDER = [
+export const TAG_PRIORITY_ORDER = [
   // Meal Types (Most Common)
   'breakfast',
   'lunch',
@@ -228,7 +229,8 @@ const TAG_PRIORITY_ORDER = [
   'lamb',
   'turkey',
   'shellfish',
-  'drink'
+  'drink',
+  'pizza'
 ];
 
 export function getFirstTagByPriority(tags: string[]): string | null {
