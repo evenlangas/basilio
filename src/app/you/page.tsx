@@ -180,8 +180,18 @@ export default function YouPage() {
                   
                   <div className="flex items-center justify-center sm:justify-start gap-4 sm:gap-6 text-sm text-gray-600 dark:text-gray-300">
                     <span>{profile.stats.creationsPosted} creations</span>
-                    <span>{profile.followers.length} followers</span>
-                    <span>{profile.following.length} following</span>
+                    <Link 
+                      href="/you/followers"
+                      className="hover:opacity-75 transition-opacity"
+                    >
+                      {profile.followers.length} followers
+                    </Link>
+                    <Link 
+                      href="/you/following"
+                      className="hover:opacity-75 transition-opacity"
+                    >
+                      {profile.following.length} following
+                    </Link>
                   </div>
                 </div>
                 

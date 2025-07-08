@@ -239,18 +239,24 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                       </div>
                       <div className="text-xs">Creations</div>
                     </div>
-                    <div className="text-center">
+                    <Link 
+                      href={`/profile/${userId}/followers`}
+                      className="text-center hover:opacity-75 transition-opacity"
+                    >
                       <div className="font-semibold text-gray-900 dark:text-white">
                         {profile.followers.length}
                       </div>
                       <div className="text-xs">Followers</div>
-                    </div>
-                    <div className="text-center">
+                    </Link>
+                    <Link 
+                      href={`/profile/${userId}/following`}
+                      className="text-center hover:opacity-75 transition-opacity"
+                    >
                       <div className="font-semibold text-gray-900 dark:text-white">
                         {profile.following.length}
                       </div>
                       <div className="text-xs">Following</div>
-                    </div>
+                    </Link>
                   </div>
                 </div>
                 
