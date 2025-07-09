@@ -22,8 +22,28 @@ import {
   IoBook,
   IoTime,
   IoChevronDown,
-  IoChevronUp
+  IoChevronUp,
+  IoReorderThree
 } from 'react-icons/io5';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface ShoppingItem {
   name: string;
@@ -31,6 +51,7 @@ interface ShoppingItem {
   unit: string;
   completed: boolean;
   addedBy: string;
+  order?: number;
 }
 
 interface RecipeLogEntry {
@@ -86,6 +107,18 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
   const [listId, setListId] = useState<string>('');
   const [isRecipeHistoryExpanded, setIsRecipeHistoryExpanded] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [draggedItem, setDraggedItem] = useState<ShoppingItem | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     const getParams = async () => {
@@ -287,6 +320,58 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
     }
   };
 
+  const handleDragStart = (event: any) => {
+    const { active } = event;
+    setDraggedItem(list?.items[parseInt(active.id)] || null);
+    
+    // Prevent scrolling during drag
+    document.body.style.overflow = 'hidden';
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setDraggedItem(null);
+    
+    // Re-enable scrolling
+    document.body.style.overflow = 'auto';
+
+    if (!list || !over || active.id === over.id) return;
+
+    const activeIndex = list.items.findIndex((_, index) => index.toString() === active.id);
+    const overIndex = list.items.findIndex((_, index) => index.toString() === over.id);
+
+    if (activeIndex !== overIndex) {
+      const reorderedItems = arrayMove(list.items, activeIndex, overIndex);
+      
+      // Optimistic update
+      setList({ ...list, items: reorderedItems });
+
+      try {
+        const response = await fetch(`/api/shopping-lists/${listId}/reorder`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            items: reorderedItems,
+          }),
+        });
+
+        if (response.ok) {
+          setLastUpdated(new Date());
+        } else {
+          // Revert on error
+          setList({ ...list, items: list.items });
+          console.error('Error reordering items:', response.statusText);
+        }
+      } catch (error) {
+        // Revert on error
+        setList({ ...list, items: list.items });
+        console.error('Error reordering items:', error);
+      }
+    }
+  };
+
   const startEditing = (index: number) => {
     if (!list) return;
     const item = list.items[index];
@@ -301,6 +386,12 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
   const cancelEditing = () => {
     setEditingIndex(null);
     setEditingItem({ name: '', amount: '', unit: '' });
+  };
+
+  const handleDragCancel = () => {
+    setDraggedItem(null);
+    // Re-enable scrolling
+    document.body.style.overflow = 'auto';
   };
 
   const saveEdit = async () => {
@@ -340,6 +431,138 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
   }
 
   if (!session) return null;
+
+  // Sortable Item Component
+  const SortableItem = ({ item, index, isCompleted }: { item: ShoppingItem; index: number; isCompleted: boolean }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: index.toString() });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.8 : 1,
+    };
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={`flex items-center gap-2 sm:gap-3 p-3 rounded-lg transition-colors min-w-0 overflow-hidden ${
+          isCompleted 
+            ? 'bg-gray-100 dark:bg-gray-700/50' 
+            : 'bg-gray-50 dark:bg-gray-700'
+        } ${
+          isDragging ? 'shadow-lg ring-2 ring-primary-500 ring-opacity-50' : ''
+        }`}
+      >
+        {/* Drag Handle */}
+        <div
+          {...attributes}
+          {...listeners}
+          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-grab active:cursor-grabbing flex-shrink-0 touch-none p-1 -m-1"
+          style={{ touchAction: 'none' }}
+        >
+          <IoReorderThree size={20} />
+        </div>
+
+        {/* Checkbox */}
+        <button 
+          onClick={() => toggleItem(index)} 
+          className="text-xl flex-shrink-0"
+        >
+          {isCompleted ? (
+            <IoCheckbox className="text-green-500" />
+          ) : (
+            <IoSquareOutline className="text-gray-400 hover:text-green-500 transition-colors" />
+          )}
+        </button>
+
+        {/* Item content */}
+        {editingIndex === index ? (
+          <div className="flex-1 min-w-0 space-y-2">
+            {/* Item name input */}
+            <input
+              type="text"
+              value={editingItem.name}
+              onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+              className="w-full max-w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-0"
+              placeholder="Item name"
+              autoFocus
+            />
+            {/* Amount and unit inputs */}
+            <div className="flex gap-1 sm:gap-2 min-w-0">
+              <input
+                type="text"
+                value={editingItem.amount}
+                onChange={(e) => setEditingItem({ ...editingItem, amount: e.target.value })}
+                className="w-0 flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-0"
+                placeholder="Amount"
+              />
+              <input
+                type="text"
+                value={editingItem.unit}
+                onChange={(e) => setEditingItem({ ...editingItem, unit: e.target.value })}
+                className="w-0 flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-0"
+                placeholder="Unit"
+              />
+            </div>
+            {/* Action buttons */}
+            <div className="flex gap-1 sm:gap-2 justify-end">
+              <button
+                onClick={() => setEditingIndex(null)}
+                className="px-2 sm:px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded transition-colors flex-shrink-0"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => saveEdit(index)}
+                className="px-2 sm:px-3 py-1 text-sm text-white bg-green-600 hover:bg-green-700 rounded transition-colors flex-shrink-0"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 min-w-0">
+            <div className="flex-1 cursor-pointer" onClick={() => startEditing(index)}>
+              <span className={`font-medium block ${
+                isCompleted 
+                  ? 'text-gray-500 dark:text-gray-400 line-through' 
+                  : 'text-gray-900 dark:text-white'
+              }`}>
+                {item.name}
+              </span>
+              {(item.amount || item.unit) && (
+                <span className={`text-sm ${
+                  isCompleted 
+                    ? 'text-gray-400 dark:text-gray-500 line-through' 
+                    : 'text-gray-600 dark:text-gray-300'
+                }`}>
+                  {item.amount} {item.unit}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Delete button (only show when not editing) */}
+        {editingIndex !== index && (
+          <button 
+            onClick={() => removeItem(index)}
+            className="text-gray-400 hover:text-red-600 flex-shrink-0"
+          >
+            <IoTrash size={16} />
+          </button>
+        )}
+      </div>
+    );
+  };
 
   const completedItems = list?.items.filter(item => item.completed).length || 0;
   const totalItems = list?.items.length || 0;
@@ -656,205 +879,58 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
                 <>
                   {/* Uncompleted Items */}
                   {list.items.filter(item => !item.completed).length > 0 && (
-                    <div className="space-y-3 mb-6">
+                    <div className="mb-6">
                       <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                         Active Items ({list.items.filter(item => !item.completed).length})
                       </h3>
-                      {list.items.filter(item => !item.completed).map((item, filteredIndex) => {
-                        const index = list.items.indexOf(item);
-                        return (
-                          <div
-                            key={index}
-                            className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                          >
-                            <button
-                              onClick={() => toggleItem(index)}
-                              className="text-xl flex-shrink-0"
-                              disabled={editingIndex === index}
-                            >
-                              <IoSquareOutline className="text-gray-400 hover:text-green-500 transition-colors" />
-                            </button>
-                            
-                            {editingIndex === index ? (
-                              // Edit mode
-                              <div className="flex-1 flex items-center gap-2">
-                                <div className="flex-1 space-y-2">
-                                  <input
-                                    type="text"
-                                    value={editingItem.name}
-                                    onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
-                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                    placeholder="Item name"
-                                    autoFocus
-                                  />
-                                  <div className="flex gap-2">
-                                    <input
-                                      type="text"
-                                      value={editingItem.amount}
-                                      onChange={(e) => setEditingItem({ ...editingItem, amount: e.target.value })}
-                                      className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                      placeholder="Amount"
-                                    />
-                                    <input
-                                      type="text"
-                                      value={editingItem.unit}
-                                      onChange={(e) => setEditingItem({ ...editingItem, unit: e.target.value })}
-                                      className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                      placeholder="Unit"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="flex gap-1">
-                                  <button
-                                    onClick={saveEdit}
-                                    className="text-green-600 hover:text-green-700 transition-colors p-1"
-                                    disabled={!editingItem.name.trim()}
-                                  >
-                                    <IoSave size={16} />
-                                  </button>
-                                  <button
-                                    onClick={cancelEditing}
-                                    className="text-gray-500 hover:text-gray-700 transition-colors p-1"
-                                  >
-                                    <IoClose size={16} />
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              // View mode
-                              <>
-                                <div className="flex-1 cursor-pointer" onClick={() => startEditing(index)}>
-                                  <span className="font-medium block text-gray-900 dark:text-white">
-                                    {item.name}
-                                  </span>
-                                  {(item.amount || item.unit) && (
-                                    <span className="text-sm text-gray-600 dark:text-gray-300">
-                                      {item.amount} {item.unit}
-                                    </span>
-                                  )}
-                                </div>
-                                
-                                <div className="flex gap-1">
-                                  <button
-                                    onClick={() => startEditing(index)}
-                                    className="text-blue-500 hover:text-blue-700 transition-colors p-1"
-                                  >
-                                    <IoPencil size={16} />
-                                  </button>
-                                  <button
-                                    onClick={() => removeItem(index)}
-                                    className="text-red-500 hover:text-red-700 transition-colors p-1"
-                                  >
-                                    <IoTrash size={16} />
-                                  </button>
-                                </div>
-                              </>
-                            )}
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                        onDragCancel={handleDragCancel}
+                      >
+                        <SortableContext
+                          items={list.items.filter(item => !item.completed).map((_, index) => list.items.indexOf(list.items.filter(item => !item.completed)[index]).toString())}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <div className="space-y-3">
+                            {list.items.filter(item => !item.completed).map((item, filteredIndex) => {
+                              const index = list.items.indexOf(item);
+                              return (
+                                <SortableItem
+                                  key={index}
+                                  item={item}
+                                  index={index}
+                                  isCompleted={false}
+                                />
+                              );
+                            })}
                           </div>
-                        );
-                      })}
+                        </SortableContext>
+                      </DndContext>
                     </div>
                   )}
-
+                  
                   {/* Completed Items */}
                   {list.items.filter(item => item.completed).length > 0 && (
                     <div className="space-y-3">
                       <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
                         Completed ({list.items.filter(item => item.completed).length})
                       </h3>
-                      {list.items.filter(item => item.completed).map((item, filteredIndex) => {
-                        const index = list.items.indexOf(item);
-                        return (
-                          <div
-                            key={index}
-                            className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg opacity-75"
-                          >
-                            <button
-                              onClick={() => toggleItem(index)}
-                              className="text-xl flex-shrink-0"
-                              disabled={editingIndex === index}
-                            >
-                              <IoCheckbox className="text-green-500 hover:text-gray-400 transition-colors" />
-                            </button>
-                            
-                            {editingIndex === index ? (
-                              // Edit mode
-                              <div className="flex-1 flex items-center gap-2">
-                                <div className="flex-1 space-y-2">
-                                  <input
-                                    type="text"
-                                    value={editingItem.name}
-                                    onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
-                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                    placeholder="Item name"
-                                    autoFocus
-                                  />
-                                  <div className="flex gap-2">
-                                    <input
-                                      type="text"
-                                      value={editingItem.amount}
-                                      onChange={(e) => setEditingItem({ ...editingItem, amount: e.target.value })}
-                                      className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                      placeholder="Amount"
-                                    />
-                                    <input
-                                      type="text"
-                                      value={editingItem.unit}
-                                      onChange={(e) => setEditingItem({ ...editingItem, unit: e.target.value })}
-                                      className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                      placeholder="Unit"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="flex gap-1">
-                                  <button
-                                    onClick={saveEdit}
-                                    className="text-green-600 hover:text-green-700 transition-colors p-1"
-                                    disabled={!editingItem.name.trim()}
-                                  >
-                                    <IoSave size={16} />
-                                  </button>
-                                  <button
-                                    onClick={cancelEditing}
-                                    className="text-gray-500 hover:text-gray-700 transition-colors p-1"
-                                  >
-                                    <IoClose size={16} />
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              // View mode
-                              <>
-                                <div className="flex-1 cursor-pointer" onClick={() => startEditing(index)}>
-                                  <span className="font-medium block line-through text-gray-500 dark:text-gray-400">
-                                    {item.name}
-                                  </span>
-                                  {(item.amount || item.unit) && (
-                                    <span className="text-sm line-through text-gray-400">
-                                      {item.amount} {item.unit}
-                                    </span>
-                                  )}
-                                </div>
-                                
-                                <div className="flex gap-1">
-                                  <button
-                                    onClick={() => startEditing(index)}
-                                    className="text-blue-500 hover:text-blue-700 transition-colors p-1"
-                                  >
-                                    <IoPencil size={16} />
-                                  </button>
-                                  <button
-                                    onClick={() => removeItem(index)}
-                                    className="text-red-500 hover:text-red-700 transition-colors p-1"
-                                  >
-                                    <IoTrash size={16} />
-                                  </button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        );
-                      })}
+                      <div className="space-y-3">
+                        {list.items.filter(item => item.completed).map((item, filteredIndex) => {
+                          const index = list.items.indexOf(item);
+                          return (
+                            <SortableItem
+                              key={index}
+                              item={item}
+                              index={index}
+                              isCompleted={true}
+                            />
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </>
