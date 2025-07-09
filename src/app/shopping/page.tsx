@@ -603,7 +603,7 @@ export default function ShoppingPage() {
                               {item.completed && <span className="text-xs">✓</span>}
                             </button>
                             
-                            <div className={`${item.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100'} min-w-0 flex-1`}>
+                            <div className={`${item.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100'} min-w-0 flex-1 min-h-[2.5rem] flex flex-col justify-center`}>
                               <div className="font-medium truncate">{item.name}</div>
                               {(item.amount || item.unit) && (
                                 <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">

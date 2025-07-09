@@ -521,7 +521,7 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
                 Cancel
               </button>
               <button
-                onClick={() => saveEdit(index)}
+                onClick={saveEdit}
                 className="px-2 sm:px-3 py-1 text-sm text-white bg-green-600 hover:bg-green-700 rounded transition-colors flex-shrink-0"
               >
                 Save
@@ -530,7 +530,7 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
           </div>
         ) : (
           <div className="flex-1 min-w-0">
-            <div className="flex-1 cursor-pointer" onClick={() => startEditing(index)}>
+            <div className="flex-1 cursor-pointer min-h-[2.5rem] flex flex-col justify-center" onClick={() => startEditing(index)}>
               <span className={`font-medium block ${
                 isCompleted 
                   ? 'text-gray-500 dark:text-gray-400 line-through' 
