@@ -283,6 +283,13 @@ export async function DELETE(
 
     await Creation.findByIdAndDelete(params.id);
 
+    // Update user stats - decrement creation count
+    await User.findByIdAndUpdate(user._id, {
+      $inc: { 
+        'stats.creationsPosted': -1
+      }
+    });
+
     return NextResponse.json({ message: 'Creation deleted successfully' });
   } catch (error) {
     console.error('Error deleting creation:', error);
