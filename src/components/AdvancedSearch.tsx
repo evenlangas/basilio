@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { IoChevronDown, IoClose, IoSearch, IoOptions } from 'react-icons/io5';
 import { TAG_PRIORITY_ORDER, getTagSymbol } from '@/utils/tags';
+import CountrySelector from '@/components/CountrySelector';
 
 export interface SearchFilters {
   contentType: 'all' | 'recipe' | 'creation' | 'chef' | 'cookbook';
@@ -12,6 +13,7 @@ export interface SearchFilters {
     max?: number;
   };
   cuisine?: string;
+  ingredients?: string[];
   sortBy: 'relevance' | 'date' | 'alphabetical' | 'popularity' | 'rating';
   sortOrder: 'asc' | 'desc';
 }
@@ -25,17 +27,13 @@ interface AdvancedSearchProps {
 // Use the same tag options as the recipe creation/edit forms
 const TAG_OPTIONS = TAG_PRIORITY_ORDER;
 
-const CUISINE_OPTIONS = [
-  'italian', 'mexican', 'chinese', 'japanese', 'indian', 'french', 'thai',
-  'mediterranean', 'american', 'korean', 'vietnamese', 'middle-eastern',
-  'spanish', 'greek', 'german', 'british'
-];
-
 export default function AdvancedSearch({ onSearch, loading, initialQuery = '' }: AdvancedSearchProps) {
   const [query, setQuery] = useState(initialQuery);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [tagSearchTerm, setTagSearchTerm] = useState('');
   const [showAllTags, setShowAllTags] = useState(false);
+  const [ingredientInput, setIngredientInput] = useState('');
+  const [showIngredientsSearch, setShowIngredientsSearch] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>({
     contentType: 'all',
     sortBy: 'relevance',
@@ -52,6 +50,7 @@ export default function AdvancedSearch({ onSearch, loading, initialQuery = '' }:
            filters.cookingTime?.min ||
            filters.cookingTime?.max ||
            filters.cuisine ||
+           (filters.ingredients && filters.ingredients.length > 0) ||
            filters.sortBy !== 'relevance';
   };
 
@@ -83,12 +82,38 @@ export default function AdvancedSearch({ onSearch, loading, initialQuery = '' }:
     }));
   };
 
+  const addIngredient = () => {
+    if (ingredientInput.trim()) {
+      setFilters(prev => ({
+        ...prev,
+        ingredients: [...(prev.ingredients || []), ingredientInput.trim()]
+      }));
+      setIngredientInput('');
+    }
+  };
+
+  const removeIngredient = (ingredient: string) => {
+    setFilters(prev => ({
+      ...prev,
+      ingredients: (prev.ingredients || []).filter(i => i !== ingredient)
+    }));
+  };
+
+  const handleIngredientKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addIngredient();
+    }
+  };
+
   const clearFilters = () => {
     setFilters({
       contentType: 'all',
       sortBy: 'relevance',
       sortOrder: 'desc'
     });
+    setIngredientInput('');
+    setShowIngredientsSearch(false);
   };
 
   const getSortOptions = () => {
@@ -114,7 +139,7 @@ export default function AdvancedSearch({ onSearch, loading, initialQuery = '' }:
     tag.toLowerCase().includes(tagSearchTerm.toLowerCase())
   );
 
-  const displayedTags = showAllTags ? filteredTags : filteredTags.slice(0, 12);
+  const displayedTags = showAllTags ? filteredTags : filteredTags.slice(0, 3);
 
   return (
     <div className="space-y-4">
@@ -266,13 +291,13 @@ export default function AdvancedSearch({ onSearch, loading, initialQuery = '' }:
                   </div>
 
                   {/* Show More/Less Button */}
-                  {filteredTags.length > 12 && (
+                  {filteredTags.length > 3 && (
                     <button
                       type="button"
                       onClick={() => setShowAllTags(!showAllTags)}
                       className="text-sm text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors"
                     >
-                      {showAllTags ? 'Show Less' : `Show ${filteredTags.length - 12} More Tags`}
+                      {showAllTags ? 'Show Less' : `Show ${filteredTags.length - 3} More Tags`}
                     </button>
                   )}
                 </div>
@@ -324,18 +349,96 @@ export default function AdvancedSearch({ onSearch, loading, initialQuery = '' }:
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Cuisine
                   </label>
-                  <select
+                  <CountrySelector
                     value={filters.cuisine || ''}
-                    onChange={(e) => updateFilter('cuisine', e.target.value || undefined)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  >
-                    <option value="">Any cuisine</option>
-                    {CUISINE_OPTIONS.map((cuisine) => (
-                      <option key={cuisine} value={cuisine}>
-                        {cuisine.charAt(0).toUpperCase() + cuisine.slice(1).replace('-', ' ')}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(countryCode) => updateFilter('cuisine', countryCode || undefined)}
+                    placeholder="Select cuisine..."
+                    className="w-full"
+                  />
+                </div>
+              )}
+
+              {/* Ingredients Filter (Recipe only) */}
+              {filters.contentType === 'recipe' && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Search by Ingredients
+                      {filters.ingredients && filters.ingredients.length > 0 && (
+                        <span className="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs font-medium">
+                          {filters.ingredients.length}
+                        </span>
+                      )}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowIngredientsSearch(!showIngredientsSearch)}
+                      className="flex items-center gap-1 px-2 py-1 text-sm text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-md transition-colors"
+                    >
+                      {showIngredientsSearch ? (
+                        <>
+                          <span>Hide</span>
+                          <IoChevronDown className="w-3 h-3 rotate-180 transition-transform" />
+                        </>
+                      ) : (
+                        <>
+                          <span>Show</span>
+                          <IoChevronDown className="w-3 h-3 transition-transform" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  
+                  {showIngredientsSearch && (
+                    <div className="space-y-3">
+                      {/* Selected Ingredients */}
+                      {filters.ingredients && filters.ingredients.length > 0 && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Selected Ingredients ({filters.ingredients.length})
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            {filters.ingredients.map((ingredient) => (
+                              <button
+                                key={ingredient}
+                                type="button"
+                                onClick={() => removeIngredient(ingredient)}
+                                className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+                              >
+                                <span>{ingredient}</span>
+                                <span className="text-blue-600 dark:text-blue-400">×</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Add Ingredient */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Add Ingredient
+                        </label>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <input
+                            type="text"
+                            value={ingredientInput}
+                            onChange={(e) => setIngredientInput(e.target.value)}
+                            onKeyPress={handleIngredientKeyPress}
+                            placeholder="e.g., tomato, chicken, garlic..."
+                            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={addIngredient}
+                            disabled={!ingredientInput.trim()}
+                            className="w-full sm:w-auto px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[80px]"
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>

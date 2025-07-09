@@ -138,6 +138,7 @@ export default function ExplorePage() {
                       filters?.cookingTime?.min || 
                       filters?.cookingTime?.max || 
                       filters?.cuisine || 
+                      (filters?.ingredients && filters.ingredients.length > 0) || 
                       filters?.sortBy !== 'relevance';
 
     if (!searchQuery.trim() && !hasFilters) {
@@ -165,6 +166,9 @@ export default function ExplorePage() {
       }
       if (filters?.cuisine) {
         params.append('cuisine', filters.cuisine);
+      }
+      if (filters?.ingredients?.length) {
+        params.append('ingredients', filters.ingredients.join(','));
       }
 
       const response = await fetch(`/api/search/advanced?${params.toString()}`);

@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
     const cookingTimeMin = searchParams.get('cookingTimeMin');
     const cookingTimeMax = searchParams.get('cookingTimeMax');
     const cuisine = searchParams.get('cuisine');
+    const ingredients = searchParams.get('ingredients')?.split(',').filter(Boolean) || [];
     const sortBy = searchParams.get('sortBy') || 'relevance';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
 
@@ -32,6 +33,7 @@ export async function GET(request: NextRequest) {
                       cookingTimeMin || 
                       cookingTimeMax || 
                       cuisine || 
+                      ingredients.length > 0 || 
                       sortBy !== 'relevance';
 
     if (!query.trim() && !hasFilters) {
@@ -110,6 +112,13 @@ export async function GET(request: NextRequest) {
           { description: searchRegex }
         ];
       }
+      
+      // Add ingredients search - require ALL ingredients to be present
+      if (ingredients.length > 0) {
+        recipeQuery.$and = ingredients.map(ingredient => ({
+          'ingredients.name': { $regex: new RegExp(ingredient, 'i') }
+        }));
+      }
 
       // Add filters
       if (tags.length > 0) {
@@ -140,6 +149,7 @@ export async function GET(request: NextRequest) {
           tags: recipe.tags,
           cookingTime: recipe.cookingTime,
           cuisine: recipe.cuisine,
+          ingredients: recipe.ingredients,
           averageRating: recipe.averageRating,
           totalRatings: recipe.totalRatings,
           createdAt: recipe.createdAt
