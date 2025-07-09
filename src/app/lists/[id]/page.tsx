@@ -453,7 +453,7 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
       <div
         ref={setNodeRef}
         style={style}
-        className={`flex items-center gap-2 sm:gap-3 p-3 rounded-lg transition-colors min-w-0 overflow-hidden ${
+        className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg transition-colors min-w-0 overflow-hidden ${
           isCompleted 
             ? 'bg-gray-100 dark:bg-gray-700/50' 
             : 'bg-gray-50 dark:bg-gray-700'
@@ -485,7 +485,7 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
 
         {/* Item content */}
         {editingIndex === index ? (
-          <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex-1 min-w-0 space-y-1 sm:space-y-2">
             {/* Item name input */}
             <input
               type="text"
@@ -572,15 +572,15 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navigation />
       
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           </div>
         ) : list ? (
-          <div className="space-y-8">
+          <div className="space-y-4 sm:space-y-6">
             {/* Header */}
-            <div className="mb-6">
+            <div className="mb-4">
               <div className="flex items-center gap-3 mb-4">
                 <button
                   onClick={() => router.back()}
@@ -863,79 +863,70 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
             )}
 
             {/* Items List */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Shopping Items
-              </h2>
-              
-              {list.items.length === 0 ? (
-                <div className="text-center py-8">
-                  <IoCart size={48} className="mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400">
-                    No items in this list yet
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {/* Uncompleted Items */}
-                  {list.items.filter(item => !item.completed).length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                        Active Items ({list.items.filter(item => !item.completed).length})
-                      </h3>
-                      <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragStart={handleDragStart}
-                        onDragEnd={handleDragEnd}
-                        onDragCancel={handleDragCancel}
+            {list.items.length === 0 ? (
+              <div className="text-center py-8">
+                <IoCart size={48} className="mx-auto text-gray-400 dark:text-gray-600 mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">
+                  No items in this list yet
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Uncompleted Items */}
+                {list.items.filter(item => !item.completed).length > 0 && (
+                  <div className="mb-4">
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      onDragCancel={handleDragCancel}
+                    >
+                      <SortableContext
+                        items={list.items.filter(item => !item.completed).map((_, index) => list.items.indexOf(list.items.filter(item => !item.completed)[index]).toString())}
+                        strategy={verticalListSortingStrategy}
                       >
-                        <SortableContext
-                          items={list.items.filter(item => !item.completed).map((_, index) => list.items.indexOf(list.items.filter(item => !item.completed)[index]).toString())}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          <div className="space-y-3">
-                            {list.items.filter(item => !item.completed).map((item, filteredIndex) => {
-                              const index = list.items.indexOf(item);
-                              return (
-                                <SortableItem
-                                  key={index}
-                                  item={item}
-                                  index={index}
-                                  isCompleted={false}
-                                />
-                              );
-                            })}
-                          </div>
-                        </SortableContext>
-                      </DndContext>
+                        <div className="space-y-2">
+                          {list.items.filter(item => !item.completed).map((item, filteredIndex) => {
+                            const index = list.items.indexOf(item);
+                            return (
+                              <SortableItem
+                                key={index}
+                                item={item}
+                                index={index}
+                                isCompleted={false}
+                              />
+                            );
+                          })}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                  </div>
+                )}
+                
+                {/* Completed Items */}
+                {list.items.filter(item => item.completed).length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-2">
+                      Completed ({list.items.filter(item => item.completed).length})
+                    </h3>
+                    <div className="space-y-2">
+                      {list.items.filter(item => item.completed).map((item, filteredIndex) => {
+                        const index = list.items.indexOf(item);
+                        return (
+                          <SortableItem
+                            key={index}
+                            item={item}
+                            index={index}
+                            isCompleted={true}
+                          />
+                        );
+                      })}
                     </div>
-                  )}
-                  
-                  {/* Completed Items */}
-                  {list.items.filter(item => item.completed).length > 0 && (
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
-                        Completed ({list.items.filter(item => item.completed).length})
-                      </h3>
-                      <div className="space-y-3">
-                        {list.items.filter(item => item.completed).map((item, filteredIndex) => {
-                          const index = list.items.indexOf(item);
-                          return (
-                            <SortableItem
-                              key={index}
-                              item={item}
-                              index={index}
-                              isCompleted={true}
-                            />
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         ) : (
           <div className="text-center py-12">
