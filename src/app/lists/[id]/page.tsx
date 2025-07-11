@@ -779,8 +779,8 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
 
             {/* Add Item Modal */}
             {showAddModal && (
-              <div className="fixed inset-0 bg-white/20 dark:bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+              <div className="fixed inset-0 bg-white/20 dark:bg-black/20 backdrop-blur-sm flex items-start justify-center pt-8 p-4 z-50">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[calc(100vh-4rem)] overflow-y-auto">
                   <div className="p-4 sm:p-6">
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                       Add Item
@@ -801,30 +801,32 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
                         />
                       </div>
                       
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Amount
-                        </label>
-                        <input
-                          type="text"
-                          value={newItem.amount}
-                          onChange={(e) => setNewItem({ ...newItem, amount: e.target.value })}
-                          placeholder="e.g., 2, 1.5, 500"
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Unit
-                        </label>
-                        <input
-                          type="text"
-                          value={newItem.unit}
-                          onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
-                          placeholder="e.g., pieces, liters, kg"
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        />
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Amount
+                          </label>
+                          <input
+                            type="text"
+                            value={newItem.amount}
+                            onChange={(e) => setNewItem({ ...newItem, amount: e.target.value })}
+                            placeholder="e.g., 2, 1.5"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          />
+                        </div>
+                        
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Unit
+                          </label>
+                          <input
+                            type="text"
+                            value={newItem.unit}
+                            onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
+                            placeholder="e.g., pieces, kg"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          />
+                        </div>
                       </div>
                       
                       <div className="flex flex-col sm:flex-row gap-3 pt-4">
