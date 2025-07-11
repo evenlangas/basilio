@@ -149,8 +149,8 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
           const data = await response.json();
           const serverUpdated = new Date(data.updatedAt || data.createdAt);
           
-          // Only update if server data is newer than our last update
-          if (serverUpdated > lastUpdated) {
+          // Only update if server data is newer than our last update AND user is not currently editing
+          if (serverUpdated > lastUpdated && editingIndex === null) {
             setList(data);
             setLastUpdated(serverUpdated);
           }
@@ -164,7 +164,7 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
     const interval = setInterval(pollForUpdates, 3000);
     
     return () => clearInterval(interval);
-  }, [listId, session, lastUpdated]);
+  }, [listId, session, lastUpdated, editingIndex]);
 
   const loadList = async (id: string) => {
     try {
@@ -493,7 +493,6 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
               onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
               className="w-full max-w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-0"
               placeholder="Item name"
-              autoFocus
             />
             {/* Amount and unit inputs */}
             <div className="flex gap-1 sm:gap-2 min-w-0">
@@ -891,7 +890,7 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
                             const index = list.items.indexOf(item);
                             return (
                               <SortableItem
-                                key={index}
+                                key={`item-${index}`}
                                 item={item}
                                 index={index}
                                 isCompleted={false}
@@ -915,7 +914,7 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
                         const index = list.items.indexOf(item);
                         return (
                           <SortableItem
-                            key={index}
+                            key={`item-${index}`}
                             item={item}
                             index={index}
                             isCompleted={true}
