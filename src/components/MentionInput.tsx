@@ -13,6 +13,7 @@ interface MentionData {
   username: string;
   startIndex: number;
   endIndex: number;
+  id: string; // Unique identifier for this mention instance
 }
 
 interface MentionInputProps {
@@ -24,6 +25,35 @@ interface MentionInputProps {
   disabled?: boolean;
   reset?: boolean;
 }
+
+// Helper function to convert mention tokens to API format
+export const convertTokensToApiFormat = (text: string, mentions: MentionData[]) => {
+  let convertedText = text;
+  const apiMentions: Array<{ user: any; username: string; startIndex: number; endIndex: number }> = [];
+  
+  // Sort mentions by position (reverse order to maintain indices)
+  const sortedMentions = [...mentions].sort((a, b) => b.startIndex - a.startIndex);
+  
+  sortedMentions.forEach(mention => {
+    // Replace token with simple @mention
+    const token = `@[${mention.username}](${mention.id})`;
+    const simpleMention = `@${mention.username}`;
+    convertedText = convertedText.replace(token, simpleMention);
+    
+    // Calculate new position after replacements
+    const newStartIndex = convertedText.indexOf(simpleMention);
+    if (newStartIndex !== -1) {
+      apiMentions.unshift({
+        user: mention.user,
+        username: mention.username,
+        startIndex: newStartIndex,
+        endIndex: newStartIndex + simpleMention.length
+      });
+    }
+  });
+  
+  return { text: convertedText, mentions: apiMentions };
+};
 
 export default function MentionInput({
   value,
@@ -71,30 +101,33 @@ export default function MentionInput({
   };
 
   const extractMentions = (text: string): MentionData[] => {
-    const mentionRegex = /@([A-Za-z][^@]*?)\s(?!\w)/g;
     const extractedMentions: MentionData[] = [];
+    const allUsers = [...suggestions, ...confirmedUsers];
+    
+    // Find mention tokens in format @[Name](mentionId)
+    const mentionTokenRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
     let match;
-
-    while ((match = mentionRegex.exec(text)) !== null) {
-      const username = match[1].trim();
+    
+    while ((match = mentionTokenRegex.exec(text)) !== null) {
+      const username = match[1];
+      const mentionId = match[2];
       const startIndex = match.index;
       const endIndex = match.index + match[0].length;
       
-      // Find if this username matches any of our known users (current suggestions or confirmed users)
-      const allUsers = [...suggestions, ...confirmedUsers];
-      const user = allUsers.find(u => u.name.toLowerCase() === username.toLowerCase());
-      
+      // Find the user
+      const user = allUsers.find(u => u.name === username);
       if (user) {
         extractedMentions.push({
           user,
           username,
           startIndex,
-          endIndex
+          endIndex,
+          id: mentionId
         });
       }
     }
-
-    return extractedMentions;
+    
+    return extractedMentions.sort((a, b) => a.startIndex - b.startIndex);
   };
 
 
@@ -132,7 +165,11 @@ export default function MentionInput({
 
     const beforeMention = value.slice(0, mentionStart);
     const afterMention = value.slice(inputRef.current?.selectionStart || mentionStart);
-    const newValue = beforeMention + `@${user.name} ` + afterMention;
+    
+    // Create a unique mention token
+    const mentionId = `mention_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const mentionToken = `@[${user.name}](${mentionId})`;
+    const newValue = beforeMention + mentionToken + afterMention;
     
     setShowSuggestions(false);
     setMentionStart(null);
@@ -143,36 +180,23 @@ export default function MentionInput({
       : [...confirmedUsers, user];
     setConfirmedUsers(updatedConfirmedUsers);
     
-    // Extract all mentions from the new text using updated confirmed users
-    const allUsers = [...suggestions, ...updatedConfirmedUsers];
-    const mentionRegex = /@([A-Za-z][^@]*?)\s(?!\w)/g;
-    const extractedMentions: MentionData[] = [];
-    let match;
-
-    while ((match = mentionRegex.exec(newValue)) !== null) {
-      const username = match[1].trim();
-      const startIndex = match.index;
-      const endIndex = match.index + match[0].length;
-      
-      const foundUser = allUsers.find(u => u.name.toLowerCase() === username.toLowerCase());
-      
-      if (foundUser) {
-        extractedMentions.push({
-          user: foundUser,
-          username,
-          startIndex,
-          endIndex
-        });
-      }
-    }
+    // Create mention data for this new mention
+    const newMention: MentionData = {
+      user,
+      username: user.name,
+      startIndex: mentionStart,
+      endIndex: mentionStart + mentionToken.length,
+      id: mentionId
+    };
     
-    setMentions(extractedMentions);
-    onChange(newValue, extractedMentions);
+    const updatedMentions = [...mentions, newMention];
+    setMentions(updatedMentions);
+    onChange(newValue, updatedMentions);
 
-    // Focus back on input
+    // Focus back on input at the end of the mention token
     setTimeout(() => {
       if (inputRef.current) {
-        const cursorPos = beforeMention.length + user.name.length + 2;
+        const cursorPos = beforeMention.length + mentionToken.length;
         inputRef.current.focus();
         inputRef.current.setSelectionRange(cursorPos, cursorPos);
       }
@@ -194,6 +218,35 @@ export default function MentionInput({
         }
       } else if (e.key === 'Escape') {
         setShowSuggestions(false);
+      }
+    } else if (e.key === 'Backspace') {
+      // Handle mention deletion
+      const cursorPosition = inputRef.current?.selectionStart || 0;
+      
+      // Check if cursor is at the end of a mention token
+      const mentionAtCursor = mentions.find(mention => 
+        cursorPosition === mention.endIndex
+      );
+      
+      if (mentionAtCursor) {
+        e.preventDefault();
+        
+        // Remove the entire mention token
+        const beforeMention = value.slice(0, mentionAtCursor.startIndex);
+        const afterMention = value.slice(mentionAtCursor.endIndex);
+        const newValue = beforeMention + afterMention;
+        
+        // Remove mention from array
+        const updatedMentions = mentions.filter(m => m.id !== mentionAtCursor.id);
+        setMentions(updatedMentions);
+        onChange(newValue, updatedMentions);
+        
+        // Set cursor position
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.setSelectionRange(mentionAtCursor.startIndex, mentionAtCursor.startIndex);
+          }
+        }, 0);
       }
     } else if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -223,13 +276,10 @@ export default function MentionInput({
         );
       }
       
-      // Add styled mention (bold, no @)
-      const mentionText = value.slice(mention.startIndex, mention.endIndex);
-      const usernameWithoutAt = mentionText.startsWith('@') ? mentionText.slice(1) : mentionText;
-      
+      // Add styled mention (bold, show just the username)
       parts.push(
-        <span key={`mention-${mention.startIndex}-${index}`} className="font-bold">
-          {usernameWithoutAt}
+        <span key={`mention-${mention.id}`} className="font-bold bg-blue-100 dark:bg-blue-900 px-1 rounded">
+          {mention.username}
         </span>
       );
       

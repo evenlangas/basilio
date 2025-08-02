@@ -8,7 +8,7 @@ import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import ChefDisplay from '@/components/ChefDisplay';
 import UserMentions from '@/components/UserMentions';
-import MentionInput from '@/components/MentionInput';
+import MentionInput, { convertTokensToApiFormat } from '@/components/MentionInput';
 import CommentText from '@/components/CommentText';
 import { IoArrowBack, IoTimeOutline, IoSendOutline, IoEllipsisVertical, IoCheckmarkOutline, IoCloseOutline, IoCreateOutline, IoTrashOutline, IoAddOutline, IoChatbubbleOutline } from 'react-icons/io5';
 
@@ -131,6 +131,9 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
     if (e) e.preventDefault();
     if (!newComment.trim() || submittingComment) return;
 
+    // Convert tokens to API format
+    const { text: apiText, mentions: apiMentions } = convertTokensToApiFormat(newComment.trim(), newCommentMentions);
+    
     setSubmittingComment(true);
     try {
       const response = await fetch(`/api/creations/${id}/comments`, {
@@ -139,8 +142,8 @@ export default function CommentsPage({ params }: { params: Promise<{ id: string 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          text: newComment.trim(),
-          mentions: newCommentMentions
+          text: apiText,
+          mentions: apiMentions
         }),
       });
 
