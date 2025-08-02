@@ -33,6 +33,10 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragOverlay,
+  MeasuringStrategy,
+  CollisionDetection,
+  rectIntersection,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -124,6 +128,26 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  const measuring = {
+    droppable: {
+      strategy: MeasuringStrategy.Always,
+    },
+  };
+
+  // Custom collision detection that prevents dragging beyond list boundaries
+  const customCollisionDetection: CollisionDetection = (args) => {
+    // First get the default collision detection result
+    const defaultCollisions = rectIntersection(args);
+    
+    // If there are valid collisions within the list, use them
+    if (defaultCollisions.length > 0) {
+      return defaultCollisions;
+    }
+    
+    // If no collisions, don't allow dropping outside the list
+    return [];
+  };
 
   useEffect(() => {
     const getParams = async () => {
@@ -485,8 +509,14 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
       isDragging,
     } = useSortable({ id: index.toString() });
 
+    // Restrict transform to vertical movement only
+    const constrainedTransform = transform ? {
+      ...transform,
+      x: 0, // Force horizontal movement to 0
+    } : null;
+
     const style = {
-      transform: CSS.Transform.toString(transform),
+      transform: CSS.Transform.toString(constrainedTransform),
       transition,
       opacity: isDragging ? 0.8 : 1,
     };
@@ -967,10 +997,11 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
                   <div className="mb-4">
                     <DndContext
                       sensors={sensors}
-                      collisionDetection={closestCenter}
+                      collisionDetection={customCollisionDetection}
                       onDragStart={handleDragStart}
                       onDragEnd={handleDragEnd}
                       onDragCancel={handleDragCancel}
+                      measuring={measuring}
                     >
                       <SortableContext
                         items={list.items.filter((item, index) => {
