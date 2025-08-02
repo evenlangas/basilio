@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
@@ -48,6 +48,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import React from 'react';
 
 interface ShoppingItem {
   name: string;
@@ -96,6 +97,224 @@ interface ShoppingList {
   recipeLog?: RecipeLogEntry[];
   createdAt: string;
 }
+
+// Sortable Item Component - moved outside to prevent recreation
+const SortableItem = React.memo(({ 
+  item, 
+  index, 
+  isCompleted,
+  loadingItems,
+  errorItems,
+  deletingItems,
+  deleteErrors,
+  editingIndex,
+  editingItem,
+  onEditNameChange,
+  onEditAmountChange,
+  onEditUnitChange,
+  toggleItem,
+  removeItem,
+  startEditing,
+  saveEdit,
+  cancelEditing
+}: { 
+  item: ShoppingItem; 
+  index: number; 
+  isCompleted: boolean;
+  loadingItems: Set<number>;
+  errorItems: Set<number>;
+  deletingItems: Set<number>;
+  deleteErrors: Set<number>;
+  editingIndex: number | null;
+  editingItem: { name: string; amount: string; unit: string };
+  onEditNameChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onEditAmountChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onEditUnitChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  toggleItem: (index: number) => void;
+  removeItem: (index: number) => void;
+  startEditing: (index: number) => void;
+  saveEdit: () => void;
+  cancelEditing: () => void;
+}) => {
+  const isLoading = loadingItems.has(index);
+  const hasError = errorItems.has(index);
+  const isDeleting = deletingItems.has(index);
+  const hasDeleteError = deleteErrors.has(index);
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: index.toString() });
+
+  // Restrict transform to vertical movement only
+  const constrainedTransform = transform ? {
+    ...transform,
+    x: 0, // Force horizontal movement to 0
+  } : null;
+
+  const style = {
+    transform: CSS.Transform.toString(constrainedTransform),
+    transition,
+    opacity: isDragging ? 0.8 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg transition-colors min-w-0 overflow-hidden ${
+        isCompleted 
+          ? 'bg-gray-100 dark:bg-gray-700/50' 
+          : 'bg-gray-50 dark:bg-gray-700'
+      } ${
+        isDragging ? 'shadow-lg ring-2 ring-primary-500 ring-opacity-50' : ''
+      } ${
+        (hasError || hasDeleteError) ? 'ring-2 ring-red-500 ring-opacity-30' : ''
+      } ${
+        (isLoading || isDeleting) ? 'opacity-60' : ''
+      }`}
+    >
+      {/* Drag Handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-grab active:cursor-grabbing flex-shrink-0 touch-none p-1 -m-1"
+        style={{ touchAction: 'none' }}
+      >
+        <IoReorderThree size={20} />
+      </div>
+
+      {/* Checkbox */}
+      <button 
+        onClick={() => toggleItem(index)} 
+        className="text-xl flex-shrink-0 relative"
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+        ) : hasError ? (
+          <div className="text-red-500 relative">
+            <IoSquareOutline />
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs">!</span>
+            </div>
+          </div>
+        ) : isCompleted ? (
+          <IoCheckbox className="text-green-500" />
+        ) : (
+          <IoSquareOutline className="text-gray-400 hover:text-green-500 transition-colors" />
+        )}
+      </button>
+
+      {/* Item content */}
+      {editingIndex === index ? (
+        <div className="flex-1 min-w-0 space-y-1 sm:space-y-2">
+          {/* Item name input */}
+          <input
+            type="text"
+            value={editingItem.name}
+            onChange={onEditNameChange}
+            className="w-full max-w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-0"
+            placeholder="Item name"
+          />
+          {/* Amount and unit inputs */}
+          <div className="flex gap-1 sm:gap-2 min-w-0">
+            <input
+              type="text"
+              value={editingItem.amount}
+              onChange={onEditAmountChange}
+              className="w-0 flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-0"
+              placeholder="Amount"
+            />
+            <input
+              type="text"
+              value={editingItem.unit}
+              onChange={onEditUnitChange}
+              className="w-0 flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-0"
+              placeholder="Unit"
+            />
+          </div>
+          {/* Action buttons */}
+          <div className="flex gap-1 sm:gap-2 justify-end">
+            <button
+              onClick={cancelEditing}
+              className="px-2 sm:px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded transition-colors flex-shrink-0"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={saveEdit}
+              className="px-2 sm:px-3 py-1 text-sm text-white bg-green-600 hover:bg-green-700 rounded transition-colors flex-shrink-0"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 min-w-0">
+          <div className="flex-1 cursor-pointer min-h-[2.5rem] flex flex-col justify-center" onClick={() => startEditing(index)}>
+            {/* Error messages */}
+            {hasError && (
+              <div className="text-xs text-red-600 dark:text-red-400 mb-1 flex items-center gap-1">
+                <span>Failed to update. Tap to try again.</span>
+              </div>
+            )}
+            {hasDeleteError && (
+              <div className="text-xs text-red-600 dark:text-red-400 mb-1 flex items-center gap-1">
+                <span>Failed to delete. Try again.</span>
+              </div>
+            )}
+            <span className={`font-medium block ${
+              isCompleted 
+                ? 'text-gray-500 dark:text-gray-400 line-through' 
+                : 'text-gray-900 dark:text-white'
+            } ${
+              (isLoading || isDeleting) ? 'opacity-70' : ''
+            }`}>
+              {item.name}
+              {isLoading && <span className="ml-2 text-xs text-green-600 dark:text-green-400">(updating...)</span>}
+              {isDeleting && <span className="ml-2 text-xs text-red-600 dark:text-red-400">(deleting...)</span>}
+            </span>
+            {(item.amount || item.unit) && (
+              <span className={`text-sm ${
+                isCompleted 
+                  ? 'text-gray-400 dark:text-gray-500 line-through' 
+                  : 'text-gray-600 dark:text-gray-300'
+              }`}>
+                {item.amount} {item.unit}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Delete button (only show when not editing) */}
+      {editingIndex !== index && (
+        <button 
+          onClick={() => removeItem(index)}
+          className="text-gray-400 hover:text-red-600 flex-shrink-0 relative"
+          disabled={isDeleting}
+        >
+          {isDeleting ? (
+            <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+          ) : hasDeleteError ? (
+            <div className="text-red-500 relative">
+              <IoTrash size={16} />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs">!</span>
+              </div>
+            </div>
+          ) : (
+            <IoTrash size={16} />
+          )}
+        </button>
+      )}
+    </div>
+  );
+});
 
 export default function ShoppingListPage({ params }: { params: Promise<{ id: string }> }) {
   const { data: session, status } = useSession();
@@ -434,7 +653,7 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
     }
   };
 
-  const startEditing = (index: number) => {
+  const startEditing = useCallback((index: number) => {
     if (!list) return;
     const item = list.items[index];
     setEditingIndex(index);
@@ -443,12 +662,12 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
       amount: item.amount,
       unit: item.unit
     });
-  };
+  }, [list]);
 
-  const cancelEditing = () => {
+  const cancelEditing = useCallback(() => {
     setEditingIndex(null);
     setEditingItem({ name: '', amount: '', unit: '' });
-  };
+  }, []);
 
   const handleDragCancel = () => {
     setDraggedItem(null);
@@ -456,7 +675,7 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
     document.body.style.overflow = 'auto';
   };
 
-  const saveEdit = async () => {
+  const saveEdit = useCallback(async () => {
     if (!list || editingIndex === null || !editingItem.name.trim()) return;
 
     const updatedItems = [...list.items];
@@ -481,12 +700,26 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
       if (response.ok) {
         setList({ ...list, items: updatedItems });
         setLastUpdated(new Date());
-        cancelEditing();
+        setEditingIndex(null);
+        setEditingItem({ name: '', amount: '', unit: '' });
       }
     } catch (error) {
       console.error('Error updating item:', error);
     }
-  };
+  }, [list, editingIndex, editingItem, listId]);
+
+  // Stable onChange handlers for editing inputs
+  const handleEditNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditingItem(prev => ({ ...prev, name: e.target.value }));
+  }, []);
+
+  const handleEditAmountChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditingItem(prev => ({ ...prev, amount: e.target.value }));
+  }, []);
+
+  const handleEditUnitChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditingItem(prev => ({ ...prev, unit: e.target.value }));
+  }, []);
 
   if (status === 'loading') {
     return <PageLoadingSkeleton />;
@@ -494,187 +727,6 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
 
   if (!session) return null;
 
-  // Sortable Item Component
-  const SortableItem = ({ item, index, isCompleted }: { item: ShoppingItem; index: number; isCompleted: boolean }) => {
-    const isLoading = loadingItems.has(index);
-    const hasError = errorItems.has(index);
-    const isDeleting = deletingItems.has(index);
-    const hasDeleteError = deleteErrors.has(index);
-    const {
-      attributes,
-      listeners,
-      setNodeRef,
-      transform,
-      transition,
-      isDragging,
-    } = useSortable({ id: index.toString() });
-
-    // Restrict transform to vertical movement only
-    const constrainedTransform = transform ? {
-      ...transform,
-      x: 0, // Force horizontal movement to 0
-    } : null;
-
-    const style = {
-      transform: CSS.Transform.toString(constrainedTransform),
-      transition,
-      opacity: isDragging ? 0.8 : 1,
-    };
-
-    return (
-      <div
-        ref={setNodeRef}
-        style={style}
-        className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg transition-colors min-w-0 overflow-hidden ${
-          isCompleted 
-            ? 'bg-gray-100 dark:bg-gray-700/50' 
-            : 'bg-gray-50 dark:bg-gray-700'
-        } ${
-          isDragging ? 'shadow-lg ring-2 ring-primary-500 ring-opacity-50' : ''
-        } ${
-          (hasError || hasDeleteError) ? 'ring-2 ring-red-500 ring-opacity-30' : ''
-        } ${
-          (isLoading || isDeleting) ? 'opacity-60' : ''
-        }`}
-      >
-        {/* Drag Handle */}
-        <div
-          {...attributes}
-          {...listeners}
-          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-grab active:cursor-grabbing flex-shrink-0 touch-none p-1 -m-1"
-          style={{ touchAction: 'none' }}
-        >
-          <IoReorderThree size={20} />
-        </div>
-
-        {/* Checkbox */}
-        <button 
-          onClick={() => toggleItem(index)} 
-          className="text-xl flex-shrink-0 relative"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
-          ) : hasError ? (
-            <div className="text-red-500 relative">
-              <IoSquareOutline />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs">!</span>
-              </div>
-            </div>
-          ) : isCompleted ? (
-            <IoCheckbox className="text-green-500" />
-          ) : (
-            <IoSquareOutline className="text-gray-400 hover:text-green-500 transition-colors" />
-          )}
-        </button>
-
-        {/* Item content */}
-        {editingIndex === index ? (
-          <div className="flex-1 min-w-0 space-y-1 sm:space-y-2">
-            {/* Item name input */}
-            <input
-              type="text"
-              value={editingItem.name}
-              onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
-              className="w-full max-w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-0"
-              placeholder="Item name"
-            />
-            {/* Amount and unit inputs */}
-            <div className="flex gap-1 sm:gap-2 min-w-0">
-              <input
-                type="text"
-                value={editingItem.amount}
-                onChange={(e) => setEditingItem({ ...editingItem, amount: e.target.value })}
-                className="w-0 flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-0"
-                placeholder="Amount"
-              />
-              <input
-                type="text"
-                value={editingItem.unit}
-                onChange={(e) => setEditingItem({ ...editingItem, unit: e.target.value })}
-                className="w-0 flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-0"
-                placeholder="Unit"
-              />
-            </div>
-            {/* Action buttons */}
-            <div className="flex gap-1 sm:gap-2 justify-end">
-              <button
-                onClick={() => setEditingIndex(null)}
-                className="px-2 sm:px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded transition-colors flex-shrink-0"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveEdit}
-                className="px-2 sm:px-3 py-1 text-sm text-white bg-green-600 hover:bg-green-700 rounded transition-colors flex-shrink-0"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex-1 min-w-0">
-            <div className="flex-1 cursor-pointer min-h-[2.5rem] flex flex-col justify-center" onClick={() => startEditing(index)}>
-              {/* Error messages */}
-              {hasError && (
-                <div className="text-xs text-red-600 dark:text-red-400 mb-1 flex items-center gap-1">
-                  <span>Failed to update. Tap to try again.</span>
-                </div>
-              )}
-              {hasDeleteError && (
-                <div className="text-xs text-red-600 dark:text-red-400 mb-1 flex items-center gap-1">
-                  <span>Failed to delete. Try again.</span>
-                </div>
-              )}
-              <span className={`font-medium block ${
-                isCompleted 
-                  ? 'text-gray-500 dark:text-gray-400 line-through' 
-                  : 'text-gray-900 dark:text-white'
-              } ${
-                (isLoading || isDeleting) ? 'opacity-70' : ''
-              }`}>
-                {item.name}
-                {isLoading && <span className="ml-2 text-xs text-green-600 dark:text-green-400">(updating...)</span>}
-                {isDeleting && <span className="ml-2 text-xs text-red-600 dark:text-red-400">(deleting...)</span>}
-              </span>
-              {(item.amount || item.unit) && (
-                <span className={`text-sm ${
-                  isCompleted 
-                    ? 'text-gray-400 dark:text-gray-500 line-through' 
-                    : 'text-gray-600 dark:text-gray-300'
-                }`}>
-                  {item.amount} {item.unit}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Delete button (only show when not editing) */}
-        {editingIndex !== index && (
-          <button 
-            onClick={() => removeItem(index)}
-            className="text-gray-400 hover:text-red-600 flex-shrink-0 relative"
-            disabled={isDeleting}
-          >
-            {isDeleting ? (
-              <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-            ) : hasDeleteError ? (
-              <div className="text-red-500 relative">
-                <IoTrash size={16} />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs">!</span>
-                </div>
-              </div>
-            ) : (
-              <IoTrash size={16} />
-            )}
-          </button>
-        )}
-      </div>
-    );
-  };
 
   const completedItems = list?.items.filter(item => item.completed).length || 0;
   const totalItems = list?.items.length || 0;
@@ -1027,10 +1079,24 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
                             const index = list.items.indexOf(item);
                             return (
                               <SortableItem
-                                key={`item-${index}`}
+                                key={`${item.name}-${item.addedBy}-${index}`}
                                 item={item}
                                 index={index}
                                 isCompleted={loadingItems.has(index) ? (originalItemStates.get(index) || false) : item.completed}
+                                loadingItems={loadingItems}
+                                errorItems={errorItems}
+                                deletingItems={deletingItems}
+                                deleteErrors={deleteErrors}
+                                editingIndex={editingIndex}
+                                editingItem={editingItem}
+                                onEditNameChange={handleEditNameChange}
+                                onEditAmountChange={handleEditAmountChange}
+                                onEditUnitChange={handleEditUnitChange}
+                                toggleItem={toggleItem}
+                                removeItem={removeItem}
+                                startEditing={startEditing}
+                                saveEdit={saveEdit}
+                                cancelEditing={cancelEditing}
                               />
                             );
                           })}
@@ -1067,10 +1133,24 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
                         const index = list.items.indexOf(item);
                         return (
                           <SortableItem
-                            key={`item-${index}`}
+                            key={`${item.name}-${item.addedBy}-${index}`}
                             item={item}
                             index={index}
                             isCompleted={loadingItems.has(index) ? (originalItemStates.get(index) || false) : item.completed}
+                            loadingItems={loadingItems}
+                            errorItems={errorItems}
+                            deletingItems={deletingItems}
+                            deleteErrors={deleteErrors}
+                            editingIndex={editingIndex}
+                            editingItem={editingItem}
+                            onEditNameChange={handleEditNameChange}
+                            onEditAmountChange={handleEditAmountChange}
+                            onEditUnitChange={handleEditUnitChange}
+                            toggleItem={toggleItem}
+                            removeItem={removeItem}
+                            startEditing={startEditing}
+                            saveEdit={saveEdit}
+                            cancelEditing={cancelEditing}
                           />
                         );
                       })}
