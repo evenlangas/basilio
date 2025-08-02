@@ -19,7 +19,7 @@ const extractMentions = (text: string): string[] => {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -29,17 +29,21 @@ export async function GET(
 
     await dbConnect();
     
-    const creation = await Creation.findById(params.id)
-      .populate([
-        {
-          path: 'comments.user',
-          select: 'name image'
-        },
-        {
-          path: 'comments.mentions.user',
-          select: 'name image'
-        }
-      ]);
+    const { id } = await params;
+    const creation = await Creation.findById(id)
+      .populate({
+        path: 'comments',
+        populate: [
+          {
+            path: 'user',
+            select: 'name image'
+          },
+          {
+            path: 'mentions.user',
+            select: 'name image'
+          }
+        ]
+      });
 
     if (!creation) {
       return NextResponse.json({ error: 'Creation not found' }, { status: 404 });
@@ -54,7 +58,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -75,7 +79,8 @@ export async function POST(
       return NextResponse.json({ error: 'Comment text is required' }, { status: 400 });
     }
 
-    const creation = await Creation.findById(params.id);
+    const { id } = await params;
+    const creation = await Creation.findById(id);
     if (!creation) {
       return NextResponse.json({ error: 'Creation not found' }, { status: 404 });
     }
@@ -127,16 +132,19 @@ export async function POST(
     }
 
     // Populate the new comment with user data and mentions
-    await creation.populate([
-      {
-        path: 'comments.user',
-        select: 'name image'
-      },
-      {
-        path: 'comments.mentions.user',
-        select: 'name image'
-      }
-    ]);
+    await creation.populate({
+      path: 'comments',
+      populate: [
+        {
+          path: 'user',
+          select: 'name image'
+        },
+        {
+          path: 'mentions.user',
+          select: 'name image'
+        }
+      ]
+    });
 
     // Return the newly created comment
     const addedComment = creation.comments[creation.comments.length - 1];

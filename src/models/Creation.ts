@@ -38,6 +38,12 @@ const CreationSchema = new mongoose.Schema({
     max: 5,
     default: null,
   },
+  // New user ID-based field for eating companions
+  eatenWithUsers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  }],
+  // Legacy string field for backward compatibility
   eatenWith: {
     type: String,
     default: '',
@@ -50,6 +56,13 @@ const CreationSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  // New user ID-based field for chef
+  chef: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
+  // Legacy string field for backward compatibility
   chefName: {
     type: String,
     default: '',

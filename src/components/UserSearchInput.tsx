@@ -12,17 +12,21 @@ interface User {
 interface UserSearchInputProps {
   value: string;
   onChange: (value: string) => void;
+  onUserSelect?: (user: User | null) => void; // New callback for user selection
   placeholder?: string;
   label?: string;
   allowFreeText?: boolean; // Allow typing custom text instead of just selecting users
+  mode?: 'legacy' | 'userIds'; // Choose between legacy string mode or new user ID mode
 }
 
 export default function UserSearchInput({ 
   value, 
   onChange, 
+  onUserSelect,
   placeholder = "Search users...", 
   label,
-  allowFreeText = true 
+  allowFreeText = true,
+  mode = 'legacy'
 }: UserSearchInputProps) {
   const [searchQuery, setSearchQuery] = useState(value);
   const [users, setUsers] = useState<User[]>([]);
@@ -90,7 +94,15 @@ export default function UserSearchInput({
   const handleUserSelect = (user: User) => {
     setSelectedUser(user);
     setSearchQuery(user.name);
-    onChange(user.name);
+    
+    if (mode === 'userIds' && onUserSelect) {
+      // New mode: pass user object to parent
+      onUserSelect(user);
+    } else {
+      // Legacy mode: pass user name as string
+      onChange(user.name);
+    }
+    
     setShowDropdown(false);
     inputRef.current?.blur();
   };
@@ -98,7 +110,13 @@ export default function UserSearchInput({
   const handleClear = () => {
     setSearchQuery('');
     setSelectedUser(null);
-    onChange('');
+    
+    if (mode === 'userIds' && onUserSelect) {
+      onUserSelect(null);
+    } else {
+      onChange('');
+    }
+    
     setShowDropdown(false);
     inputRef.current?.focus();
   };

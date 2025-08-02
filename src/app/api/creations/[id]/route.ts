@@ -40,6 +40,8 @@ export async function GET(
     const creation = await Creation.findById(params.id)
       .populate('createdBy', 'name image')
       .populate('likes', 'name image')
+      .populate('chef', 'name image') // Populate new chef field
+      .populate('eatenWithUsers', 'name image') // Populate new eatenWith field
       .populate({
         path: 'recipes.recipe',
         select: 'title description cookingTime servings image ingredients instructions averageRating'
@@ -88,9 +90,22 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { title, description, image, recipes, eatenWith, cookingTime, drankWith, chefName } = body;
+    const { 
+      title, 
+      description, 
+      image, 
+      recipes, 
+      eatenWith, 
+      eatenWithUsers, 
+      cookingTime, 
+      drankWith, 
+      chefName, 
+      chef 
+    } = body;
 
-    // Get old mentions to compare with new ones
+    // Store old user references for comparison
+    const oldChef = creation.chef;
+    const oldEatenWithUsers = creation.eatenWithUsers || [];
     const oldMentions = [
       ...extractMentions(creation.eatenWith || ''),
       ...extractMentions(creation.chefName || '')
@@ -157,66 +172,121 @@ export async function PUT(
         description,
         image,
         recipes: recipes || [],
+        // Legacy fields
         eatenWith,
+        chefName,
+        // New user ID fields
+        eatenWithUsers: eatenWithUsers || [],
+        chef: chef || null,
         cookingTime,
-        drankWith,
-        chefName
+        drankWith
       },
       { new: true }
     ).populate('createdBy', 'name image')
      .populate('likes', 'name image')
+     .populate('chef', 'name image') // Populate new chef field
+     .populate('eatenWithUsers', 'name image') // Populate new eatenWith field
      .populate({
        path: 'recipes.recipe',
        select: 'title description cookingTime servings image ingredients instructions averageRating'
      });
 
-    // Create notifications for new mentions in eatenWith and chefName
-    const newMentions = [
-      ...extractMentions(eatenWith || ''),
-      ...extractMentions(chefName || '')
-    ];
+    // Create notifications for new user references
+    const notificationPromises = [];
     
-    // Only notify for mentions that weren't in the original creation
-    const mentionsToNotify = newMentions.filter(mention => 
-      !oldMentions.some(oldMention => oldMention.toLowerCase() === mention.toLowerCase())
-    );
+    // Handle chef notification (new user ID field takes precedence)
+    if (chef && chef !== oldChef?.toString() && chef !== user._id.toString()) {
+      notificationPromises.push(
+        Notification.create({
+          recipient: chef,
+          sender: user._id,
+          type: 'yum',
+          title: 'You were credited as chef!',
+          message: `${user.name} credited you as the chef for "${title}"`,
+          data: {
+            creationId: updatedCreation._id,
+          },
+        })
+      );
+    }
     
-    if (mentionsToNotify.length > 0) {
-      const mentionedUsers = await User.find({ 
-        name: { $in: mentionsToNotify.map(mention => new RegExp(`^${mention}$`, 'i')) }
-      });
+    // Handle eatenWith notifications (new user ID field takes precedence)
+    if (eatenWithUsers && Array.isArray(eatenWithUsers)) {
+      const newEatenWithUsers = eatenWithUsers.filter(userId => 
+        userId !== user._id.toString() && 
+        !oldEatenWithUsers.some(oldUser => oldUser.toString() === userId)
+      );
+      
+      for (const eatenWithUserId of newEatenWithUsers) {
+        notificationPromises.push(
+          Notification.create({
+            recipient: eatenWithUserId,
+            sender: user._id,
+            type: 'yum',
+            title: 'You were mentioned in a creation!',
+            message: `${user.name} mentioned you in their creation "${title}"`,
+            data: {
+              creationId: updatedCreation._id,
+            },
+          })
+        );
+      }
+    } else {
+      // Fallback to legacy string-based mentions for backward compatibility
+      const newMentions = [
+        ...extractMentions(eatenWith || ''),
+        ...extractMentions(chefName || '')
+      ];
+      
+      // Only notify for mentions that weren't in the original creation
+      const mentionsToNotify = newMentions.filter(mention => 
+        !oldMentions.some(oldMention => oldMention.toLowerCase() === mention.toLowerCase())
+      );
+      
+      if (mentionsToNotify.length > 0) {
+        const mentionedUsers = await User.find({ 
+          name: { $in: mentionsToNotify.map(mention => new RegExp(`^${mention}$`, 'i')) }
+        });
 
-      for (const mentionedUser of mentionedUsers) {
-        // Don't notify the creator themselves
-        if (mentionedUser._id.toString() !== user._id.toString()) {
-          const isChef = extractMentions(chefName || '').some(mention => 
-            mentionedUser.name.toLowerCase() === mention.toLowerCase()
-          );
-          const isEatenWith = extractMentions(eatenWith || '').some(mention => 
-            mentionedUser.name.toLowerCase() === mention.toLowerCase()
-          );
+        for (const mentionedUser of mentionedUsers) {
+          // Don't notify the creator themselves
+          if (mentionedUser._id.toString() !== user._id.toString()) {
+            const isChef = extractMentions(chefName || '').some(mention => 
+              mentionedUser.name.toLowerCase() === mention.toLowerCase()
+            );
+            const isEatenWith = extractMentions(eatenWith || '').some(mention => 
+              mentionedUser.name.toLowerCase() === mention.toLowerCase()
+            );
 
-          let notificationMessage = '';
-          if (isChef) {
-            notificationMessage = `${user.name} credited you as the chef for "${title}"`;
-          } else if (isEatenWith) {
-            notificationMessage = `${user.name} mentioned you in their creation "${title}"`;
-          }
+            let notificationMessage = '';
+            if (isChef) {
+              notificationMessage = `${user.name} credited you as the chef for "${title}"`;
+            } else if (isEatenWith) {
+              notificationMessage = `${user.name} mentioned you in their creation "${title}"`;
+            }
 
-          if (notificationMessage) {
-            await Notification.create({
-              recipient: mentionedUser._id,
-              sender: user._id,
-              type: 'yum',
-              title: 'You were mentioned in a creation!',
-              message: notificationMessage,
-              data: {
-                creationId: creation._id,
-              },
-            });
+            if (notificationMessage) {
+              notificationPromises.push(
+                Notification.create({
+                  recipient: mentionedUser._id,
+                  sender: user._id,
+                  type: 'yum',
+                  title: 'You were mentioned in a creation!',
+                  message: notificationMessage,
+                  data: {
+                    creationId: updatedCreation._id,
+                  },
+                })
+              );
+            }
           }
         }
       }
+    }
+    
+    // Execute all notifications in parallel
+    if (notificationPromises.length > 0) {
+      await Promise.all(notificationPromises);
     }
 
     return NextResponse.json(updatedCreation);

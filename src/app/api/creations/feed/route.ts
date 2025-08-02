@@ -32,6 +32,8 @@ export async function GET() {
     })
     .populate('createdBy', 'name image')
     .populate('likes', 'name image')
+    .populate('chef', 'name image') // Populate new chef field
+    .populate('eatenWithUsers', 'name image') // Populate new eatenWith field
     .populate('recipe', 'title description cookingTime servings')
     .sort({ createdAt: -1 })
     .limit(50); // Limit to recent 50 creations

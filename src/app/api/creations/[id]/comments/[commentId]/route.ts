@@ -22,7 +22,7 @@ export async function PUT(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { text } = await request.json();
+    const { text, mentions = [] } = await request.json();
     
     if (!text || !text.trim()) {
       return NextResponse.json({ error: 'Comment text is required' }, { status: 400 });
@@ -50,14 +50,24 @@ export async function PUT(
 
     // Update the comment
     creation.comments[commentIndex].text = text.trim();
+    creation.comments[commentIndex].mentions = mentions; // Update mentions
     creation.comments[commentIndex].updatedAt = new Date();
 
     await creation.save();
 
-    // Populate the updated comment with user data
+    // Populate the updated comment with user data and mentions
     await creation.populate({
-      path: 'comments.user',
-      select: 'name image'
+      path: 'comments',
+      populate: [
+        {
+          path: 'user',
+          select: 'name image'
+        },
+        {
+          path: 'mentions.user',
+          select: 'name image'
+        }
+      ]
     });
 
     // Return the updated comment

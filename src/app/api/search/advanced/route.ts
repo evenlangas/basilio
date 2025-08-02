@@ -179,6 +179,8 @@ export async function GET(request: NextRequest) {
       const creations = await Creation.find(creationQuery)
         .populate('createdBy', 'name image')
         .populate('likes', 'name image')
+        .populate('chef', 'name image') // Populate new chef field
+        .populate('eatenWithUsers', 'name image') // Populate new eatenWith field
         .populate('comments')
         .sort(getSortObject('creation'))
         .limit(20);

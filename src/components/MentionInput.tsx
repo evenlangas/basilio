@@ -71,18 +71,19 @@ export default function MentionInput({
   };
 
   const extractMentions = (text: string): MentionData[] => {
-    const mentionRegex = /@(\w+)/g;
+    const mentionRegex = /@([A-Za-z][^@]*?)\s(?!\w)/g;
     const extractedMentions: MentionData[] = [];
     let match;
 
     while ((match = mentionRegex.exec(text)) !== null) {
-      const username = match[1];
+      const username = match[1].trim();
       const startIndex = match.index;
       const endIndex = match.index + match[0].length;
       
       // Find if this username matches any of our known users (current suggestions or confirmed users)
       const allUsers = [...suggestions, ...confirmedUsers];
       const user = allUsers.find(u => u.name.toLowerCase() === username.toLowerCase());
+      
       if (user) {
         extractedMentions.push({
           user,
@@ -103,7 +104,7 @@ export default function MentionInput({
     
     // Check for @ mentions
     const beforeCursor = newValue.slice(0, cursorPosition);
-    const mentionMatch = beforeCursor.match(/@(\w*)$/);
+    const mentionMatch = beforeCursor.match(/@([^@\s]*)$/);
     
     if (mentionMatch) {
       const query = mentionMatch[1];
@@ -144,16 +145,17 @@ export default function MentionInput({
     
     // Extract all mentions from the new text using updated confirmed users
     const allUsers = [...suggestions, ...updatedConfirmedUsers];
-    const mentionRegex = /@(\w+)/g;
+    const mentionRegex = /@([A-Za-z][^@]*?)\s(?!\w)/g;
     const extractedMentions: MentionData[] = [];
     let match;
 
     while ((match = mentionRegex.exec(newValue)) !== null) {
-      const username = match[1];
+      const username = match[1].trim();
       const startIndex = match.index;
       const endIndex = match.index + match[0].length;
       
       const foundUser = allUsers.find(u => u.name.toLowerCase() === username.toLowerCase());
+      
       if (foundUser) {
         extractedMentions.push({
           user: foundUser,
@@ -200,25 +202,74 @@ export default function MentionInput({
   };
 
 
+  const renderStyledText = () => {
+    if (!mentions.length) {
+      return null;
+    }
+
+    const parts = [];
+    let lastIndex = 0;
+
+    // Sort mentions by start index
+    const sortedMentions = [...mentions].sort((a, b) => a.startIndex - b.startIndex);
+
+    sortedMentions.forEach((mention, index) => {
+      // Add text before mention
+      if (mention.startIndex > lastIndex) {
+        parts.push(
+          <span key={`text-${lastIndex}`}>
+            {value.slice(lastIndex, mention.startIndex)}
+          </span>
+        );
+      }
+      
+      // Add styled mention (bold, no @)
+      const mentionText = value.slice(mention.startIndex, mention.endIndex);
+      const usernameWithoutAt = mentionText.startsWith('@') ? mentionText.slice(1) : mentionText;
+      
+      parts.push(
+        <span key={`mention-${mention.startIndex}-${index}`} className="font-bold">
+          {usernameWithoutAt}
+        </span>
+      );
+      
+      lastIndex = mention.endIndex;
+    });
+
+    // Add remaining text
+    if (lastIndex < value.length) {
+      parts.push(
+        <span key={`text-${lastIndex}`}>
+          {value.slice(lastIndex)}
+        </span>
+      );
+    }
+
+    return parts;
+  };
+
   return (
     <div className="relative">
+      {/* Styled text overlay */}
+      {mentions.length > 0 && (
+        <div className="absolute inset-0 p-3 pointer-events-none whitespace-pre-wrap break-words overflow-hidden text-transparent">
+          <div className="text-gray-900 dark:text-white">
+            {renderStyledText()}
+          </div>
+        </div>
+      )}
+      
       <textarea
         ref={inputRef}
         value={value}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className={`w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none ${className}`}
+        className={`w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 ${mentions.length > 0 ? 'text-transparent' : 'text-gray-900 dark:text-white'} placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none ${className}`}
         rows={3}
         disabled={disabled}
       />
       
-      {/* Show count of confirmed mentions */}
-      {mentions.length > 0 && (
-        <div className="absolute bottom-1 right-2 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
-          {mentions.length} mention{mentions.length === 1 ? '' : 's'}
-        </div>
-      )}
       
       {/* Suggestions dropdown */}
       {showSuggestions && suggestions.length > 0 && (

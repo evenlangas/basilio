@@ -11,18 +11,28 @@ interface User {
 }
 
 interface ChefDisplayProps {
-  chefName: string;
+  // Legacy mode: accepts chef name string (for backward compatibility)
+  chefName?: string;
+  // New mode: accepts user object directly (optimized)
+  chef?: User;
   className?: string;
   showProfilePicture?: boolean;
   asLink?: boolean;
 }
 
-export default function ChefDisplay({ chefName, className = "", showProfilePicture = true, asLink = true }: ChefDisplayProps) {
-  const [chefUser, setChefUser] = useState<User | null>(null);
+export default function ChefDisplay({ chefName, chef, className = "", showProfilePicture = true, asLink = true }: ChefDisplayProps) {
+  const [chefUser, setChefUser] = useState<User | null>(chef || null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!chefName.trim()) return;
+    // If chef object is provided, use it directly (new optimized mode)
+    if (chef) {
+      setChefUser(chef);
+      return;
+    }
+    
+    // Fallback to legacy search mode for backward compatibility
+    if (!chefName?.trim()) return;
 
     const searchChef = async () => {
       setLoading(true);
@@ -49,9 +59,9 @@ export default function ChefDisplay({ chefName, className = "", showProfilePictu
     };
 
     searchChef();
-  }, [chefName]);
+  }, [chefName, chef]);
 
-  if (!chefName.trim()) return null;
+  if (!chef && !chefName?.trim()) return null;
 
   if (chefUser) {
     const content = (
@@ -103,7 +113,7 @@ export default function ChefDisplay({ chefName, className = "", showProfilePictu
       {loading && (
         <span className="inline-block w-3 h-3 border border-gray-300 border-t-gray-600 rounded-full animate-spin mr-1"></span>
       )}
-      {chefName}
+      {chefName || 'Unknown Chef'}
     </span>
   );
 }

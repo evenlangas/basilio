@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import UserSearchInput from '@/components/UserSearchInput';
+import MultiUserSearchInput from '@/components/MultiUserSearchInput';
 import RecipeSearchInput from '@/components/RecipeSearchInput';
 import CameraInput from '@/components/CameraInput';
 import { IoArrowBack, IoCamera, IoClose, IoBook, IoTime, IoPeople, IoRestaurantOutline } from 'react-icons/io5';
@@ -19,11 +20,17 @@ export default function CreatePage() {
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [recipes, setRecipes] = useState<Array<{recipe: string, rating: number | null}>>([]);
+  // Legacy fields for backward compatibility
   const [eatenWith, setEatenWith] = useState('');
+  const [chefName, setChefName] = useState('');
+  // New user ID fields
+  const [eatenWithUsers, setEatenWithUsers] = useState<Array<{_id: string, name: string, image?: string}>>([]);
+  const [chef, setChef] = useState<{_id: string, name: string, image?: string} | null>(null);
   const [cookingTime, setCookingTime] = useState('');
   const [drankWith, setDrankWith] = useState('');
-  const [chefName, setChefName] = useState('');
   const [loading, setLoading] = useState(false);
+  // Mode toggle for testing both approaches
+  const [useNewUserIds, setUseNewUserIds] = useState(true);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -131,10 +138,13 @@ export default function CreatePage() {
           description: description.trim(),
           image: imageUrl,
           recipes: recipes.filter(r => r.recipe), // Only include recipes that have been selected
-          eatenWith: eatenWith.trim(),
+          // Send both legacy and new fields for backward compatibility
+          eatenWith: useNewUserIds ? '' : eatenWith.trim(),
+          chefName: useNewUserIds ? '' : chefName.trim(),
+          eatenWithUsers: useNewUserIds ? eatenWithUsers.map(u => u._id) : [],
+          chef: useNewUserIds ? chef?._id : null,
           cookingTime: cookingTime ? parseInt(cookingTime) : 0,
           drankWith: drankWith.trim(),
-          chefName: chefName.trim(),
         }),
       });
 
@@ -323,7 +333,18 @@ export default function CreatePage() {
 
           {/* Additional Details */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Additional Details</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Additional Details</h3>
+              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={useNewUserIds}
+                  onChange={(e) => setUseNewUserIds(e.target.checked)}
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                Use New User ID System
+              </label>
+            </div>
             
             <UserSearchInput
               value={eatenWith}
@@ -363,13 +384,26 @@ export default function CreatePage() {
               />
             </div>
 
-            <UserSearchInput
-              value={chefName}
-              onChange={setChefName}
-              placeholder="Search users or type custom text..."
-              label="👨‍🍳 Chef name (if someone else cooked)"
-              allowFreeText={true}
-            />
+            {useNewUserIds ? (
+              <UserSearchInput
+                value={chef?.name || ''}
+                onChange={() => {}} // Not used in new mode
+                onUserSelect={setChef}
+                placeholder="Search for the chef..."
+                label="👨‍🍳 Chef name (if someone else cooked)"
+                allowFreeText={false}
+                mode="userIds"
+              />
+            ) : (
+              <UserSearchInput
+                value={chefName}
+                onChange={setChefName}
+                placeholder="Search users or type custom text..."
+                label="👨‍🍳 Chef name (if someone else cooked) - Legacy Mode"
+                allowFreeText={true}
+                mode="legacy"
+              />
+            )}
           </div>
 
           {/* Submit Button */}

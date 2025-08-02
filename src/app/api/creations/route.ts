@@ -77,6 +77,8 @@ export async function GET() {
       .populate('createdBy', 'name image')
       .populate('likes', 'name image')
       .populate('recipes.recipe', 'title')
+      .populate('chef', 'name image') // Populate new chef field
+      .populate('eatenWithUsers', 'name image') // Populate new eatenWith field
       .sort({ createdAt: -1 });
 
     return NextResponse.json(creations);
@@ -94,7 +96,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, image, recipes, eatenWith, cookingTime, drankWith, chefName } = body;
+    const { 
+      title, 
+      description, 
+      image, 
+      recipes, 
+      eatenWith, 
+      eatenWithUsers, 
+      cookingTime, 
+      drankWith, 
+      chefName, 
+      chef 
+    } = body;
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
@@ -113,10 +126,14 @@ export async function POST(request: NextRequest) {
       description: description || '',
       image: image || '',
       recipes: recipes || [],
+      // Legacy fields
       eatenWith: eatenWith || '',
+      chefName: chefName || '',
+      // New user ID fields
+      eatenWithUsers: eatenWithUsers || [],
+      chef: chef || null,
       cookingTime: cookingTime || 0,
       drankWith: drankWith || '',
-      chefName: chefName || '',
       createdBy: user._id,
       likes: [],
       comments: [],
@@ -133,48 +150,96 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Create notifications for mentions in eatenWith and chefName
-    const allMentions = [
-      ...extractMentions(eatenWith || ''),
-      ...extractMentions(chefName || '')
-    ];
+    // Create notifications for user references
+    const notificationPromises = [];
     
-    if (allMentions.length > 0) {
-      const mentionedUsers = await User.find({ 
-        name: { $in: allMentions.map(mention => new RegExp(`^${mention}$`, 'i')) }
-      });
-
-      for (const mentionedUser of mentionedUsers) {
-        // Don't notify the creator themselves
-        if (mentionedUser._id.toString() !== user._id.toString()) {
-          const isChef = extractMentions(chefName || '').some(mention => 
-            mentionedUser.name.toLowerCase() === mention.toLowerCase()
-          );
-          const isEatenWith = extractMentions(eatenWith || '').some(mention => 
-            mentionedUser.name.toLowerCase() === mention.toLowerCase()
-          );
-
-          let notificationMessage = '';
-          if (isChef) {
-            notificationMessage = `${user.name} credited you as the chef for "${title}"`;
-          } else if (isEatenWith) {
-            notificationMessage = `${user.name} mentioned you in their creation "${title}"`;
-          }
-
-          if (notificationMessage) {
-            await Notification.create({
-              recipient: mentionedUser._id,
+    // Handle chef notification (new user ID field takes precedence)
+    if (chef) {
+      if (chef !== user._id.toString()) {
+        notificationPromises.push(
+          Notification.create({
+            recipient: chef,
+            sender: user._id,
+            type: 'yum',
+            title: 'You were credited as chef!',
+            message: `${user.name} credited you as the chef for "${title}"`,
+            data: {
+              creationId: creation._id,
+            },
+          })
+        );
+      }
+    }
+    
+    // Handle eatenWith notifications (new user ID field takes precedence)
+    if (eatenWithUsers && Array.isArray(eatenWithUsers)) {
+      for (const eatenWithUserId of eatenWithUsers) {
+        if (eatenWithUserId !== user._id.toString()) {
+          notificationPromises.push(
+            Notification.create({
+              recipient: eatenWithUserId,
               sender: user._id,
               type: 'yum',
               title: 'You were mentioned in a creation!',
-              message: notificationMessage,
+              message: `${user.name} mentioned you in their creation "${title}"`,
               data: {
                 creationId: creation._id,
               },
-            });
+            })
+          );
+        }
+      }
+    } else {
+      // Fallback to legacy string-based mentions for backward compatibility
+      const allMentions = [
+        ...extractMentions(eatenWith || ''),
+        ...extractMentions(chefName || '')
+      ];
+      
+      if (allMentions.length > 0) {
+        const mentionedUsers = await User.find({ 
+          name: { $in: allMentions.map(mention => new RegExp(`^${mention}$`, 'i')) }
+        });
+
+        for (const mentionedUser of mentionedUsers) {
+          // Don't notify the creator themselves
+          if (mentionedUser._id.toString() !== user._id.toString()) {
+            const isChef = extractMentions(chefName || '').some(mention => 
+              mentionedUser.name.toLowerCase() === mention.toLowerCase()
+            );
+            const isEatenWith = extractMentions(eatenWith || '').some(mention => 
+              mentionedUser.name.toLowerCase() === mention.toLowerCase()
+            );
+
+            let notificationMessage = '';
+            if (isChef) {
+              notificationMessage = `${user.name} credited you as the chef for "${title}"`;
+            } else if (isEatenWith) {
+              notificationMessage = `${user.name} mentioned you in their creation "${title}"`;
+            }
+
+            if (notificationMessage) {
+              notificationPromises.push(
+                Notification.create({
+                  recipient: mentionedUser._id,
+                  sender: user._id,
+                  type: 'yum',
+                  title: 'You were mentioned in a creation!',
+                  message: notificationMessage,
+                  data: {
+                    creationId: creation._id,
+                  },
+                })
+              );
+            }
           }
         }
       }
+    }
+    
+    // Execute all notifications in parallel
+    if (notificationPromises.length > 0) {
+      await Promise.all(notificationPromises);
     }
     
     // Update user stats
