@@ -108,6 +108,11 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
   const [isRecipeHistoryExpanded, setIsRecipeHistoryExpanded] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [draggedItem, setDraggedItem] = useState<ShoppingItem | null>(null);
+  const [loadingItems, setLoadingItems] = useState<Set<number>>(new Set());
+  const [errorItems, setErrorItems] = useState<Set<number>>(new Set());
+  const [deletingItems, setDeletingItems] = useState<Set<number>>(new Set());
+  const [deleteErrors, setDeleteErrors] = useState<Set<number>>(new Set());
+  const [originalItemStates, setOriginalItemStates] = useState<Map<number, boolean>>(new Map());
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -187,12 +192,22 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
   const toggleItem = async (index: number) => {
     if (!list) return;
 
-    const updatedItems = [...list.items];
-    const originalCompleted = updatedItems[index].completed;
-    updatedItems[index].completed = !updatedItems[index].completed;
+    // Store original state before starting operation
+    const originalCompleted = list.items[index].completed;
+    setOriginalItemStates(prev => new Map(prev).set(index, originalCompleted));
 
-    // Optimistic update
-    setList({ ...list, items: updatedItems });
+    // Clear any previous error for this item
+    setErrorItems(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(index);
+      return newSet;
+    });
+
+    // Set loading state
+    setLoadingItems(prev => new Set(prev).add(index));
+
+    const updatedItems = [...list.items];
+    updatedItems[index].completed = !updatedItems[index].completed;
 
     try {
       const response = await fetch(`/api/shopping-lists/${listId}`, {
@@ -206,20 +221,34 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
       });
 
       if (response.ok) {
+        // Success: update the list and clear loading
+        setList({ ...list, items: updatedItems });
         setLastUpdated(new Date());
       } else {
-        // Revert on error
+        // Error: show error state and revert the item's completed state
         const revertedItems = [...list.items];
         revertedItems[index].completed = originalCompleted;
         setList({ ...list, items: revertedItems });
-        console.error('Error updating item:', response.statusText);
+        setErrorItems(prev => new Set(prev).add(index));
       }
     } catch (error) {
-      // Revert on error
+      // Error: show error state and revert the item's completed state
       const revertedItems = [...list.items];
       revertedItems[index].completed = originalCompleted;
       setList({ ...list, items: revertedItems });
-      console.error('Error updating item:', error);
+      setErrorItems(prev => new Set(prev).add(index));
+    } finally {
+      // Clear loading state and original state tracking
+      setLoadingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(index);
+        return newSet;
+      });
+      setOriginalItemStates(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(index);
+        return newMap;
+      });
     }
   };
 
@@ -285,11 +314,17 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
   const removeItem = async (index: number) => {
     if (!list) return;
 
-    const itemToRemove = list.items[index];
-    const updatedItems = list.items.filter((_, i) => i !== index);
+    // Clear any previous delete error for this item
+    setDeleteErrors(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(index);
+      return newSet;
+    });
 
-    // Optimistic update
-    setList({ ...list, items: updatedItems });
+    // Set deleting state
+    setDeletingItems(prev => new Set(prev).add(index));
+
+    const updatedItems = list.items.filter((_, i) => i !== index);
 
     try {
       const response = await fetch(`/api/shopping-lists/${listId}`, {
@@ -303,20 +338,23 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
       });
 
       if (response.ok) {
+        // Success: update the list
+        setList({ ...list, items: updatedItems });
         setLastUpdated(new Date());
       } else {
-        // Revert on error
-        const revertedItems = [...list.items];
-        revertedItems.splice(index, 0, itemToRemove);
-        setList({ ...list, items: revertedItems });
-        console.error('Error removing item:', response.statusText);
+        // Error: show error state
+        setDeleteErrors(prev => new Set(prev).add(index));
       }
     } catch (error) {
-      // Revert on error
-      const revertedItems = [...list.items];
-      revertedItems.splice(index, 0, itemToRemove);
-      setList({ ...list, items: revertedItems });
-      console.error('Error removing item:', error);
+      // Error: show error state
+      setDeleteErrors(prev => new Set(prev).add(index));
+    } finally {
+      // Clear deleting state
+      setDeletingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(index);
+        return newSet;
+      });
     }
   };
 
@@ -434,6 +472,10 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
 
   // Sortable Item Component
   const SortableItem = ({ item, index, isCompleted }: { item: ShoppingItem; index: number; isCompleted: boolean }) => {
+    const isLoading = loadingItems.has(index);
+    const hasError = errorItems.has(index);
+    const isDeleting = deletingItems.has(index);
+    const hasDeleteError = deleteErrors.has(index);
     const {
       attributes,
       listeners,
@@ -459,6 +501,10 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
             : 'bg-gray-50 dark:bg-gray-700'
         } ${
           isDragging ? 'shadow-lg ring-2 ring-primary-500 ring-opacity-50' : ''
+        } ${
+          (hasError || hasDeleteError) ? 'ring-2 ring-red-500 ring-opacity-30' : ''
+        } ${
+          (isLoading || isDeleting) ? 'opacity-60' : ''
         }`}
       >
         {/* Drag Handle */}
@@ -474,9 +520,19 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
         {/* Checkbox */}
         <button 
           onClick={() => toggleItem(index)} 
-          className="text-xl flex-shrink-0"
+          className="text-xl flex-shrink-0 relative"
+          disabled={isLoading}
         >
-          {isCompleted ? (
+          {isLoading ? (
+            <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+          ) : hasError ? (
+            <div className="text-red-500 relative">
+              <IoSquareOutline />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs">!</span>
+              </div>
+            </div>
+          ) : isCompleted ? (
             <IoCheckbox className="text-green-500" />
           ) : (
             <IoSquareOutline className="text-gray-400 hover:text-green-500 transition-colors" />
@@ -530,12 +586,27 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
         ) : (
           <div className="flex-1 min-w-0">
             <div className="flex-1 cursor-pointer min-h-[2.5rem] flex flex-col justify-center" onClick={() => startEditing(index)}>
+              {/* Error messages */}
+              {hasError && (
+                <div className="text-xs text-red-600 dark:text-red-400 mb-1 flex items-center gap-1">
+                  <span>Failed to update. Tap to try again.</span>
+                </div>
+              )}
+              {hasDeleteError && (
+                <div className="text-xs text-red-600 dark:text-red-400 mb-1 flex items-center gap-1">
+                  <span>Failed to delete. Try again.</span>
+                </div>
+              )}
               <span className={`font-medium block ${
                 isCompleted 
                   ? 'text-gray-500 dark:text-gray-400 line-through' 
                   : 'text-gray-900 dark:text-white'
+              } ${
+                (isLoading || isDeleting) ? 'opacity-70' : ''
               }`}>
                 {item.name}
+                {isLoading && <span className="ml-2 text-xs text-green-600 dark:text-green-400">(updating...)</span>}
+                {isDeleting && <span className="ml-2 text-xs text-red-600 dark:text-red-400">(deleting...)</span>}
               </span>
               {(item.amount || item.unit) && (
                 <span className={`text-sm ${
@@ -554,9 +625,21 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
         {editingIndex !== index && (
           <button 
             onClick={() => removeItem(index)}
-            className="text-gray-400 hover:text-red-600 flex-shrink-0"
+            className="text-gray-400 hover:text-red-600 flex-shrink-0 relative"
+            disabled={isDeleting}
           >
-            <IoTrash size={16} />
+            {isDeleting ? (
+              <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+            ) : hasDeleteError ? (
+              <div className="text-red-500 relative">
+                <IoTrash size={16} />
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs">!</span>
+                </div>
+              </div>
+            ) : (
+              <IoTrash size={16} />
+            )}
           </button>
         )}
       </div>
@@ -874,7 +957,13 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
             ) : (
               <>
                 {/* Uncompleted Items */}
-                {list.items.filter(item => !item.completed).length > 0 && (
+                {list.items.filter((item, index) => {
+                  if (loadingItems.has(index)) {
+                    // If loading, show in original section
+                    return originalItemStates.get(index) === false;
+                  }
+                  return !item.completed;
+                }).length > 0 && (
                   <div className="mb-4">
                     <DndContext
                       sensors={sensors}
@@ -884,18 +973,33 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
                       onDragCancel={handleDragCancel}
                     >
                       <SortableContext
-                        items={list.items.filter(item => !item.completed).map((_, index) => list.items.indexOf(list.items.filter(item => !item.completed)[index]).toString())}
+                        items={list.items.filter((item, index) => {
+                          if (loadingItems.has(index)) {
+                            return originalItemStates.get(index) === false;
+                          }
+                          return !item.completed;
+                        }).map((_, filteredIndex) => list.items.indexOf(list.items.filter((item, index) => {
+                          if (loadingItems.has(index)) {
+                            return originalItemStates.get(index) === false;
+                          }
+                          return !item.completed;
+                        })[filteredIndex]).toString())}
                         strategy={verticalListSortingStrategy}
                       >
                         <div className="space-y-2">
-                          {list.items.filter(item => !item.completed).map((item, filteredIndex) => {
+                          {list.items.filter((item, index) => {
+                            if (loadingItems.has(index)) {
+                              return originalItemStates.get(index) === false;
+                            }
+                            return !item.completed;
+                          }).map((item, filteredIndex) => {
                             const index = list.items.indexOf(item);
                             return (
                               <SortableItem
                                 key={`item-${index}`}
                                 item={item}
                                 index={index}
-                                isCompleted={false}
+                                isCompleted={loadingItems.has(index) ? (originalItemStates.get(index) || false) : item.completed}
                               />
                             );
                           })}
@@ -906,20 +1010,36 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
                 )}
                 
                 {/* Completed Items */}
-                {list.items.filter(item => item.completed).length > 0 && (
+                {list.items.filter((item, index) => {
+                  if (loadingItems.has(index)) {
+                    // If loading, show in original section
+                    return originalItemStates.get(index) === true;
+                  }
+                  return item.completed;
+                }).length > 0 && (
                   <div className="space-y-2">
                     <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-2">
-                      Completed ({list.items.filter(item => item.completed).length})
+                      Completed ({list.items.filter((item, index) => {
+                        if (loadingItems.has(index)) {
+                          return originalItemStates.get(index) === true;
+                        }
+                        return item.completed;
+                      }).length})
                     </h3>
                     <div className="space-y-2">
-                      {list.items.filter(item => item.completed).map((item, filteredIndex) => {
+                      {list.items.filter((item, index) => {
+                        if (loadingItems.has(index)) {
+                          return originalItemStates.get(index) === true;
+                        }
+                        return item.completed;
+                      }).map((item, filteredIndex) => {
                         const index = list.items.indexOf(item);
                         return (
                           <SortableItem
                             key={`item-${index}`}
                             item={item}
                             index={index}
-                            isCompleted={true}
+                            isCompleted={loadingItems.has(index) ? (originalItemStates.get(index) || false) : item.completed}
                           />
                         );
                       })}
