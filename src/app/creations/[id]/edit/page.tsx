@@ -113,8 +113,19 @@ export default function EditCreationPage({ params }: { params: Promise<{ id: str
         const eatenWithEntries: FlexibleEntry[] = [];
         const chefEntries: FlexibleEntry[] = [];
         
-        // Handle eaten with - prioritize user data, fall back to legacy text
-        if (data.eatenWithUsers && data.eatenWithUsers.length > 0) {
+        // Handle eaten with - prioritize new flexible entries, then user data, then legacy text
+        if (data.eatenWithEntries && data.eatenWithEntries.length > 0) {
+          // Use the new flexible entries format
+          data.eatenWithEntries.forEach((entry: any) => {
+            eatenWithEntries.push({
+              id: entry.id,
+              type: entry.type,
+              name: entry.name,
+              user: entry.user || undefined
+            });
+          });
+        } else if (data.eatenWithUsers && data.eatenWithUsers.length > 0) {
+          // Fallback to legacy user array field
           data.eatenWithUsers.forEach((user: any, index: number) => {
             eatenWithEntries.push({
               id: `user_${user._id}`,
@@ -123,45 +134,46 @@ export default function EditCreationPage({ params }: { params: Promise<{ id: str
               user: user
             });
           });
-        }
-        if (data.eatenWith && data.eatenWith.trim()) {
-          // Add legacy text entries if they don't conflict with users
+        } else if (data.eatenWith && data.eatenWith.trim()) {
+          // Fallback to legacy text field
           const customNames = data.eatenWith.split(',').map(name => name.trim()).filter(name => name);
           customNames.forEach((name, index) => {
-            // Only add if not already covered by a user entry
-            const exists = eatenWithEntries.some(entry => entry.name.toLowerCase() === name.toLowerCase());
-            if (!exists) {
-              eatenWithEntries.push({
-                id: `custom_eaten_${index}_${Date.now()}`,
-                type: 'custom',
-                name: name
-              });
-            }
+            eatenWithEntries.push({
+              id: `custom_eaten_${index}_${Date.now()}`,
+              type: 'custom',
+              name: name
+            });
           });
         }
         
-        // Handle chef - prioritize user data, fall back to legacy text
-        if (data.chef) {
+        // Handle chef - prioritize new flexible entries, then user data, then legacy text
+        if (data.chefEntries && data.chefEntries.length > 0) {
+          // Use the new flexible entries format
+          data.chefEntries.forEach((entry: any) => {
+            chefEntries.push({
+              id: entry.id,
+              type: entry.type,
+              name: entry.name,
+              user: entry.user || undefined
+            });
+          });
+        } else if (data.chef) {
+          // Fallback to legacy single chef field
           chefEntries.push({
             id: `user_${data.chef._id}`,
             type: 'user',
             name: data.chef.name,
             user: data.chef
           });
-        }
-        if (data.chefName && data.chefName.trim()) {
-          // Add legacy text entries if they don't conflict with users
+        } else if (data.chefName && data.chefName.trim()) {
+          // Fallback to legacy text field
           const customNames = data.chefName.split(',').map(name => name.trim()).filter(name => name);
           customNames.forEach((name, index) => {
-            // Only add if not already covered by a user entry
-            const exists = chefEntries.some(entry => entry.name.toLowerCase() === name.toLowerCase());
-            if (!exists) {
-              chefEntries.push({
-                id: `custom_chef_${index}_${Date.now()}`,
-                type: 'custom',
-                name: name
-              });
-            }
+            chefEntries.push({
+              id: `custom_chef_${index}_${Date.now()}`,
+              type: 'custom',
+              name: name
+            });
           });
         }
         
