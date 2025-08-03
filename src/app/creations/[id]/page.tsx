@@ -278,8 +278,8 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
-                {creation.createdBy.name}
+              <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base break-words">
+                <span className="break-words">{creation.createdBy.name}</span>
                 {((creation.chefEntries && creation.chefEntries.length > 0) || creation.chefName || creation.chef) && (
                   <span className="font-normal text-gray-600 dark:text-gray-400">
                     {' '}cooked with{' '}
@@ -290,7 +290,7 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                         className="inline" 
                       />
                     ) : creation.chef ? (
-                      <Link href={`/profile/${creation.chef._id}`} className="font-semibold hover:underline text-blue-600 dark:text-blue-400">
+                      <Link href={`/profile/${creation.chef._id}`} className="font-semibold hover:underline text-gray-900 dark:text-white break-words">
                         {creation.chef.name}
                       </Link>
                     ) : (
@@ -374,123 +374,25 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
               </p>
             )}
             
-            {/* Eaten With Info */}
-            {((creation.eatenWithEntries && creation.eatenWithEntries.length > 0) || creation.eatenWith) && (
-              <div className="text-sm mb-3">
-                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-1">
-                  <IoPeopleOutline size={16} />
-                  <span className="font-medium">Eaten with:</span>
-                </div>
-                <div className="ml-6">
-                  {creation.eatenWithEntries && creation.eatenWithEntries.length > 0 ? (
-                    <FlexibleEntriesDisplay 
-                      entries={creation.eatenWithEntries} 
-                      maxDisplay={3} 
-                      className="inline" 
-                    />
-                  ) : creation.eatenWith ? (
-                    <UserMentions text={creation.eatenWith} />
-                  ) : null}
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Actions - matching feed layout */}
-          <div className="px-3 sm:px-4 pb-3 sm:pb-4">
-            
-            {/* Yums and Comments - Strava style */}
-            <div className="flex items-center justify-center gap-6 mb-3">
-              {/* Yums with profile pictures */}
-              <Link
-                href={`/creations/${id}/yums`}
-                className="flex items-center gap-2 hover:opacity-75 transition-opacity"
-              >
-                {creation.likes && creation.likes.length > 0 ? (
-                  <>
-                    <div className="flex -space-x-2">
-                      {creation.likes.slice(0, 3).map((user, index) => (
-                        <div 
-                          key={user._id} 
-                          className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center"
-                          style={{ zIndex: 3 - index }}
-                        >
-                          {user.image ? (
-                            <img 
-                              src={user.image} 
-                              alt={user.name}
-                              className="w-full h-full rounded-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                              {user.name.charAt(0).toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    <span className="text-sm text-gray-600 dark:text-gray-300">
-                      {creation.likes.length} yummed
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    0 yummed
-                  </span>
-                )}
-              </Link>
-
-              {/* Comments */}
-              <Link
-                href={`/creations/${id}/comments`}
-                className="flex items-center gap-2 hover:opacity-75 transition-opacity"
-              >
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  {comments?.length || 0} {(comments?.length || 0) === 1 ? 'comment' : 'comments'}
-                </span>
-              </Link>
-            </div>
-            
-            {/* Action buttons - bigger and more inviting */}
-            <div className="flex items-center gap-4 sm:gap-6">
-              <button 
-                onClick={handleYum}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all ${
-                  hasYummed
-                    ? 'bg-green-50 text-green-600 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
-                    : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-green-900/20 dark:hover:text-green-400 dark:hover:border-green-800'
-                }`}
-              >
-                {hasYummed ? <FaGrinHearts size={20} style={{ color: 'var(--color-primary-600)' }} /> : <FaRegGrinHearts size={20} />}
-                <span className="text-sm sm:text-base">
-                  Yum
-                </span>
-              </button>
-              <Link
-                href={`/creations/${id}/comments?focus=true`}
-                className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 dark:hover:border-blue-800 transition-all"
-              >
-                <IoChatbubbleOutline size={20} />
-                <span className="text-sm sm:text-base">
-                  Comment
-                </span>
-              </Link>
-            </div>
-          </div>
         </div>
 
-        {/* Additional Information Section */}
-        <div className="mt-6 space-y-6">
-
-          {/* Creation Details */}
-          {((creation.eatenWithEntries && creation.eatenWithEntries.length > 0) || creation.eatenWith || creation.cookingTime || creation.drankWith) && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Creation Details</h3>
-              <div className="space-y-3">
-                {((creation.eatenWithEntries && creation.eatenWithEntries.length > 0) || creation.eatenWith) && (
-                  <div className="flex items-center gap-2">
-                    <IoPeopleOutline size={16} className="text-gray-500" />
-                    <span className="text-gray-600 dark:text-gray-300">Eaten with:</span>
+        {/* Consolidated Information Section */}
+        {(((creation.eatenWithEntries && creation.eatenWithEntries.length > 0) || creation.eatenWith) || 
+          (creation.cookingTime && creation.cookingTime > 0) || 
+          creation.drankWith || 
+          ((creation.recipes && creation.recipes.length > 0) || creation.recipe)) && (
+          <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Creation Details</h3>
+            <div className="space-y-4">
+              
+              {/* Eaten With */}
+              {((creation.eatenWithEntries && creation.eatenWithEntries.length > 0) || creation.eatenWith) && (
+                <div className="flex items-center gap-2">
+                  <IoPeopleOutline size={16} className="text-gray-500" />
+                  <span className="text-gray-600 dark:text-gray-300">
+                    Ate with{' '}
                     {creation.eatenWithEntries && creation.eatenWithEntries.length > 0 ? (
                       <FlexibleEntriesDisplay 
                         entries={creation.eatenWithEntries} 
@@ -500,87 +402,172 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                     ) : creation.eatenWith ? (
                       <UserMentions text={creation.eatenWith} />
                     ) : null}
+                  </span>
+                </div>
+              )}
+              
+              {/* Cooking Time */}
+              {creation.cookingTime && creation.cookingTime > 0 && (
+                <div className="flex items-center gap-2">
+                  <IoTimeOutline size={16} className="text-gray-500" />
+                  <span className="text-gray-600 dark:text-gray-300">{creation.cookingTime} minutes</span>
+                </div>
+              )}
+              
+              {/* Drank With */}
+              {creation.drankWith && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600 dark:text-gray-300">🥤 {creation.drankWith}</span>
+                </div>
+              )}
+              
+              {/* Recipes Section */}
+              {((creation.recipes && creation.recipes.length > 0) || creation.recipe) && (
+                <div className="border-t pt-4">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                    <IoRestaurantOutline size={16} />
+                    Recipe{((creation.recipes && creation.recipes.length > 1) || (!creation.recipes && creation.recipe)) ? 's' : ''} Used
+                  </h4>
+                  <div className="space-y-3">
+                    {/* New format: multiple recipes */}
+                    {creation.recipes && creation.recipes.length > 0 ? (
+                      creation.recipes.map((recipeItem, index) => (
+                        <div key={index} className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <IoRestaurantOutline size={14} className="text-gray-500 dark:text-gray-400" />
+                            <Link 
+                              href={`/recipes/${recipeItem.recipe._id}`}
+                              className="text-green-600 dark:text-green-400 hover:underline font-medium"
+                            >
+                              {recipeItem.recipe.title}
+                            </Link>
+                            <span className="text-gray-500 dark:text-gray-400">
+                              ({recipeItem.recipe.averageRating ? recipeItem.recipe.averageRating.toFixed(1) : '0.0'} 🤌)
+                            </span>
+                          </div>
+                          {recipeItem.rating && (
+                            <div className="flex items-center gap-2 ml-5">
+                              <span className="text-sm text-gray-500 dark:text-gray-400">Your rating:</span>
+                              <div className="flex">
+                                {renderPinchedFingers(recipeItem.rating)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      /* Old format: single recipe - for backward compatibility */
+                      creation.recipe && (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <IoRestaurantOutline size={14} className="text-gray-500 dark:text-gray-400" />
+                            <Link 
+                              href={`/recipes/${creation.recipe._id}`}
+                              className="text-green-600 dark:text-green-400 hover:underline font-medium"
+                            >
+                              {creation.recipe.title}
+                            </Link>
+                            <span className="text-gray-500 dark:text-gray-400">
+                              ({creation.recipe.averageRating ? creation.recipe.averageRating.toFixed(1) : '0.0'} 🤌)
+                            </span>
+                          </div>
+                          {creation.recipeRating && (
+                            <div className="flex items-center gap-2 ml-5">
+                              <span className="text-sm text-gray-500 dark:text-gray-400">Your rating:</span>
+                              <div className="flex">
+                                {renderPinchedFingers(creation.recipeRating)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    )}
                   </div>
-                )}
-                {creation.cookingTime && (
-                  <div className="flex items-center gap-2">
-                    <IoTimeOutline size={16} className="text-gray-500" />
-                    <span className="text-gray-600 dark:text-gray-300">{creation.cookingTime} minutes</span>
-                  </div>
-                )}
-                {creation.drankWith && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-600 dark:text-gray-300">🥤 {creation.drankWith}</span>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Recipes Section */}
-          {((creation.recipes && creation.recipes.length > 0) || creation.recipe) && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <IoRestaurantOutline size={18} />
-                Recipe{((creation.recipes && creation.recipes.length > 1) || (!creation.recipes && creation.recipe)) ? 's' : ''} Used
-              </h3>
-              <div className="space-y-3">
-                {/* New format: multiple recipes */}
-                {creation.recipes && creation.recipes.length > 0 ? (
-                  creation.recipes.map((recipeItem, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <IoRestaurantOutline size={14} className="text-gray-500 dark:text-gray-400" />
-                        <Link 
-                          href={`/recipes/${recipeItem.recipe._id}`}
-                          className="text-green-600 dark:text-green-400 hover:underline font-medium"
-                        >
-                          {recipeItem.recipe.title}
-                        </Link>
-                        <span className="text-gray-500 dark:text-gray-400">
-                          ({recipeItem.recipe.averageRating ? recipeItem.recipe.averageRating.toFixed(1) : '0.0'} 🤌)
-                        </span>
+        {/* Yums and Comments Section - Bottom */}
+        <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+          {/* Yums and Comments - Strava style */}
+          <div className="flex items-center justify-center gap-6 mb-4">
+            {/* Yums with profile pictures */}
+            <Link
+              href={`/creations/${id}/yums`}
+              className="flex items-center gap-2 hover:opacity-75 transition-opacity"
+            >
+              {creation.likes && creation.likes.length > 0 ? (
+                <>
+                  <div className="flex -space-x-2">
+                    {creation.likes.slice(0, 3).map((user, index) => (
+                      <div 
+                        key={user._id} 
+                        className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center"
+                        style={{ zIndex: 3 - index }}
+                      >
+                        {user.image ? (
+                          <img 
+                            src={user.image} 
+                            alt={user.name}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                            {user.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
                       </div>
-                      {recipeItem.rating && (
-                        <div className="flex items-center gap-2 ml-5">
-                          <span className="text-sm text-gray-500 dark:text-gray-400">Your rating:</span>
-                          <div className="flex">
-                            {renderPinchedFingers(recipeItem.rating)}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  /* Old format: single recipe - for backward compatibility */
-                  creation.recipe && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <IoRestaurantOutline size={14} className="text-gray-500 dark:text-gray-400" />
-                        <Link 
-                          href={`/recipes/${creation.recipe._id}`}
-                          className="text-green-600 dark:text-green-400 hover:underline font-medium"
-                        >
-                          {creation.recipe.title}
-                        </Link>
-                        <span className="text-gray-500 dark:text-gray-400">
-                          ({creation.recipe.averageRating ? creation.recipe.averageRating.toFixed(1) : '0.0'} 🤌)
-                        </span>
-                      </div>
-                      {creation.recipeRating && (
-                        <div className="flex items-center gap-2 ml-5">
-                          <span className="text-sm text-gray-500 dark:text-gray-400">Your rating:</span>
-                          <div className="flex">
-                            {renderPinchedFingers(creation.recipeRating)}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-          )}
+                    ))}
+                  </div>
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                    {creation.likes.length} yummed
+                  </span>
+                </>
+              ) : (
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  0 yummed
+                </span>
+              )}
+            </Link>
+
+            {/* Comments */}
+            <Link
+              href={`/creations/${id}/comments`}
+              className="flex items-center gap-2 hover:opacity-75 transition-opacity"
+            >
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                {comments?.length || 0} {(comments?.length || 0) === 1 ? 'comment' : 'comments'}
+              </span>
+            </Link>
+          </div>
+          
+          {/* Action buttons - bigger and more inviting */}
+          <div className="flex items-center gap-4 sm:gap-6">
+            <button 
+              onClick={handleYum}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all ${
+                hasYummed
+                  ? 'bg-green-50 text-green-600 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
+                  : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-green-900/20 dark:hover:text-green-400 dark:hover:border-green-800'
+              }`}
+            >
+              {hasYummed ? <FaGrinHearts size={20} style={{ color: 'var(--color-primary-600)' }} /> : <FaRegGrinHearts size={20} />}
+              <span className="text-sm sm:text-base">
+                Yum
+              </span>
+            </button>
+            <Link
+              href={`/creations/${id}/comments?focus=true`}
+              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 dark:hover:border-blue-800 transition-all"
+            >
+              <IoChatbubbleOutline size={20} />
+              <span className="text-sm sm:text-base">
+                Comment
+              </span>
+            </Link>
+          </div>
         </div>
 
       </main>

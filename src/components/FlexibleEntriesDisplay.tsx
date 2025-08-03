@@ -35,41 +35,56 @@ export default function FlexibleEntriesDisplay({
   const remainingCount = entries.length - maxDisplay;
 
   return (
-    <div className={`inline-flex items-center flex-wrap gap-1 ${className}`}>
+    <span className={`inline ${className}`}>
       {displayEntries.map((entry, index) => {
-        const needsComma = index < displayEntries.length - 1 || remainingCount > 0;
+        const isLast = index === displayEntries.length - 1;
+        const isSecondToLast = index === displayEntries.length - 2;
+        
+        let separator = '';
+        if (!isLast) {
+          if (isSecondToLast && remainingCount === 0) {
+            // Second to last item with no overflow - add "and"
+            separator = displayEntries.length === 2 ? ' and ' : ', and ';
+          } else if (isSecondToLast && remainingCount > 0) {
+            // Second to last item with overflow - just comma
+            separator = ', ';
+          } else {
+            // Any other non-last item - comma
+            separator = ', ';
+          }
+        }
         
         if (entry.type === 'user' && entry.user) {
-          // Display user with bold link (no profile picture)
+          // Display user with bold black link (no profile picture)
           return (
-            <div key={entry.id} className="inline-flex items-center">
+            <span key={entry.id}>
               <Link
                 href={`/profile/${entry.user._id}`}
-                className="font-semibold hover:underline text-blue-600 dark:text-blue-400"
+                className="font-semibold hover:underline text-gray-900 dark:text-white break-words"
               >
                 {entry.name}
               </Link>
-              {needsComma && <span className="text-sm text-gray-500 ml-0.5">,</span>}
-            </div>
+              {separator}
+            </span>
           );
         } else {
-          // Display custom text (no link)
+          // Display custom text (no link, not bold)
           return (
-            <div key={entry.id} className="inline-flex items-center">
-              <span className="text-sm text-gray-600 dark:text-gray-300">
+            <span key={entry.id}>
+              <span className="text-gray-900 dark:text-white break-words">
                 {entry.name}
               </span>
-              {needsComma && <span className="text-sm text-gray-500 ml-0.5">,</span>}
-            </div>
+              {separator}
+            </span>
           );
         }
       })}
       
       {remainingCount > 0 && (
-        <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">
-          and {remainingCount} other{remainingCount === 1 ? '' : 's'}
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          {displayEntries.length > 0 ? ', and ' : ''}{remainingCount} other{remainingCount === 1 ? '' : 's'}
         </span>
       )}
-    </div>
+    </span>
   );
 }

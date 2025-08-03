@@ -325,8 +325,8 @@ export default function UserCreationsPage({ params }: { params: Promise<{ id: st
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
-                      {creation.createdBy.name}
+                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base break-words">
+                      <span className="break-words">{creation.createdBy.name}</span>
                       {((creation.chefEntries && creation.chefEntries.length > 0) || creation.chefName || creation.chef) && (
                         <span className="font-normal text-gray-600 dark:text-gray-400">
                           {' '}cooked with{' '}
@@ -339,7 +339,7 @@ export default function UserCreationsPage({ params }: { params: Promise<{ id: st
                           ) : creation.chef ? (
                             <Link 
                               href={`/profile/${creation.chef._id}`} 
-                              className="font-semibold hover:underline text-blue-600 dark:text-blue-400"
+                              className="font-semibold hover:underline text-gray-900 dark:text-white break-words"
                               onClick={(e) => e.stopPropagation()}
                             >
                               {creation.chef.name}

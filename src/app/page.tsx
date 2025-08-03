@@ -301,8 +301,8 @@ export default function Home() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
-                        {item.createdBy.name}
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base break-words">
+                        <span className="break-words">{item.createdBy.name}</span>
                         {((item.chefEntries && item.chefEntries.length > 0) || item.chefName || item.chef) && (
                           <span className="font-normal text-gray-600 dark:text-gray-400">
                             {' '}cooked with{' '}
@@ -315,7 +315,7 @@ export default function Home() {
                             ) : item.chef ? (
                               <Link 
                                 href={`/profile/${item.chef._id}`} 
-                                className="font-semibold hover:underline text-blue-600 dark:text-blue-400"
+                                className="font-semibold hover:underline text-gray-900 dark:text-white break-words"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 {item.chef.name}
