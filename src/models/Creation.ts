@@ -67,6 +67,41 @@ const CreationSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  // New flexible entry fields that support both users and custom text
+  chefEntries: [{
+    id: String,
+    type: {
+      type: String,
+      enum: ['user', 'custom'],
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    }
+  }],
+  eatenWithEntries: [{
+    id: String,
+    type: {
+      type: String,
+      enum: ['user', 'custom'],
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    }
+  }],
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

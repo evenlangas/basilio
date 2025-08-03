@@ -21,7 +21,7 @@ const extractMentions = (text: string): string[] => {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -37,11 +37,20 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const creation = await Creation.findById(params.id)
+    const { id } = await params;
+    const creation = await Creation.findById(id)
       .populate('createdBy', 'name image')
       .populate('likes', 'name image')
       .populate('chef', 'name image') // Populate new chef field
       .populate('eatenWithUsers', 'name image') // Populate new eatenWith field
+      .populate({
+        path: 'chefEntries.user',
+        select: 'name image'
+      })
+      .populate({
+        path: 'eatenWithEntries.user', 
+        select: 'name image'
+      })
       .populate({
         path: 'recipes.recipe',
         select: 'title description cookingTime servings image ingredients instructions averageRating'
@@ -64,7 +73,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -79,7 +88,8 @@ export async function PUT(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const creation = await Creation.findById(params.id);
+    const { id } = await params;
+    const creation = await Creation.findById(id);
     if (!creation) {
       return NextResponse.json({ error: 'Creation not found' }, { status: 404 });
     }
@@ -90,6 +100,12 @@ export async function PUT(
     }
 
     const body = await request.json();
+    console.log('PUT API received body:', { 
+      chef: body.chef, 
+      chefEntries: body.chefEntries, 
+      eatenWithEntries: body.eatenWithEntries 
+    });
+    
     const { 
       title, 
       description, 
@@ -100,7 +116,9 @@ export async function PUT(
       cookingTime, 
       drankWith, 
       chefName, 
-      chef 
+      chef,
+      chefEntries,
+      eatenWithEntries
     } = body;
 
     // Store old user references for comparison
@@ -166,7 +184,7 @@ export async function PUT(
 
     // Update the creation
     const updatedCreation = await Creation.findByIdAndUpdate(
-      params.id,
+      id,
       {
         title,
         description,
@@ -178,6 +196,9 @@ export async function PUT(
         // New user ID fields
         eatenWithUsers: eatenWithUsers || [],
         chef: chef || null,
+        // New flexible entry fields
+        chefEntries: chefEntries || [],
+        eatenWithEntries: eatenWithEntries || [],
         cookingTime,
         drankWith
       },
@@ -186,6 +207,14 @@ export async function PUT(
      .populate('likes', 'name image')
      .populate('chef', 'name image') // Populate new chef field
      .populate('eatenWithUsers', 'name image') // Populate new eatenWith field
+     .populate({
+       path: 'chefEntries.user',
+       select: 'name image'
+     })
+     .populate({
+       path: 'eatenWithEntries.user', 
+       select: 'name image'
+     })
      .populate({
        path: 'recipes.recipe',
        select: 'title description cookingTime servings image ingredients instructions averageRating'
@@ -298,7 +327,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -313,7 +342,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const creation = await Creation.findById(params.id);
+    const { id } = await params;
+    const creation = await Creation.findById(id);
     if (!creation) {
       return NextResponse.json({ error: 'Creation not found' }, { status: 404 });
     }
@@ -351,7 +381,7 @@ export async function DELETE(
       }
     }
 
-    await Creation.findByIdAndDelete(params.id);
+    await Creation.findByIdAndDelete(id);
 
     // Update user stats - decrement creation count
     await User.findByIdAndUpdate(user._id, {

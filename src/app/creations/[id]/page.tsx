@@ -8,6 +8,7 @@ import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import ChefDisplay from '@/components/ChefDisplay';
 import UserMentions from '@/components/UserMentions';
+import FlexibleEntriesDisplay from '@/components/FlexibleEntriesDisplay';
 import { IoRestaurantOutline, IoArrowBack, IoTimeOutline, IoPeopleOutline, IoCreateOutline, IoTrashOutline, IoChatbubbleOutline, IoEllipsisVertical } from 'react-icons/io5';
 import { FaGrinHearts, FaRegGrinHearts } from 'react-icons/fa';
 
@@ -43,6 +44,13 @@ interface Comment {
   updatedAt?: string;
 }
 
+interface FlexibleEntry {
+  id: string;
+  type: 'user' | 'custom';
+  name: string;
+  user?: User;
+}
+
 interface Creation {
   _id: string;
   title: string;
@@ -56,9 +64,12 @@ interface Creation {
     rating?: number;
   }>;
   eatenWith?: string;
+  eatenWithEntries?: FlexibleEntry[];
   cookingTime?: number;
   drankWith?: string;
   chefName?: string;
+  chefEntries?: FlexibleEntry[];
+  chef?: User;
   createdAt: string;
 }
 
@@ -267,14 +278,27 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
+              <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
                 {creation.createdBy.name}
+                {((creation.chefEntries && creation.chefEntries.length > 0) || creation.chefName || creation.chef) && (
+                  <span className="font-normal text-gray-600 dark:text-gray-400">
+                    {' '}cooked with{' '}
+                    {creation.chefEntries && creation.chefEntries.length > 0 ? (
+                      <FlexibleEntriesDisplay 
+                        entries={creation.chefEntries} 
+                        maxDisplay={2} 
+                        className="inline" 
+                      />
+                    ) : creation.chef ? (
+                      <Link href={`/profile/${creation.chef._id}`} className="font-semibold hover:underline text-blue-600 dark:text-blue-400">
+                        {creation.chef.name}
+                      </Link>
+                    ) : (
+                      <ChefDisplay chefName={creation.chefName} className="text-sm" showProfilePicture={false} />
+                    )}
+                  </span>
+                )}
               </h3>
-              {creation.chefName && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  Chef: <ChefDisplay chefName={creation.chefName} className="text-xs" showProfilePicture={false} />
-                </p>
-              )}
               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 {new Date(creation.createdAt).toLocaleDateString('en-US', {
                   year: 'numeric',
@@ -348,6 +372,27 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
               <p className="text-gray-600 dark:text-gray-300 mb-3 text-sm sm:text-base line-clamp-2">
                 {creation.description}
               </p>
+            )}
+            
+            {/* Eaten With Info */}
+            {((creation.eatenWithEntries && creation.eatenWithEntries.length > 0) || creation.eatenWith) && (
+              <div className="text-sm mb-3">
+                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-1">
+                  <IoPeopleOutline size={16} />
+                  <span className="font-medium">Eaten with:</span>
+                </div>
+                <div className="ml-6">
+                  {creation.eatenWithEntries && creation.eatenWithEntries.length > 0 ? (
+                    <FlexibleEntriesDisplay 
+                      entries={creation.eatenWithEntries} 
+                      maxDisplay={3} 
+                      className="inline" 
+                    />
+                  ) : creation.eatenWith ? (
+                    <UserMentions text={creation.eatenWith} />
+                  ) : null}
+                </div>
+              </div>
             )}
           </div>
 
@@ -438,15 +483,23 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
         <div className="mt-6 space-y-6">
 
           {/* Creation Details */}
-          {(creation.eatenWith || creation.cookingTime || creation.drankWith) && (
+          {((creation.eatenWithEntries && creation.eatenWithEntries.length > 0) || creation.eatenWith || creation.cookingTime || creation.drankWith) && (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Creation Details</h3>
               <div className="space-y-3">
-                {creation.eatenWith && (
+                {((creation.eatenWithEntries && creation.eatenWithEntries.length > 0) || creation.eatenWith) && (
                   <div className="flex items-center gap-2">
                     <IoPeopleOutline size={16} className="text-gray-500" />
-                    <span className="text-gray-600 dark:text-gray-300"></span>
-                    <UserMentions text={creation.eatenWith} />
+                    <span className="text-gray-600 dark:text-gray-300">Eaten with:</span>
+                    {creation.eatenWithEntries && creation.eatenWithEntries.length > 0 ? (
+                      <FlexibleEntriesDisplay 
+                        entries={creation.eatenWithEntries} 
+                        maxDisplay={3} 
+                        className="inline" 
+                      />
+                    ) : creation.eatenWith ? (
+                      <UserMentions text={creation.eatenWith} />
+                    ) : null}
                   </div>
                 )}
                 {creation.cookingTime && (

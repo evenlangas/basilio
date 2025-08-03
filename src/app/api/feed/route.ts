@@ -36,6 +36,14 @@ export async function GET() {
     .populate('likes', 'name image')
     .populate('chef', 'name image') // Populate new chef field
     .populate('eatenWithUsers', 'name image') // Populate new eatenWith field
+    .populate({
+      path: 'chefEntries.user',
+      select: 'name image'
+    })
+    .populate({
+      path: 'eatenWithEntries.user', 
+      select: 'name image'
+    })
     .populate('recipes.recipe', 'title description cookingTime servings averageRating')
     .populate('recipe', 'title description cookingTime servings averageRating')
     .sort({ createdAt: -1 })

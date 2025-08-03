@@ -7,6 +7,7 @@ import Navigation from '@/components/Navigation';
 import Link from 'next/link';
 import ChefDisplay from '@/components/ChefDisplay';
 import UserMentions from '@/components/UserMentions';
+import FlexibleEntriesDisplay from '@/components/FlexibleEntriesDisplay';
 import { 
   IoArrowBack,
   IoRestaurantOutline,
@@ -17,6 +18,13 @@ import {
 } from 'react-icons/io5';
 import { FaGrinHearts, FaRegGrinHearts } from 'react-icons/fa';
 
+interface FlexibleEntry {
+  id: string;
+  type: 'user' | 'custom';
+  name: string;
+  user?: {_id: string, name: string, image?: string};
+}
+
 interface Creation {
   _id: string;
   title: string;
@@ -26,9 +34,12 @@ interface Creation {
   createdBy: { _id: string; name: string; image?: string };
   createdAt: string;
   eatenWith?: string;
+  eatenWithEntries?: FlexibleEntry[];
   cookingTime?: number;
   drankWith?: string;
   chefName?: string;
+  chefEntries?: FlexibleEntry[];
+  chef?: {_id: string, name: string, image?: string};
   comments?: Array<{
     user: { _id: string; name: string };
     text: string;
@@ -314,14 +325,31 @@ export default function UserCreationsPage({ params }: { params: Promise<{ id: st
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
+                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
                       {creation.createdBy.name}
+                      {((creation.chefEntries && creation.chefEntries.length > 0) || creation.chefName || creation.chef) && (
+                        <span className="font-normal text-gray-600 dark:text-gray-400">
+                          {' '}cooked with{' '}
+                          {creation.chefEntries && creation.chefEntries.length > 0 ? (
+                            <FlexibleEntriesDisplay 
+                              entries={creation.chefEntries} 
+                              maxDisplay={2} 
+                              className="inline" 
+                            />
+                          ) : creation.chef ? (
+                            <Link 
+                              href={`/profile/${creation.chef._id}`} 
+                              className="font-semibold hover:underline text-blue-600 dark:text-blue-400"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {creation.chef.name}
+                            </Link>
+                          ) : (
+                            <ChefDisplay chefName={creation.chefName} className="text-sm" showProfilePicture={false} asLink={false} />
+                          )}
+                        </span>
+                      )}
                     </h3>
-                    {creation.chefName && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                        Chef: <ChefDisplay chefName={creation.chefName} className="text-xs" showProfilePicture={false} asLink={false} />
-                      </p>
-                    )}
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                       {new Date(creation.createdAt).toLocaleDateString('en-US', {
                         year: 'numeric',
@@ -355,13 +383,6 @@ export default function UserCreationsPage({ params }: { params: Promise<{ id: st
                       </p>
                     )}
                     
-                    {/* Eaten With */}
-                    {creation.eatenWith && (
-                      <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-sm mb-2">
-                        <IoPeopleOutline size={16} />
-                        <UserMentions text={creation.eatenWith} />
-                      </div>
-                    )}
                     
                     {/* Recipe Information */}
                     {((creation.recipes && creation.recipes.length > 0) || creation.recipe) && (

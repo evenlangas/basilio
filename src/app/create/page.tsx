@@ -7,10 +7,19 @@ import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import UserSearchInput from '@/components/UserSearchInput';
 import MultiUserSearchInput from '@/components/MultiUserSearchInput';
+import LockedUserInput from '@/components/LockedUserInput';
+import LockedMultiUserInput from '@/components/LockedMultiUserInput';
+import FlexibleMultiInput from '@/components/FlexibleMultiInput';
 import RecipeSearchInput from '@/components/RecipeSearchInput';
 import CameraInput from '@/components/CameraInput';
 import { IoArrowBack, IoCamera, IoClose, IoBook, IoTime, IoPeople, IoRestaurantOutline } from 'react-icons/io5';
 
+interface FlexibleEntry {
+  id: string;
+  type: 'user' | 'custom';
+  name: string;
+  user?: {_id: string, name: string, image?: string}; // Only present if type is 'user'
+}
 
 export default function CreatePage() {
   const { data: session, status } = useSession();
@@ -20,17 +29,12 @@ export default function CreatePage() {
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [recipes, setRecipes] = useState<Array<{recipe: string, rating: number | null}>>([]);
-  // Legacy fields for backward compatibility
-  const [eatenWith, setEatenWith] = useState('');
-  const [chefName, setChefName] = useState('');
-  // New user ID fields
-  const [eatenWithUsers, setEatenWithUsers] = useState<Array<{_id: string, name: string, image?: string}>>([]);
-  const [chef, setChef] = useState<{_id: string, name: string, image?: string} | null>(null);
+  // User selection fields
+  const [eatenWithEntries, setEatenWithEntries] = useState<FlexibleEntry[]>([]);
+  const [chefEntries, setChefEntries] = useState<FlexibleEntry[]>([]);
   const [cookingTime, setCookingTime] = useState('');
   const [drankWith, setDrankWith] = useState('');
   const [loading, setLoading] = useState(false);
-  // Mode toggle for testing both approaches
-  const [useNewUserIds, setUseNewUserIds] = useState(true);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -138,11 +142,13 @@ export default function CreatePage() {
           description: description.trim(),
           image: imageUrl,
           recipes: recipes.filter(r => r.recipe), // Only include recipes that have been selected
-          // Send both legacy and new fields for backward compatibility
-          eatenWith: useNewUserIds ? '' : eatenWith.trim(),
-          chefName: useNewUserIds ? '' : chefName.trim(),
-          eatenWithUsers: useNewUserIds ? eatenWithUsers.map(u => u._id) : [],
-          chef: useNewUserIds ? chef?._id : null,
+          // Send flexible entry data
+          eatenWith: eatenWithEntries.filter(e => e.type === 'custom').map(e => e.name).join(', '),
+          chefName: chefEntries.filter(e => e.type === 'custom').map(e => e.name).join(', '),
+          eatenWithUsers: eatenWithEntries.filter(e => e.type === 'user' && e.user).map(e => e.user!._id),
+          chef: chefEntries.find(e => e.type === 'user' && e.user)?._id || null,
+          chefEntries: chefEntries, // Send all chef entries (both users and custom)
+          eatenWithEntries: eatenWithEntries, // Send all eaten with entries (both users and custom)
           cookingTime: cookingTime ? parseInt(cookingTime) : 0,
           drankWith: drankWith.trim(),
         }),
@@ -333,25 +339,15 @@ export default function CreatePage() {
 
           {/* Additional Details */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Additional Details</h3>
-              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={useNewUserIds}
-                  onChange={(e) => setUseNewUserIds(e.target.checked)}
-                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                />
-                Use New User ID System
-              </label>
-            </div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Additional Details</h3>
             
-            <UserSearchInput
-              value={eatenWith}
-              onChange={setEatenWith}
-              placeholder="Search users or type custom text..."
+            <FlexibleMultiInput
+              selectedEntries={eatenWithEntries}
+              onEntriesChange={setEatenWithEntries}
+              placeholder="Search users or add custom names..."
               label="👥 Who did you eat this with?"
-              allowFreeText={true}
+              maxEntries={10}
+              allowCustomText={true}
             />
 
             <div>
@@ -384,26 +380,14 @@ export default function CreatePage() {
               />
             </div>
 
-            {useNewUserIds ? (
-              <UserSearchInput
-                value={chef?.name || ''}
-                onChange={() => {}} // Not used in new mode
-                onUserSelect={setChef}
-                placeholder="Search for the chef..."
-                label="👨‍🍳 Chef name (if someone else cooked)"
-                allowFreeText={false}
-                mode="userIds"
-              />
-            ) : (
-              <UserSearchInput
-                value={chefName}
-                onChange={setChefName}
-                placeholder="Search users or type custom text..."
-                label="👨‍🍳 Chef name (if someone else cooked) - Legacy Mode"
-                allowFreeText={true}
-                mode="legacy"
-              />
-            )}
+            <FlexibleMultiInput
+              selectedEntries={chefEntries}
+              onEntriesChange={setChefEntries}
+              placeholder="Search users or add co-chef names..."
+              label="👨‍🍳 Who did you cook this with? (co-chefs)"
+              maxEntries={5}
+              allowCustomText={true}
+            />
           </div>
 
           {/* Submit Button */}

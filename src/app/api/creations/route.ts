@@ -79,6 +79,14 @@ export async function GET() {
       .populate('recipes.recipe', 'title')
       .populate('chef', 'name image') // Populate new chef field
       .populate('eatenWithUsers', 'name image') // Populate new eatenWith field
+      .populate({
+        path: 'chefEntries.user',
+        select: 'name image'
+      })
+      .populate({
+        path: 'eatenWithEntries.user', 
+        select: 'name image'
+      })
       .sort({ createdAt: -1 });
 
     return NextResponse.json(creations);

@@ -8,6 +8,7 @@ import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import ChefDisplay from '@/components/ChefDisplay';
 import UserMentions from '@/components/UserMentions';
+import FlexibleEntriesDisplay from '@/components/FlexibleEntriesDisplay';
 import { IoSearchOutline, IoRestaurantOutline, IoTimeOutline, IoChatbubbleOutline, IoPeopleOutline } from 'react-icons/io5';
 import { FaGrinHearts, FaRegGrinHearts } from 'react-icons/fa';
 import { getTagsDisplay, getFirstTagByPriority } from '@/utils/tags';
@@ -16,6 +17,13 @@ interface User {
   _id: string;
   name: string;
   image?: string;
+}
+
+interface FlexibleEntry {
+  id: string;
+  type: 'user' | 'custom';
+  name: string;
+  user?: User;
 }
 
 interface Recipe {
@@ -46,9 +54,12 @@ interface Creation {
   recipe?: Recipe;
   recipeRating?: number;
   eatenWith?: string;
+  eatenWithEntries?: FlexibleEntry[];
   cookingTime?: number;
   drankWith?: string;
   chefName?: string;
+  chefEntries?: FlexibleEntry[];
+  chef?: User;
   createdAt: string;
   comments?: Array<{
     user: User;
@@ -74,9 +85,12 @@ interface FeedItem {
   recipe?: Recipe;
   recipeRating?: number;
   eatenWith?: string;
+  eatenWithEntries?: FlexibleEntry[];
   cookingTime?: number;
   drankWith?: string;
   chefName?: string;
+  chefEntries?: FlexibleEntry[];
+  chef?: User;
   comments?: Array<{
     user: User;
     text: string;
@@ -287,14 +301,31 @@ export default function Home() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
                         {item.createdBy.name}
+                        {((item.chefEntries && item.chefEntries.length > 0) || item.chefName || item.chef) && (
+                          <span className="font-normal text-gray-600 dark:text-gray-400">
+                            {' '}cooked with{' '}
+                            {item.chefEntries && item.chefEntries.length > 0 ? (
+                              <FlexibleEntriesDisplay 
+                                entries={item.chefEntries} 
+                                maxDisplay={2} 
+                                className="inline" 
+                              />
+                            ) : item.chef ? (
+                              <Link 
+                                href={`/profile/${item.chef._id}`} 
+                                className="font-semibold hover:underline text-blue-600 dark:text-blue-400"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {item.chef.name}
+                              </Link>
+                            ) : (
+                              <ChefDisplay chefName={item.chefName} className="text-sm" showProfilePicture={false} asLink={false} />
+                            )}
+                          </span>
+                        )}
                       </h3>
-                      {item.chefName && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                          Chef: <ChefDisplay chefName={item.chefName} className="text-xs" showProfilePicture={false} asLink={false} />
-                        </p>
-                      )}
                       <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                         {new Date(item.createdAt).toLocaleDateString('en-US', {
                           year: 'numeric',
@@ -328,13 +359,6 @@ export default function Home() {
                         </p>
                       )}
                       
-                      {/* Eaten With */}
-                      {item.eatenWith && (
-                        <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-sm mb-2">
-                          <IoPeopleOutline size={16} />
-                          <span>{item.eatenWith}</span>
-                        </div>
-                      )}
                       
                       {/* Recipe Information */}
                       {((item.recipes && item.recipes.length > 0) || item.recipe) && (

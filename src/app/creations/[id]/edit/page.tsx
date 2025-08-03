@@ -6,10 +6,19 @@ import { useEffect, useState, use } from 'react';
 import Navigation from '@/components/Navigation';
 import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import UserSearchInput from '@/components/UserSearchInput';
+import LockedUserInput from '@/components/LockedUserInput';
+import LockedMultiUserInput from '@/components/LockedMultiUserInput';
+import FlexibleMultiInput from '@/components/FlexibleMultiInput';
 import RecipeSearchInput from '@/components/RecipeSearchInput';
 import CameraInput from '@/components/CameraInput';
 import { IoArrowBack, IoCamera, IoClose, IoBook, IoTime, IoPeople, IoRestaurantOutline } from 'react-icons/io5';
 
+interface FlexibleEntry {
+  id: string;
+  type: 'user' | 'custom';
+  name: string;
+  user?: {_id: string, name: string, image?: string}; // Only present if type is 'user'
+}
 
 interface Creation {
   _id: string;
@@ -43,10 +52,10 @@ export default function EditCreationPage({ params }: { params: Promise<{ id: str
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [recipes, setRecipes] = useState<Array<{recipe: string, rating: number | null}>>([]);
-  const [eatenWith, setEatenWith] = useState('');
+  const [eatenWithEntries, setEatenWithEntries] = useState<FlexibleEntry[]>([]);
+  const [chefEntries, setChefEntries] = useState<FlexibleEntry[]>([]);
   const [cookingTime, setCookingTime] = useState('');
   const [drankWith, setDrankWith] = useState('');
-  const [chefName, setChefName] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -97,10 +106,67 @@ export default function EditCreationPage({ params }: { params: Promise<{ id: str
         setTitle(data.title || '');
         setDescription(data.description || '');
         setImagePreview(data.image || '');
-        setEatenWith(data.eatenWith || '');
         setCookingTime(data.cookingTime?.toString() || '');
         setDrankWith(data.drankWith || '');
-        setChefName(data.chefName || '');
+        
+        // Convert legacy data to flexible entries
+        const eatenWithEntries: FlexibleEntry[] = [];
+        const chefEntries: FlexibleEntry[] = [];
+        
+        // Handle eaten with - prioritize user data, fall back to legacy text
+        if (data.eatenWithUsers && data.eatenWithUsers.length > 0) {
+          data.eatenWithUsers.forEach((user: any, index: number) => {
+            eatenWithEntries.push({
+              id: `user_${user._id}`,
+              type: 'user',
+              name: user.name,
+              user: user
+            });
+          });
+        }
+        if (data.eatenWith && data.eatenWith.trim()) {
+          // Add legacy text entries if they don't conflict with users
+          const customNames = data.eatenWith.split(',').map(name => name.trim()).filter(name => name);
+          customNames.forEach((name, index) => {
+            // Only add if not already covered by a user entry
+            const exists = eatenWithEntries.some(entry => entry.name.toLowerCase() === name.toLowerCase());
+            if (!exists) {
+              eatenWithEntries.push({
+                id: `custom_eaten_${index}_${Date.now()}`,
+                type: 'custom',
+                name: name
+              });
+            }
+          });
+        }
+        
+        // Handle chef - prioritize user data, fall back to legacy text
+        if (data.chef) {
+          chefEntries.push({
+            id: `user_${data.chef._id}`,
+            type: 'user',
+            name: data.chef.name,
+            user: data.chef
+          });
+        }
+        if (data.chefName && data.chefName.trim()) {
+          // Add legacy text entries if they don't conflict with users
+          const customNames = data.chefName.split(',').map(name => name.trim()).filter(name => name);
+          customNames.forEach((name, index) => {
+            // Only add if not already covered by a user entry
+            const exists = chefEntries.some(entry => entry.name.toLowerCase() === name.toLowerCase());
+            if (!exists) {
+              chefEntries.push({
+                id: `custom_chef_${index}_${Date.now()}`,
+                type: 'custom',
+                name: name
+              });
+            }
+          });
+        }
+        
+        setEatenWithEntries(eatenWithEntries);
+        setChefEntries(chefEntries);
         
         // Handle recipes - support both old and new formats
         if (data.recipes && data.recipes.length > 0) {
@@ -170,10 +236,15 @@ export default function EditCreationPage({ params }: { params: Promise<{ id: str
           description: description.trim(),
           image: imageUrl,
           recipes: recipes.filter(r => r.recipe), // Only include recipes that have been selected
-          eatenWith: eatenWith.trim(),
+          // Send flexible entry data
+          eatenWith: eatenWithEntries.filter(e => e.type === 'custom').map(e => e.name).join(', '),
+          chefName: chefEntries.filter(e => e.type === 'custom').map(e => e.name).join(', '),
+          eatenWithUsers: eatenWithEntries.filter(e => e.type === 'user' && e.user).map(e => e.user!._id),
+          chef: chefEntries.find(e => e.type === 'user' && e.user)?._id || null,
+          chefEntries: chefEntries, // Send all chef entries (both users and custom)
+          eatenWithEntries: eatenWithEntries, // Send all eaten with entries (both users and custom)
           cookingTime: cookingTime ? parseInt(cookingTime) : 0,
           drankWith: drankWith.trim(),
-          chefName: chefName.trim(),
         }),
       });
 
@@ -364,12 +435,13 @@ export default function EditCreationPage({ params }: { params: Promise<{ id: str
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 space-y-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">Additional Details</h3>
             
-            <UserSearchInput
-              value={eatenWith}
-              onChange={setEatenWith}
-              placeholder="Search users or type custom text..."
-              label="🍽️ Who did you eat this with?"
-              allowFreeText={true}
+            <FlexibleMultiInput
+              selectedEntries={eatenWithEntries}
+              onEntriesChange={setEatenWithEntries}
+              placeholder="Search users or add custom names..."
+              label="👥 Who did you eat this with?"
+              maxEntries={10}
+              allowCustomText={true}
             />
 
             <div>
@@ -396,12 +468,13 @@ export default function EditCreationPage({ params }: { params: Promise<{ id: str
               allowFreeText={true}
             />
 
-            <UserSearchInput
-              value={chefName}
-              onChange={setChefName}
-              placeholder="Search users or type custom text..."
-              label="👨‍🍳 Chef name (if someone else cooked)"
-              allowFreeText={true}
+            <FlexibleMultiInput
+              selectedEntries={chefEntries}
+              onEntriesChange={setChefEntries}
+              placeholder="Search users or add co-chef names..."
+              label="👨‍🍳 Who did you cook this with? (co-chefs)"
+              maxEntries={5}
+              allowCustomText={true}
             />
           </div>
 
