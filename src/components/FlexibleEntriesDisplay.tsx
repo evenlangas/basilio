@@ -32,59 +32,67 @@ export default function FlexibleEntriesDisplay({
   }
 
   const displayEntries = entries.slice(0, maxDisplay);
-  const remainingCount = entries.length - maxDisplay;
+  const remainingCount = Math.max(0, entries.length - maxDisplay);
+
+  // Simple approach: build the text with proper grammar
+  const renderEntries = () => {
+    const elements: React.ReactNode[] = [];
+    
+    for (let i = 0; i < displayEntries.length; i++) {
+      const entry = displayEntries[i];
+      const isLast = i === displayEntries.length - 1;
+      const isSecondToLast = i === displayEntries.length - 2;
+      
+      // Render the entry (user or custom)
+      if (entry.type === 'user' && entry.user) {
+        elements.push(
+          <Link
+            key={entry.id}
+            href={`/profile/${entry.user._id}`}
+            className="font-semibold hover:underline text-gray-900 dark:text-white break-words"
+          >
+            {entry.name}
+          </Link>
+        );
+      } else {
+        elements.push(
+          <span key={entry.id} className="text-gray-900 dark:text-white break-words">
+            {entry.name}
+          </span>
+        );
+      }
+      
+      // Add separator
+      if (!isLast) {
+        if (displayEntries.length === 2 && remainingCount === 0) {
+          // For exactly 2 items with no overflow: "A and B"
+          elements.push(' and ');
+        } else if (isSecondToLast && remainingCount === 0) {
+          // For 3+ items with no overflow, second to last: "A, B, and C"
+          elements.push(', and ');
+        } else {
+          // For other non-last items or when there's overflow: "A, B, C"
+          elements.push(', ');
+        }
+      }
+    }
+    
+    // Add overflow text if there are more entries
+    if (remainingCount > 0) {
+      elements.push(', and ');
+      elements.push(
+        <span key="overflow" className="text-sm text-gray-500 dark:text-gray-400">
+          {remainingCount} other{remainingCount === 1 ? '' : 's'}
+        </span>
+      );
+    }
+    
+    return elements;
+  };
 
   return (
     <span className={`inline ${className}`}>
-      {displayEntries.map((entry, index) => {
-        const isLast = index === displayEntries.length - 1;
-        const isSecondToLast = index === displayEntries.length - 2;
-        
-        let separator = '';
-        if (!isLast) {
-          if (isSecondToLast && remainingCount === 0) {
-            // Second to last item with no overflow - add "and"
-            separator = displayEntries.length === 2 ? ' and ' : ', and ';
-          } else if (isSecondToLast && remainingCount > 0) {
-            // Second to last item with overflow - just comma
-            separator = ', ';
-          } else {
-            // Any other non-last item - comma
-            separator = ', ';
-          }
-        }
-        
-        if (entry.type === 'user' && entry.user) {
-          // Display user with bold black link (no profile picture)
-          return (
-            <span key={entry.id}>
-              <Link
-                href={`/profile/${entry.user._id}`}
-                className="font-semibold hover:underline text-gray-900 dark:text-white break-words"
-              >
-                {entry.name}
-              </Link>
-              {separator}
-            </span>
-          );
-        } else {
-          // Display custom text (no link, not bold)
-          return (
-            <span key={entry.id}>
-              <span className="text-gray-900 dark:text-white break-words">
-                {entry.name}
-              </span>
-              {separator}
-            </span>
-          );
-        }
-      })}
-      
-      {remainingCount > 0 && (
-        <span className="text-sm text-gray-500 dark:text-gray-400">
-          {displayEntries.length > 0 ? ', and ' : ''}{remainingCount} other{remainingCount === 1 ? '' : 's'}
-        </span>
-      )}
+      {renderEntries()}
     </span>
   );
 }

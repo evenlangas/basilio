@@ -369,7 +369,7 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
               {creation.title}
             </h4>
             {creation.description && (
-              <p className="text-gray-600 dark:text-gray-300 mb-4 text-base">
+              <p className="text-gray-600 dark:text-gray-300 mb-4 text-sm">
                 {creation.description}
               </p>
             )}
@@ -389,9 +389,9 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                   
                   {/* Eaten With */}
                   {((creation.eatenWithEntries && creation.eatenWithEntries.length > 0) || creation.eatenWith) && (
-                    <div className="flex items-center gap-2">
-                      <IoPeopleOutline size={16} className="text-gray-500" />
-                      <span className="text-gray-600 dark:text-gray-300 text-base">
+                    <div className="flex items-start gap-2">
+                      <IoPeopleOutline size={16} className="text-gray-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-600 dark:text-gray-300 text-sm">
                         Ate with{' '}
                         {creation.eatenWithEntries && creation.eatenWithEntries.length > 0 ? (
                           <FlexibleEntriesDisplay 
@@ -409,15 +409,15 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                   {/* Cooking Time */}
                   {creation.cookingTime && creation.cookingTime > 0 && (
                     <div className="flex items-center gap-2">
-                      <IoTimeOutline size={16} className="text-gray-500" />
-                      <span className="text-gray-600 dark:text-gray-300 text-base">{creation.cookingTime} minutes</span>
+                      <IoTimeOutline size={16} className="text-gray-500 flex-shrink-0" />
+                      <span className="text-gray-600 dark:text-gray-300 text-sm">{creation.cookingTime} minutes</span>
                     </div>
                   )}
                   
                   {/* Drank With */}
                   {creation.drankWith && (
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-600 dark:text-gray-300 text-base">🥤 {creation.drankWith}</span>
+                      <span className="text-gray-600 dark:text-gray-300 text-sm">🥤 {creation.drankWith}</span>
                     </div>
                   )}
                   
@@ -430,14 +430,14 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                           creation.recipes.map((recipeItem, index) => (
                             <div key={index} className="space-y-2">
                               <div className="flex items-center gap-2">
-                                <IoRestaurantOutline size={14} className="text-gray-500 dark:text-gray-400" />
+                                <IoRestaurantOutline size={16} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
                                 <Link 
                                   href={`/recipes/${recipeItem.recipe._id}`}
-                                  className="text-green-600 dark:text-green-400 hover:underline font-medium text-base"
+                                  className="text-green-600 dark:text-green-400 hover:underline font-medium text-sm"
                                 >
                                   {recipeItem.recipe.title}
                                 </Link>
-                                <span className="text-gray-500 dark:text-gray-400 text-base">
+                                <span className="text-gray-500 dark:text-gray-400 text-sm">
                                   ({recipeItem.recipe.averageRating ? recipeItem.recipe.averageRating.toFixed(1) : '0.0'} 🤌)
                                 </span>
                               </div>
@@ -456,14 +456,14 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                           creation.recipe && (
                             <div className="space-y-2">
                               <div className="flex items-center gap-2">
-                                <IoRestaurantOutline size={14} className="text-gray-500 dark:text-gray-400" />
+                                <IoRestaurantOutline size={16} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
                                 <Link 
                                   href={`/recipes/${creation.recipe._id}`}
-                                  className="text-green-600 dark:text-green-400 hover:underline font-medium text-base"
+                                  className="text-green-600 dark:text-green-400 hover:underline font-medium text-sm"
                                 >
                                   {creation.recipe.title}
                                 </Link>
-                                <span className="text-gray-500 dark:text-gray-400 text-base">
+                                <span className="text-gray-500 dark:text-gray-400 text-sm">
                                   ({creation.recipe.averageRating ? creation.recipe.averageRating.toFixed(1) : '0.0'} 🤌)
                                 </span>
                               </div>
@@ -521,12 +521,12 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                         </div>
                       ))}
                     </div>
-                    <span className="text-base text-gray-600 dark:text-gray-300">
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
                       {creation.likes.length} yummed
                     </span>
                   </>
                 ) : (
-                  <span className="text-base text-gray-500 dark:text-gray-400">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
                     0 yummed
                   </span>
                 )}
@@ -537,7 +537,7 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                 href={`/creations/${id}/comments`}
                 className="flex items-center gap-2 hover:opacity-75 transition-opacity"
               >
-                <span className="text-base text-gray-600 dark:text-gray-300">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
                   {comments?.length || 0} {(comments?.length || 0) === 1 ? 'comment' : 'comments'}
                 </span>
               </Link>
@@ -554,7 +554,7 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                 }`}
               >
                 {hasYummed ? <FaGrinHearts size={20} style={{ color: 'var(--color-primary-600)' }} /> : <FaRegGrinHearts size={20} />}
-                <span className="text-base">
+                <span className="text-sm">
                   Yum
                 </span>
               </button>
@@ -563,7 +563,7 @@ export default function CreationDetail({ params }: { params: Promise<{ id: strin
                 className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 dark:hover:border-blue-800 transition-all"
               >
                 <IoChatbubbleOutline size={20} />
-                <span className="text-base">
+                <span className="text-sm">
                   Comment
                 </span>
               </Link>
