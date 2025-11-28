@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { IoCart, IoAdd, IoCheckbox, IoSquareOutline, IoChevronForward } from 'react-icons/io5';
+import { IoCart, IoAdd, IoChevronForward } from 'react-icons/io5';
 
 interface ShoppingItem {
   name: string;
@@ -20,7 +20,8 @@ interface ShoppingList {
 export default function ShoppingListWidget() {
   const [list, setList] = useState<ShoppingList | null>(null);
   const [loading, setLoading] = useState(true);
-  const [newItemName, setNewItemName] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newItem, setNewItem] = useState({ name: '', amount: '', unit: '' });
   const [addingItem, setAddingItem] = useState(false);
 
   useEffect(() => {
@@ -50,19 +51,19 @@ export default function ShoppingListWidget() {
     }
   };
 
-  const quickAddItem = async (e: React.FormEvent) => {
+  const addItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newItemName.trim() || !list) return;
+    if (!newItem.name.trim() || !list) return;
 
     setAddingItem(true);
-    const newItem: ShoppingItem = {
-      name: newItemName.trim(),
-      amount: '',
-      unit: '',
+    const newShoppingItem: ShoppingItem = {
+      name: newItem.name.trim(),
+      amount: newItem.amount.trim(),
+      unit: newItem.unit.trim(),
       completed: false,
     };
 
-    const updatedItems = [...list.items, newItem];
+    const updatedItems = [...list.items, newShoppingItem];
 
     try {
       const response = await fetch(`/api/shopping-lists/${list._id}`, {
@@ -77,7 +78,8 @@ export default function ShoppingListWidget() {
 
       if (response.ok) {
         setList({ ...list, items: updatedItems });
-        setNewItemName('');
+        setNewItem({ name: '', amount: '', unit: '' });
+        setShowAddModal(false);
       }
     } catch (error) {
       console.error('Error adding item:', error);
@@ -86,49 +88,11 @@ export default function ShoppingListWidget() {
     }
   };
 
-  const toggleItem = async (index: number) => {
-    if (!list) return;
-
-    const updatedItems = [...list.items];
-    updatedItems[index].completed = !updatedItems[index].completed;
-
-    // Optimistic update
-    setList({ ...list, items: updatedItems });
-
-    try {
-      const response = await fetch(`/api/shopping-lists/${list._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          items: updatedItems,
-        }),
-      });
-
-      if (!response.ok) {
-        // Revert on error
-        const revertedItems = [...list.items];
-        revertedItems[index].completed = !revertedItems[index].completed;
-        setList({ ...list, items: revertedItems });
-      }
-    } catch (error) {
-      // Revert on error
-      const revertedItems = [...list.items];
-      revertedItems[index].completed = !revertedItems[index].completed;
-      setList({ ...list, items: revertedItems });
-      console.error('Error toggling item:', error);
-    }
-  };
-
   if (loading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 animate-pulse">
         <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
-        <div className="space-y-2">
-          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
-          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
-        </div>
+        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
       </div>
     );
   }
@@ -138,122 +102,129 @@ export default function ShoppingListWidget() {
   }
 
   const uncompleted = list.items.filter(item => !item.completed);
-  const displayItems = uncompleted.slice(0, 5);
-  const remainingCount = uncompleted.length - displayItems.length;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <IoCart size={20} className="text-primary-600 dark:text-primary-400" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {list.name}
-            </h2>
+    <>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+        {/* Header */}
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <IoCart size={20} className="text-primary-600 dark:text-primary-400" />
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {list.name}
+              </h2>
+            </div>
+            <Link
+              href={`/lists/${list._id}`}
+              className="text-sm text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
+            >
+              View all
+              <IoChevronForward size={14} />
+            </Link>
           </div>
-          <Link
-            href={`/lists/${list._id}`}
-            className="text-sm text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
-          >
-            View all
-            <IoChevronForward size={14} />
-          </Link>
-        </div>
-        {list.items.length > 0 && (
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {uncompleted.length} of {list.items.length} items remaining
-          </p>
-        )}
-      </div>
-
-      {/* Quick add form */}
-      <form onSubmit={quickAddItem} className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newItemName}
-            onChange={(e) => setNewItemName(e.target.value)}
-            placeholder="Add item..."
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            disabled={addingItem}
-          />
+          {list.items.length > 0 && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+              {uncompleted.length} of {list.items.length} items remaining
+            </p>
+          )}
+          
+          {/* Add Item Button */}
           <button
-            type="submit"
-            disabled={addingItem || !newItemName.trim()}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+            onClick={() => setShowAddModal(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors"
           >
-            {addingItem ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <>
-                <IoAdd size={18} />
-                <span className="hidden sm:inline text-sm">Add</span>
-              </>
-            )}
+            <IoAdd size={20} />
+            <span>Add Item</span>
           </button>
         </div>
-      </form>
+      </div>
 
-      {/* Items list */}
-      <div className="p-4">
-        {displayItems.length === 0 ? (
-          <div className="text-center py-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              All items completed! 🎉
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {displayItems.map((item, index) => {
-              const actualIndex = list.items.indexOf(item);
-              return (
-                <div
-                  key={`${item.name}-${actualIndex}`}
-                  className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                >
-                  <button
-                    onClick={() => toggleItem(actualIndex)}
-                    className="flex-shrink-0"
-                  >
-                    {item.completed ? (
-                      <IoCheckbox size={20} className="text-green-500" />
-                    ) : (
-                      <IoSquareOutline size={20} className="text-gray-400 hover:text-green-500 transition-colors" />
-                    )}
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <span className={`text-sm font-medium ${
-                      item.completed 
-                        ? 'text-gray-500 dark:text-gray-400 line-through' 
-                        : 'text-gray-900 dark:text-white'
-                    }`}>
-                      {item.name}
-                    </span>
-                    {(item.amount || item.unit) && (
-                      <span className={`text-xs ml-2 ${
-                        item.completed 
-                          ? 'text-gray-400 dark:text-gray-500 line-through' 
-                          : 'text-gray-600 dark:text-gray-300'
-                      }`}>
-                        {item.amount} {item.unit}
-                      </span>
-                    )}
+      {/* Add Item Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-white/20 dark:bg-black/20 backdrop-blur-sm flex items-start justify-center pt-8 p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[calc(100vh-4rem)] overflow-y-auto">
+            <div className="p-4 sm:p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Add Item
+              </h2>
+              <form onSubmit={addItem} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Item name *
+                  </label>
+                  <input
+                    type="text"
+                    value={newItem.name}
+                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                    placeholder="e.g., Milk, Bread, Apples"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    required
+                    autoFocus
+                  />
+                </div>
+                
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Amount
+                    </label>
+                    <input
+                      type="text"
+                      value={newItem.amount}
+                      onChange={(e) => setNewItem({ ...newItem, amount: e.target.value })}
+                      placeholder="e.g., 2, 1.5"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                  
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Unit
+                    </label>
+                    <input
+                      type="text"
+                      value={newItem.unit}
+                      onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
+                      placeholder="e.g., pieces, kg"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
                   </div>
                 </div>
-              );
-            })}
-            {remainingCount > 0 && (
-              <Link
-                href={`/lists/${list._id}`}
-                className="block text-center py-2 text-sm text-primary-600 dark:text-primary-400 hover:underline"
-              >
-                + {remainingCount} more item{remainingCount !== 1 ? 's' : ''}
-              </Link>
-            )}
+                
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="order-2 sm:order-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={addingItem}
+                    className="order-1 sm:order-2 flex items-center justify-center gap-2 px-4 py-3 sm:py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                    style={{ 
+                      backgroundColor: addingItem ? 'var(--color-primary-400)' : 'var(--color-primary-600)'
+                    }}
+                    onMouseEnter={(e) => !addingItem && (e.currentTarget.style.backgroundColor = 'var(--color-primary-700)')}
+                    onMouseLeave={(e) => !addingItem && (e.currentTarget.style.backgroundColor = 'var(--color-primary-600)')}
+                  >
+                    {addingItem ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <>
+                        <IoAdd size={18} />
+                        Add Item
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 }
