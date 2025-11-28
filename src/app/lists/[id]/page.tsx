@@ -23,7 +23,9 @@ import {
   IoTime,
   IoChevronDown,
   IoChevronUp,
-  IoReorderThree
+  IoReorderThree,
+  IoPin,
+  IoPinOutline
 } from 'react-icons/io5';
 import {
   DndContext,
@@ -336,6 +338,8 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
   const [deletingItems, setDeletingItems] = useState<Set<number>>(new Set());
   const [deleteErrors, setDeleteErrors] = useState<Set<number>>(new Set());
   const [originalItemStates, setOriginalItemStates] = useState<Map<number, boolean>>(new Map());
+  const [isPinned, setIsPinned] = useState(false);
+  const [pinning, setPinning] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -422,6 +426,13 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
         setList(data);
         setIsOwner(data.createdBy._id === session?.user?.id);
         setLastUpdated(new Date());
+        
+        // Check if this list is pinned
+        const userResponse = await fetch('/api/user/profile');
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          setIsPinned(userData.pinnedShoppingList === id);
+        }
       } else if (response.status === 404) {
         router.push('/lists');
       }
@@ -721,6 +732,33 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
     setEditingItem(prev => ({ ...prev, unit: e.target.value }));
   }, []);
 
+  const togglePin = async () => {
+    if (pinning) return;
+    
+    setPinning(true);
+    const newPinState = !isPinned;
+    
+    try {
+      const response = await fetch('/api/user/pin-list', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          listId: newPinState ? listId : null,
+        }),
+      });
+      
+      if (response.ok) {
+        setIsPinned(newPinState);
+      }
+    } catch (error) {
+      console.error('Error toggling pin:', error);
+    } finally {
+      setPinning(false);
+    }
+  };
+
   if (status === 'loading') {
     return <PageLoadingSkeleton />;
   }
@@ -768,6 +806,26 @@ export default function ShoppingListPage({ params }: { params: Promise<{ id: str
                     Created by {list.createdBy.name} • {totalItems} items
                   </p>
                 </div>
+                
+                <button
+                  onClick={togglePin}
+                  disabled={pinning}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors flex-shrink-0 ${
+                    isPinned 
+                      ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' 
+                      : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                  title={isPinned ? 'Unpin from home' : 'Pin to home'}
+                >
+                  {pinning ? (
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : isPinned ? (
+                    <IoPin size={18} />
+                  ) : (
+                    <IoPinOutline size={18} />
+                  )}
+                  <span className="hidden sm:inline text-sm">{isPinned ? 'Pinned' : 'Pin'}</span>
+                </button>
                 
                 {isOwner && (
                   <Link

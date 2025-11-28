@@ -9,6 +9,7 @@ import { PageLoadingSkeleton } from '@/components/SkeletonLoader';
 import ChefDisplay from '@/components/ChefDisplay';
 import UserMentions from '@/components/UserMentions';
 import FlexibleEntriesDisplay from '@/components/FlexibleEntriesDisplay';
+import ShoppingListWidget from '@/components/ShoppingListWidget';
 import { IoSearchOutline, IoRestaurantOutline, IoTimeOutline, IoChatbubbleOutline, IoPeopleOutline } from 'react-icons/io5';
 import { FaGrinHearts, FaRegGrinHearts } from 'react-icons/fa';
 import { getTagsDisplay, getFirstTagByPriority } from '@/utils/tags';
@@ -255,6 +256,11 @@ export default function Home() {
       <Navigation />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Shopping List Widget */}
+        <div className="mb-6">
+          <ShoppingListWidget />
+        </div>
+
         {/* Feed */}
         {loading ? (
           <div className="text-center py-12">

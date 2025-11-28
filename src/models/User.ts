@@ -46,6 +46,11 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  pinnedShoppingList: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ShoppingList',
+    default: null,
+  },
   trophies: [{
     type: {
       type: String,
